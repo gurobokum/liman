@@ -1,1 +1,6 @@
-echo "No pre-commit hooks"
+# liman
+uv run poe -C python/packages/liman lint
+uv run poe -C python/packages/liman mypy
+# liman_core
+uv run poe -C python/packages/liman_core lint
+uv run poe -C python/packages/liman_core mypy
