@@ -1,0 +1,21 @@
+{
+  "name": "liman-monorepo",
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.11.1",
+  "type": "module",
+  "description": "Liman Monorepo",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "Guro Bokum <jiojiajiu@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7"
+  }
+}
