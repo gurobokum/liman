@@ -135,11 +135,6 @@ source = { editable = "packages/liman" }
 name = "liman-core"
 source = { editable = "packages/liman_core" }
 
-[package.metadata]
-
-[package.metadata.requires-dev]
-dev = []
-
 [[package]]
 name = "mypy"
 version = "1.16.0"

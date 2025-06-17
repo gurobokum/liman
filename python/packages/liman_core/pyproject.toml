@@ -12,6 +12,11 @@ requires-python = ">=3.9"
 authors = [
     { name = "Guro Bokum", email = "jiojiajiu@gmail.com" }
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 
 [tool.hatch.version]
 path = "VERSION"
@@ -28,6 +33,3 @@ extend = "../../pyproject.toml"
 
 [tool.mypy]
 extend = "../../pyproject.toml"
-
-[dependency-groups]
-dev = []
