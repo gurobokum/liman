@@ -20,6 +20,9 @@ pattern = "(?P<version>.+)"
 [tool.poe]
 include = "../../pyproject.toml"
 
+[tool.poe.tasks]
+mypy = "mypy --config-file ../../pyproject.toml ."
+
 [tool.ruff]
 extend = "../../pyproject.toml"
 

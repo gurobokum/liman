@@ -25,11 +25,7 @@ liman_core = { workspace = true }
 include = "../../pyproject.toml"
 
 [tool.poe.tasks]
-test = "nox"
+mypy = "mypy --config-file ../../pyproject.toml ."
 
 [tool.ruff]
 extend = "../../pyproject.toml"
-
-[tool.mypy]
-extend = "../../pyproject.toml"
-

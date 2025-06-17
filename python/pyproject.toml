@@ -11,13 +11,13 @@ dev = [
     "poethepoet>=0.35.0",
     "pytest>=8.4.0",
     "pytest-cov>=6.2.1",
+    "pytest-dotenv>=0.5.2",
     "ruff>=0.11.13",
 ]
 
 [tool.poe.tasks]
 lint = ["_format", "_lint"]
 format = "ruff format"
-mypy = "mypy ."
 test = "pytest"
 _format = "ruff format --check"
 _lint = "ruff check --diff"
