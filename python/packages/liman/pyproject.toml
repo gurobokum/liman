@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "liman"
+dynamic = ["version"]
+description = "Liman AgentOps"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Guro Bokum", email = "jiojiajiu@gmail.com" }
+]
+dependencies = []
+
+[tool.hatch.version]
+path = "VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.uv.sources]
+liman_core = { workspace = true }
+
+[tool.poe]
+include = "../../pyproject.toml"
+
+[tool.poe.tasks]
+test = "nox"
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.mypy]
+extend = "../../pyproject.toml"
+
