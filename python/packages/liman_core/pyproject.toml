@@ -17,6 +17,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "protobuf>=6.31.1",
+]
 
 [tool.hatch.version]
 path = "VERSION"
@@ -33,3 +36,8 @@ extend = "../../pyproject.toml"
 
 [tool.mypy]
 extend = "../../pyproject.toml"
+
+[dependency-groups]
+dev = [
+    "types-protobuf>=6.30.2.20250516",
+]

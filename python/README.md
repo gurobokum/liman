@@ -2,6 +2,11 @@
 
 ## Development
 
+- Install [protoc](https://protobuf.dev/installation/)
+- ```bash
+  poe protoc
+  ```
+
 ```bash
 poe -C package_path format
 

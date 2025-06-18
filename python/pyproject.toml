@@ -1,6 +1,7 @@
 [tool.uv.sources]
 liman = { workspace = true }
 liman_core = { workspace = true }
+proto = { path = "./proto" }
 
 [tool.uv.workspace]
 members = ["packages/*"]
@@ -24,6 +25,7 @@ lint.sequence = [
   { cmd = "poe lint", cwd = "packages/liman" },
   { cmd = "poe lint", cwd = "packages/liman_core" }
 ]
+protoc = "protoc --python_out=proto/  --proto_path=../proto --pyi_out=proto/ liman.proto"
 
 
 [tool.ruff]
@@ -60,7 +62,7 @@ warn_no_return = true
 warn_return_any = true
 warn_unused_configs = true
 strict_equality = true
-exclude = []
+mypy_path = "$MYPY_CONFIG_FILE_DIR"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
