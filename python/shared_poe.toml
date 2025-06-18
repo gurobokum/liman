@@ -1,0 +1,7 @@
+[tool.poe.tasks]
+lint.sequence = [
+  { cmd = "ruff format --check" },
+  { cmd = "ruff check --diff" }
+]
+format = "ruff format"
+test = "pytest"

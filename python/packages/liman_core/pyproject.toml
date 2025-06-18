@@ -23,7 +23,7 @@ path = "VERSION"
 pattern = "(?P<version>.+)"
 
 [tool.poe]
-include = "../../pyproject.toml"
+include = "../../shared_poe.toml"
 
 [tool.poe.tasks]
 mypy = "mypy --config-file ../../pyproject.toml ."

@@ -26,7 +26,7 @@ pattern = "(?P<version>.+)"
 liman_core = { workspace = true }
 
 [tool.poe]
-include = "../../pyproject.toml"
+include = "../../shared_poe.toml"
 
 [tool.poe.tasks]
 mypy = "mypy --config-file ../../pyproject.toml ."

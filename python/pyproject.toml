@@ -16,11 +16,14 @@ dev = [
 ]
 
 [tool.poe.tasks]
-lint = ["_format", "_lint"]
-format = "ruff format"
-test = "pytest"
-_format = "ruff format --check"
-_lint = "ruff check --diff"
+typing.sequence = [
+  { cmd = "poe mypy", cwd = "packages/liman" },
+  { cmd = "poe mypy", cwd = "packages/liman_core" }
+]
+lint.sequence = [
+  { cmd = "poe lint", cwd = "packages/liman" },
+  { cmd = "poe lint", cwd = "packages/liman_core" }
+]
 
 
 [tool.ruff]
