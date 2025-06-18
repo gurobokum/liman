@@ -10,7 +10,9 @@
   "scripts": {
     "prepare": "husky",
     "python:lint": "cd python && uv run poe lint",
-    "python:typing": "cd python && uv run poe typing"
+    "python:typing": "cd python && uv run poe typing",
+    "commitlint:type": "commitlint --print-config json | jq '.rules.\"type-enum\"[2]'",
+    "commitlint:scope": "commitlint --print-config json | jq '.rules.\"scope-enum\"[2]'"
   },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",
