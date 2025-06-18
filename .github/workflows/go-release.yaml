@@ -3,10 +3,6 @@ name: Go Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: Version to release
-        required: true
-        type: string
       commit:
         description: Commit to release
         required: true
@@ -82,10 +78,17 @@ jobs:
               );
             }
 
-  deploy-package:
-    name: liman-${{ needs.set-version.outputs.version }}
+  build-artifacts:
+    name: Build Artifacts
     needs: [set-version, check-workflow-status]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux, window, darwin]
+        arch: [amd64, arm64]
+        exclude:
+          - os: window
+            arch: arm64
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -106,13 +109,65 @@ jobs:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}
           repository-cache: true
-      - name: Build package
+      - name: Build artifacts for ${{ matrix.os }}-${{ matrix.arch }}
         run: |
-          bazel build //:liman
+          PLATFORM_OPT="--platforms=@rules_go//go/toolchain:${{ matrix.os }}:${{matrix.arch}}"
+          bazel build ${PLATFORM_OPT} //:liman
+          OUTPUT_FILE=$(bazel cquery ${PLATFORM_OPT} //:liman --output=files)
+
+          if [ -z "$OUTPUT_PATH" ]; then
+            echo "Error: Could not find output path for //:liman on ${{ matrix.os }}/${{ matrix.arch }}"
+            exit 1
+          fi
+
+          # Determine the binary extension
+          BINARY_EXT=""
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            BINARY_EXT=".exe"
+          fi
+
+          BINARY_NAME="liman-${{ matrix.os }}-${{ matrix.arch }}${BINARY_EXT}"
+
+          echo "Output file: ${OUTPUT_FILE}"
+          echo "Binary name: ${BINARY_NAME}"
+
+          mkdir -p artifacts
+          cp ${OUTPUT_FILE} ${BINARY_NAME}
+
+      - name: Generate Checksum for ${{ matrix.os }}-${{ matrix.arch }}
+        run: |
+          BINARY_EXT=""
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            BINARY_EXT=".exe"
+          fi
+          BINARY_NAME="liman-${{ matrix.goos }}-${{ matrix.goarch }}${BINARY_EXT}"
+
+          if [ "${{ matrix.os }}" == "windows" ]; then
+            (Get-FileHash -Algorithm SHA256 "${BINARY_NAME}").Hash | Out-File -FilePath "${BINARY_NAME}.sha256"
+          else
+            sha256sum "${BINARY_NAME}" > "${BINARY_NAME}.sha256"
+          fi
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: liman-build-artifacts
+          path: |
+            liman-${{ matrix.os }}-${{ matrix.arch }}*
+
+  release:
+    name: liman-${{ needs.set-version.outputs.version }}
+    needs: [set-version, check-workflow-status]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: liman-build-artifacts
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: bazel-bin/liman_/liman
+          files: |
+            liman-*
           tag_name: ${{ needs.set-version.outputs.version }}
           name: Release ${{ github.event.inputs.tag || github.ref_name }}
           generate_release_notes: true
