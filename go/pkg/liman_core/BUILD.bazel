@@ -12,3 +12,9 @@ go_test(
     srcs = ["main_test.go"],
     embed = [":liman_core"],
 )
+
+filegroup(
+    name = "all_go_files",
+    srcs = glob(["**/*.go"]),
+    visibility = ["//visibility:public"],
+)

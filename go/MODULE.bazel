@@ -1,8 +1,9 @@
 module(
-  name = "liman",
-  version = "0.0.1-alpha.1",
+    name = "liman",
+    version = "0.0.1-alpha.1",
 )
 
 # versions https://registry.bazel.build/
 bazel_dep(name = "rules_go", version = "0.55.0")
+bazel_dep(name = "rules_shell", version = "0.5.0")
 bazel_dep(name = "gazelle", version = "0.44.0")
