@@ -1,0 +1,118 @@
+name: Go Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release
+        required: true
+        type: string
+      commit:
+        description: Commit to release
+        required: true
+        default: HEAD
+        type: string
+
+defaults:
+  run:
+    working-directory: ./go
+
+jobs:
+  set-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commit == 'HEAD' && github.ref_name || github.event.inputs.commit }}
+          fetch-depth: 0
+      - name: Read liman version from MODULE.bazel
+        id: version
+        run: |
+          version=$(awk '
+            $0 ~ /module\(/ {in_module=1}
+            in_module && $0 ~ /name *= *"liman"/ {found_name=1}
+            in_module && found_name && $0 ~ /version *= *"/ {
+              # Extract version using sub()
+              version_line = $0
+              sub(/.*version *= *"/, "", version_line)
+              sub(/".*/, "", version_line)
+              print version_line
+              exit
+            }
+            in_module && $0 ~ /\)/ {in_module=0; found_name=0}
+          ' MODULE.bazel)
+          if [ -z "$version" ]; then
+            echo "Version not found"
+            exit 1
+          fi
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+  check-workflow-status:
+    needs: set-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Python Checks Workflow Status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const commit = context.payload.inputs.commit;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Get the workflow runs for the commit
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              commit_sha: commit,
+              workflow_id: 'go-checks.yaml'
+            });
+
+            // Check if there's a successful run
+            const successfulRun = runs.data.workflow_runs.find(
+              run => run.conclusion === 'success'
+            );
+
+            if (!successfulRun) {
+              throw new Error(
+                `Commit ${commit} has not passed the Go checks workflow. ` +
+                `Please ensure the commit has passed all checks before releasing.`
+              );
+            }
+
+  deploy-package:
+    name: liman-${{ needs.set-version.outputs.version }}
+    needs: [set-version, check-workflow-status]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commit == 'HEAD' && github.ref_name || github.event.inputs.commit }}
+          fetch-depth: 0
+      - name: Verify commit
+        if: github.event.inputs.commit != 'HEAD'
+        run: git show-ref --verify refs/tags/${{ github.event.inputs.commit }}
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          cache: true
+          cache-dependency-path: go.sum
+      - name: Install Bazel
+        uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+      - name: Build package
+        run: |
+          bazel build //:liman
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bazel-bin/liman_/liman
+          tag_name: ${{ needs.set-version.outputs.version }}
+          name: Release ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
