@@ -1,0 +1,8 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "liman_core",
+    srcs = ["main.go"],
+    importpath = "github.com/gurobokum/liman/pkg/liman_core",
+    visibility = ["//visibility:public"],
+)
