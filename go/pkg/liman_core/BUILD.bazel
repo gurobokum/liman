@@ -1,8 +1,14 @@
-load("@rules_go//go:def.bzl", "go_library")
+load("@rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "liman_core",
     srcs = ["main.go"],
     importpath = "github.com/gurobokum/liman/pkg/liman_core",
     visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "liman_core_test",
+    srcs = ["main_test.go"],
+    embed = [":liman_core"],
 )

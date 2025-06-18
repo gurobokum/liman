@@ -1,12 +1,19 @@
 load("@gazelle//:def.bzl", "gazelle")
-load("@rules_go//go:def.bzl", "go_binary")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 gazelle(name = "gazelle")
 
 go_binary(
     name = "liman",
-    srcs = ["main.go"],
+    embed = [":liman_lib"],
     importpath = "github.com/gurobokum/liman",
     visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "liman_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/gurobokum/liman",
+    visibility = ["//visibility:private"],
     deps = ["//pkg/liman_core"],
 )
