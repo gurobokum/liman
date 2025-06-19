@@ -90,9 +90,16 @@ jobs:
       - name: Verify commit
         if: github.event.inputs.commit != 'HEAD'
         run: git show-ref --verify refs/tags/${{ github.event.inputs.commit }}
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
       - uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Compile Protobuf files
+        run: |
+          uv run poe protoc
       - run: uv build --package ${{ github.event.inputs.package }} --out-dir dist/
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
