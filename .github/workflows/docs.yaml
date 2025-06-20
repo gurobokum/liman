@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build documentation
+        env:
+          SITE_URL: https://gurobokum.github.io/
+          BASE_URL: /liman/
         run: pnpm build
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
