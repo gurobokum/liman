@@ -19,6 +19,8 @@ classifiers = [
 ]
 dependencies = [
     "protobuf>=6.31.1",
+    "pydantic>=2.11.7",
+    "ruamel-yaml>=0.18.14",
 ]
 
 [tool.hatch.version]
@@ -40,4 +42,5 @@ extend = "../../pyproject.toml"
 [dependency-groups]
 dev = [
     "types-protobuf>=6.30.2.20250516",
+    "typing-extensions>=4.14.0",
 ]
