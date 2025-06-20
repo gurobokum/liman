@@ -1,3 +1,1 @@
-pnpm run python:lint
-pnpm run python:typing
-pnpm run go:lint
+lint-staged --verbose
