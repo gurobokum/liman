@@ -1,7 +1,6 @@
-from typing import Generic, Literal, TypeVar
+from typing import Generic, Literal, TypeGuard, TypeVar, get_args
 
 from pydantic import BaseModel
-from typing_extensions import TypeGuard, get_args  # Safe fallback for 3.9
 
 LANGUAGE_CODES = get_args("LanguageCode")
 LanguageCode = Literal["en", "ru", "zh", "fr", "de", "es", "it", "pt", "ja", "ko"]

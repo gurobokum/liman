@@ -28,7 +28,7 @@ const Configuration = {
         "feat_py",
         "fix",
         "fix_go",
-        "fix_go",
+        "fix_py",
         "perf",
         "refactor_go",
         "refactor_py",
