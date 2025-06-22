@@ -2,12 +2,13 @@ import { themes as prismThemes } from "prism-react-renderer";
 import type { Config } from "@docusaurus/types";
 import type * as Preset from "@docusaurus/preset-classic";
 import "dotenv/config";
+import path from "path";
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: "My Site",
-  tagline: "Dinosaurs are cool",
+  title: "Liman",
+  tagline: "Declarative AgentOps framework for building composable AI agents",
   favicon: "img/favicon.ico",
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -16,7 +17,7 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: process.env.SITE_URL,
+  url: process.env.SITE_URL || "https://example.com",
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: process.env.BASE_URL || "/",
@@ -36,6 +37,22 @@ const config: Config = {
     defaultLocale: "en",
     locales: ["en"],
   },
+
+  plugins: [
+    async function tailwindPlugin() {
+      return {
+        name: "tailwind-plugin",
+        configurePostCss(postcssOptions) {
+          postcssOptions.plugins = [
+            "@tailwindcss/postcss",
+            "postcss-import",
+            "autoprefixer",
+          ];
+          return postcssOptions;
+        },
+      };
+    },
+  ],
 
   presets: [
     [
