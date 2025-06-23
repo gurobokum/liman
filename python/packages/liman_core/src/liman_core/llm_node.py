@@ -1,13 +1,11 @@
-from typing import Any, Literal, cast
+from typing import Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel
 from ruamel.yaml import YAML
 
-from liman_core.errors import LimanError
+from liman_core.base import BaseNode
 from liman_core.languages import (
-    LANGUAGE_CODES,
-    LanguageCode,
     LanguagesBundle,
     is_valid_language_code,
 )
@@ -27,7 +25,7 @@ class LLMPrompts(BaseModel):
 class LLMPromptsBundle(LanguagesBundle[LLMPrompts]): ...
 
 
-class LLMNode:
+class LLMNode(BaseNode):
     """
     Represents a node in a graph that uses a Large Language Model (LLM).
 
@@ -71,15 +69,10 @@ class LLMNode:
     ```
     """
 
-    __slots__ = (
-        "id",
-        "declaration",
-        "yaml_path",
+    __slots__ = BaseNode.__slots__ + (
+        "kind",
         "spec",
         "prompts",
-        "default_lang",
-        "fallback_lang",
-        "_compiled",
     )
 
     def __init__(
@@ -89,32 +82,22 @@ class LLMNode:
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
-        if not declaration and not yaml_path:
-            raise LimanError("Either declaration or yaml_path must be provided.")
-
-        self.declaration = declaration
-        if not declaration:
-            self.declaration = YAML().load(yaml_path).dict()
-            self.yaml_path = yaml_path
+        super().__init__(
+            declaration=declaration,
+            yaml_path=yaml_path,
+            default_lang=default_lang,
+            fallback_lang=fallback_lang,
+        )
 
         self.spec = LLMNodeSpec.model_validate(self.declaration, strict=True)
-
-        if not is_valid_language_code(default_lang):
-            raise LimanError(f"Invalid default language code: {default_lang}")
-        self.default_lang: LanguageCode = default_lang
-        if not is_valid_language_code(fallback_lang):
-            raise LimanError(f"Invalid fallback language code: {fallback_lang}")
-        self.fallback_lang: LanguageCode = fallback_lang
-
-        self._generate_id()
-        self._compiled = False
+        self.kind = "LLMNode"
 
     def compile(self) -> None:
         self._init_prompts()
 
         self._compiled = True
 
-    def _generate_id(self) -> None:
+    def generate_id(self) -> None:
         self.id = uuid4()
 
     def _init_prompts(self) -> None:
