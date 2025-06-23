@@ -2,8 +2,6 @@ from typing import Literal
 
 from liman_core.base import BaseNode
 from liman_core.errors import LimanError
-from liman_core.llm_node import LLMNode
-from liman_core.tool_node import ToolNode
 
 
 class Registry:
@@ -12,9 +10,9 @@ class Registry:
     """
 
     def __init__(self) -> None:
-        self._nodes: dict[str, LLMNode | ToolNode] = {}
+        self._nodes: dict[str, BaseNode] = {}
 
-    def lookup(self, kind: Literal["LLMNode", "ToolNode"], name: str) -> "BaseNode":
+    def lookup(self, kind: BaseNode, name: str) -> BaseNode:
         """
         Retrieve a node by its name.
 
@@ -30,7 +28,7 @@ class Registry:
         else:
             raise LimanError(f"Node with key '{key}' not found in the registry.")
 
-    def add(self, node: LLMNode | ToolNode) -> None:
+    def add(self, node: BaseNode) -> None:
         """
         Add a node to the registry.
 

@@ -18,6 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "dishka>=1.6.0",
     "protobuf>=6.31.1",
     "pydantic>=2.11.7",
     "ruamel-yaml>=0.18.14",

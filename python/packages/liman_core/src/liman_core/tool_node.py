@@ -1,6 +1,10 @@
 from typing import Any
 
+from dishka import FromDishka
+
 from liman_core.base import BaseNode
+from liman_core.dishka import inject
+from liman_core.registry import Registry
 
 
 class ToolNode(BaseNode):
@@ -41,9 +45,12 @@ class ToolNode(BaseNode):
     ```
     """
 
+    @inject
     def __init__(
         self,
         name: str,
+        # injections
+        registry: FromDishka[Registry],
         *,
         declaration: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -58,3 +65,4 @@ class ToolNode(BaseNode):
             fallback_lang=fallback_lang,
         )
         self.kind = "ToolNode"
+        registry.add(self)

@@ -1,13 +1,16 @@
 from typing import Any, Literal
 from uuid import uuid4
 
+from dishka import FromDishka
 from pydantic import BaseModel
 
 from liman_core.base import BaseNode
+from liman_core.dishka import inject
 from liman_core.languages import (
     LanguagesBundle,
     is_valid_language_code,
 )
+from liman_core.registry import Registry
 
 
 class LLMNodeSpec(BaseModel):
@@ -74,9 +77,13 @@ class LLMNode(BaseNode):
         "prompts",
     )
 
+    @inject
     def __init__(
         self,
         name: str,
+        # injections
+        registry: FromDishka[Registry],
+        *,
         declaration: dict[str, Any] | None = None,
         yaml_path: str | None = None,
         default_lang: str = "en",
@@ -92,6 +99,7 @@ class LLMNode(BaseNode):
 
         self.spec = LLMNodeSpec.model_validate(self.declaration, strict=True)
         self.kind = "LLMNode"
+        registry.add(self)
 
     def compile(self) -> None:
         self._init_prompts()
