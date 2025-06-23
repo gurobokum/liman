@@ -6,6 +6,11 @@ from liman_core.base import BaseNode
 from liman_core.dishka import inject
 from liman_core.registry import Registry
 
+DEFAULT_TOOL_PROMPT_TEMPLATE = """
+{func} - {description}
+{triggers}
+"""
+
 
 class ToolNode(BaseNode):
     """
@@ -33,6 +38,24 @@ class ToolNode(BaseNode):
         description:
           en: longitude of the location
           ru: долгота местоположения (longitude)
+    # Optionally, you can specify example triggers for the tool.
+    triggers:
+      en:
+        - What's the weather in New York?
+      ru:
+        - Какая погода в Нью-Йорке?
+    # Optionally, you can specify a template for the tool prompt.
+    # It will allow to improve tool execution accuracy.
+    # supported only {name}, {description} and {triggers} variables.
+    tool_prompt_template:
+      en: |
+        {name} - {description}
+        Examples:
+          {triggers}
+      ru: |
+        {name} - {description}
+        Примеры:
+          {triggers}
     ```
 
     Usage:
@@ -65,4 +88,18 @@ class ToolNode(BaseNode):
             fallback_lang=fallback_lang,
         )
         self.kind = "ToolNode"
+        self._init_prompts()
         registry.add(self)
+
+    def _init_prompts(self) -> None:
+        """
+        Initialize prompts for the ToolNode.
+        This prompts contain description for the node in different languages for system llm prompt to improve tool execution accuracy.
+        """
+        ...
+
+    def _get_tool_prompt_template(self) -> None:
+        """
+        Get the tool prompt template from the declaration or use the default template.
+        """
+        ...

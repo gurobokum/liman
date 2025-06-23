@@ -35,4 +35,11 @@ arguments:
     description:
       [lang]: |
         <argument description>
+[triggers]:
+  [lang]
+      - <trigger>
+      - <trigger>
+[tool_prompt_template]:
+  [lang]: |
+    <tool prompt template>
 ```
