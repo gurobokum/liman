@@ -24,26 +24,48 @@ Liman is similar to Kubernetes manifests and Kustomize-style overlays:
 ## Declaration
 
 ```yaml
-name: MyAgent
-lang: en
-main:
+kind: LLMNode
+name: StartNode
+prompts:
   system:
-    intro: |
+    en: |
       You are a helpful agent that can answer questions about the weather.
-    tool_template: |
-      * {tool_function} - {tool_description}
-        Possible triggers: {tool_triggers}
+    es: |
+      Eres un agente útil que puede responder preguntas sobre el clima.
   tools:
-    - name: get_weather
-      description: Get current weather information
-      arguments:
-        - name: latitude
-          type: float
-          description: Latitude of the location
-        - name: longitude
-          type: float
-          description: Longitude of the location
-      triggers:
-        - What is the weather in {latitude}, {longitude}?
-        - What is the temperature in {latitude}, {longitude}?
+    - GetWeather
+
+kind: ToolNode
+name: GetWeather
+description:
+  en: Get current weather information
+  es: Obtiene información actual del clima
+func: mypackage.get_weather
+arguments:
+  - name: latitude
+    type: float
+    description:
+      en: Latitude of the location
+      es: Latitud de la ubicación
+  - name: longitude
+    type: float
+    description:
+      en: Longitude of the location
+      es: Longitud de la ubicaciónk
+triggers:
+  en:
+    - What is the weather in {latitude}, {longitude}?
+    - What is the temperature in {latitude}, {longitude}?
+  es:
+    - ¿Cuál es el clima en {latitude}, {longitude}?
+    - ¿Cuál es la temperatura en {latitude}, {longitude}?
+tool_prompt_template:
+  en: |
+    {name} - {description}
+    Examples:
+      {triggers}
+  es: |
+    {name} - {description}
+    Ejemplos:
+      {triggers}
 ```
