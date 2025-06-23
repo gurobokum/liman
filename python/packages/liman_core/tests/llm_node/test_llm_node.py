@@ -36,7 +36,7 @@ INVALID_YAML_IMPRPOER_KIND = {
 
 
 def test_llmnode_parses_style_1() -> None:
-    node = LLMNode(declaration=YAML_STYLE_1)
+    node = LLMNode(name="LLMNode", declaration=YAML_STYLE_1)
     node.compile()
     assert node.spec.name == "StartNode"
     assert node.prompts.en
@@ -46,7 +46,7 @@ def test_llmnode_parses_style_1() -> None:
 
 
 def test_llmnode_parses_style_2() -> None:
-    node = LLMNode(declaration=YAML_STYLE_2)
+    node = LLMNode(name="LLMNode", declaration=YAML_STYLE_2)
     node.compile()
     assert node.spec.name == "StartNode"
     assert node.prompts.en
@@ -57,4 +57,4 @@ def test_llmnode_parses_style_2() -> None:
 
 def test_llmnode_invalid_yaml_raises() -> None:
     with pytest.raises(ValidationError):
-        LLMNode(declaration=INVALID_YAML)
+        LLMNode(name="InvalidLLMNode", declaration=INVALID_YAML)

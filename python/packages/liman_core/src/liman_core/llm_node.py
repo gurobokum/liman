@@ -2,7 +2,6 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel
-from ruamel.yaml import YAML
 
 from liman_core.base import BaseNode
 from liman_core.languages import (
@@ -77,12 +76,14 @@ class LLMNode(BaseNode):
 
     def __init__(
         self,
+        name: str,
         declaration: dict[str, Any] | None = None,
         yaml_path: str | None = None,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
         super().__init__(
+            name,
             declaration=declaration,
             yaml_path=yaml_path,
             default_lang=default_lang,

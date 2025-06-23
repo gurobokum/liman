@@ -43,6 +43,7 @@ class ToolNode(BaseNode):
 
     def __init__(
         self,
+        name: str,
         *,
         declaration: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -50,6 +51,7 @@ class ToolNode(BaseNode):
         fallback_lang: str = "en",
     ) -> None:
         super().__init__(
+            name,
             declaration=declaration,
             yaml_path=yaml_path,
             default_lang=default_lang,

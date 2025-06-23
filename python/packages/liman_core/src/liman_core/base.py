@@ -10,15 +10,18 @@ from liman_core.languages import LanguageCode, is_valid_language_code
 class BaseNode:
     __slots__ = (
         "id",
+        "name",
         "declaration",
         "yaml_path",
         "default_lang",
         "fallback_lang",
+        "kind",
         "_compiled",
     )
 
     def __init__(
         self,
+        name: str,
         *,
         declaration: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -35,6 +38,9 @@ class BaseNode:
 
         self.declaration = declaration
         self.yaml_path = yaml_path
+
+        self.kind = "BaseNode"
+        self.name = name
 
         self.generate_id()
         self._compiled = False
@@ -56,7 +62,11 @@ class BaseNode:
         Returns:
             BaseNode: An instance of BaseNode initialized with the YAML data.
         """
+        name = yaml_data.get("name")
+        if not name:
+            raise LimanError("YAML data must contain a 'name' field.")
         return cls(
+            name=name,
             declaration=yaml_data,
             default_lang=default_lang,
             fallback_lang=fallback_lang,
@@ -80,7 +90,11 @@ class BaseNode:
             BaseNode: An instance of BaseNode initialized with the YAML data.
         """
         yaml_data = YAML().load(yaml_path).dict()
+        name = yaml_data.get("name")
+        if not name:
+            raise LimanError("YAML data must contain a 'name' field.")
         return cls(
+            name,
             declaration=yaml_data,
             yaml_path=yaml_path,
             default_lang=default_lang,
@@ -95,3 +109,11 @@ class BaseNode:
         Compile the node. This method should be overridden in subclasses to implement specific compilation logic.
         """
         raise NotImplementedError("Subclasses must implement the compile method.")
+
+    @property
+    def is_llm_node(self) -> bool:
+        return self.kind == "LLMNode"
+
+    @property
+    def is_tool_node(self) -> bool:
+        return self.kind == "ToolNode"
