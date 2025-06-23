@@ -69,3 +69,7 @@ tool_prompt_template:
     Ejemplos:
       {triggers}
 ```
+
+## Papers
+
+- [arxiv: A Survey of AI Agent Protocols](https://arxiv.org/abs/2504.16736)
