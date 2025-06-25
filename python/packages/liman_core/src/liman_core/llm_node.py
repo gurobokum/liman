@@ -9,6 +9,7 @@ from liman_core.dishka import inject
 from liman_core.languages import (
     LanguagesBundle,
     is_valid_language_code,
+    normalize_dict,
 )
 from liman_core.registry import Registry
 
@@ -110,27 +111,7 @@ class LLMNode(BaseNode):
         self.id = uuid4()
 
     def _init_prompts(self) -> None:
-        prompts_bundle = LLMPromptsBundle(fallback_lang=self.fallback_lang)
-
-        def traverse_prompts(
-            prompts: dict[str, Any], current_lang: str, prefix: str = ""
-        ) -> None:
-            for key, value in prompts.items():
-                if is_valid_language_code(key):
-                    current_lang = key
-                else:
-                    prefix = f"{prefix}.{key}" if prefix else key
-
-                if isinstance(value, dict):
-                    traverse_prompts(value, current_lang, prefix)
-                    continue
-
-                if not getattr(prompts_bundle, current_lang):
-                    setattr(prompts_bundle, current_lang, LLMPrompts())
-
-                for key in prefix.split("."):
-                    _prompts = getattr(prompts_bundle, current_lang)
-                    setattr(_prompts, key, value)
-
-        traverse_prompts(self.spec.prompts, self.fallback_lang)
-        self.prompts = prompts_bundle
+        normalized_prompts = normalize_dict(self.spec.prompts, self.default_lang)
+        self.prompts = LLMPromptsBundle.model_validate(
+            {**normalized_prompts, "fallback_lang": self.fallback_lang}
+        )

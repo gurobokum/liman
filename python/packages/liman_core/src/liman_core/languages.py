@@ -12,6 +12,8 @@ def is_valid_language_code(code: str) -> TypeGuard[LanguageCode]:
 
 T = TypeVar("T", bound="BaseModel")
 
+type LocalizedValue = dict[str, Any] | str
+
 
 class LanguagesBundle(BaseModel, Generic[T]):
     """
