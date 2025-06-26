@@ -1,15 +1,39 @@
-from typing import Any
+from typing import Any, Literal, Self
 
 from dishka import FromDishka
+from pydantic import (
+    BaseModel,
+    ModelWrapValidatorHandler,
+    ValidationInfo,
+    model_validator,
+)
 
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
+from liman_core.languages import LocalizedValue
 from liman_core.registry import Registry
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {func} - {description}
 {triggers}
 """
+
+
+class ToolArgument(BaseModel):
+    name: str
+    type: str
+    description: LocalizedValue
+
+
+class ToolNodeSpec(BaseModel):
+    kind: Literal["ToolNode"] = "ToolNode"
+    name: str
+    description: LocalizedValue
+    func: str
+
+    arguments: list[ToolArgument] | None = None
+    triggers: list[LocalizedValue] | None = None
+    tool_prompt_template: LocalizedValue | None = None
 
 
 class ToolNode(BaseNode):
@@ -88,7 +112,14 @@ class ToolNode(BaseNode):
             fallback_lang=fallback_lang,
         )
         self.kind = "ToolNode"
-        self._init_prompts()
+
+        if declaration:
+            self.spec = ToolNodeSpec.model_validate(
+                self.declaration,
+                strict=True,
+                context={"default_lang": self.default_lang},
+            )
+            self._init_prompts()
         registry.add(self)
 
     def _init_prompts(self) -> None:

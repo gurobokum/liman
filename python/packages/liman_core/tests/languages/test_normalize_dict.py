@@ -24,6 +24,12 @@ def test_normalize_dict_example() -> None:
     assert expected == normalize_dict(data)
 
 
+def test_normalize_dict_with_inline_lang() -> None:
+    data = {"en": "Hello!", "ru": "Привет!"}
+    expected = {"en": "Hello!", "ru": "Привет!"}
+    assert expected == normalize_dict(data)
+
+
 def test_normalize_dict_flat() -> None:
     data = {"en": {"a": 1, "b": 2}, "ru": {"a": 3, "b": 4}}
     expected = {"en": {"a": 1, "b": 2}, "ru": {"a": 3, "b": 4}}
