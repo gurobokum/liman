@@ -8,7 +8,6 @@ from liman_core.base import BaseNode
 from liman_core.dishka import inject
 from liman_core.languages import (
     LanguagesBundle,
-    is_valid_language_code,
     normalize_dict,
 )
 from liman_core.registry import Registry

@@ -1,11 +1,8 @@
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 from dishka import FromDishka
 from pydantic import (
     BaseModel,
-    ModelWrapValidatorHandler,
-    ValidationInfo,
-    model_validator,
 )
 
 from liman_core.base import BaseNode

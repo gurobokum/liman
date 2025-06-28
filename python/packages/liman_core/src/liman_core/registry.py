@@ -1,5 +1,3 @@
-from typing import Literal
-
 from liman_core.base import BaseNode
 from liman_core.errors import LimanError
 
