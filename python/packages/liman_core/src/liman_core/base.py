@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Self
 from uuid import uuid4
 
 from ruamel.yaml import YAML
@@ -52,7 +52,7 @@ class BaseNode:
         *,
         default_lang: str = "en",
         fallback_lang: str = "en",
-    ) -> "BaseNode":
+    ) -> Self:
         """
         Create a BaseNode instance from a YAML dictionary.
 
@@ -79,7 +79,7 @@ class BaseNode:
         *,
         default_lang: str = "en",
         fallback_lang: str = "en",
-    ) -> "BaseNode":
+    ) -> Self:
         """
         Create a BaseNode instance from a YAML file.
 

@@ -7,13 +7,14 @@ from pydantic import (
 
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
-from liman_core.languages import LocalizedValue
+from liman_core.errors import LimanError
+from liman_core.languages import LanguageCode, LocalizedValue
 from liman_core.registry import Registry
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
-{func} - {description}
+{name} - {description}
 {triggers}
-"""
+""".strip()
 
 
 class ToolArgument(BaseModel):
@@ -116,18 +117,50 @@ class ToolNode(BaseNode):
                 strict=True,
                 context={"default_lang": self.default_lang},
             )
-            self._init_prompts()
         registry.add(self)
 
-    def _init_prompts(self) -> None:
-        """
-        Initialize prompts for the ToolNode.
-        This prompts contain description for the node in different languages for system llm prompt to improve tool execution accuracy.
-        """
-        ...
+    def get_tool_description(self, lang: LanguageCode) -> str:
+        template = self._get_tool_prompt_template(lang)
 
-    def _get_tool_prompt_template(self) -> None:
+        description = self.spec.description.get(lang) or self.spec.description.get(
+            self.fallback_lang, ""
+        )
+
+        triggers = [
+            trigger.get(lang) or trigger.get(self.fallback_lang, "")
+            for trigger in (self.spec.triggers or [])
+        ]
+        triggers_str = "\n".join(
+            f"- {trigger}" for trigger in triggers if trigger.strip()
+        )
+
+        return template.format(
+            name=self.name,
+            description=description,
+            triggers=triggers_str,
+        ).strip()
+
+    def _get_tool_prompt_template(self, lang: LanguageCode) -> str:
         """
         Get the tool prompt template from the declaration or use the default template.
         """
-        ...
+        tool_prompt_template = self.spec.tool_prompt_template
+        if not tool_prompt_template:
+            return DEFAULT_TOOL_PROMPT_TEMPLATE
+
+        if hasattr(tool_prompt_template, lang):
+            template = tool_prompt_template[lang]
+            if not isinstance(template, str):
+                raise LimanError(
+                    f"Tool prompt template for language '{lang}' must be a string, got {type(template).__name__}."
+                )
+            return template
+
+        if hasattr(tool_prompt_template, self.fallback_lang):
+            template = tool_prompt_template[self.fallback_lang]
+            if not isinstance(template, str):
+                raise LimanError(
+                    f"Tool prompt template for fallback language '{self.fallback_lang}' must be a string, got {type(template).__name__}."
+                )
+
+        return DEFAULT_TOOL_PROMPT_TEMPLATE
