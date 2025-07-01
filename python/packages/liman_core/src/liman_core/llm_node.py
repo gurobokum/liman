@@ -6,17 +6,20 @@ from pydantic import BaseModel
 
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
+from liman_core.errors import LimanError
 from liman_core.languages import (
+    LanguageCode,
     LanguagesBundle,
-    normalize_dict,
+    LocalizedValue,
 )
 from liman_core.registry import Registry
+from liman_core.tool_node import ToolNode
 
 
 class LLMNodeSpec(BaseModel):
     kind: Literal["LLMNode"] = "LLMNode"
     name: str
-    prompts: dict[str, dict[str, str]] = {}
+    prompts: LocalizedValue
     tools: list[str] = []
 
 
@@ -75,6 +78,7 @@ class LLMNode(BaseNode):
         "kind",
         "spec",
         "prompts",
+        "registry",
     )
 
     @inject
@@ -89,6 +93,7 @@ class LLMNode(BaseNode):
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
+        print(registry)
         super().__init__(
             name,
             declaration=declaration,
@@ -99,7 +104,9 @@ class LLMNode(BaseNode):
 
         self.spec = LLMNodeSpec.model_validate(self.declaration, strict=True)
         self.kind = "LLMNode"
-        registry.add(self)
+
+        self.registry = registry
+        self.registry.add(self)
 
     def compile(self) -> None:
         self._init_prompts()
@@ -110,7 +117,34 @@ class LLMNode(BaseNode):
         self.id = uuid4()
 
     def _init_prompts(self) -> None:
-        normalized_prompts = normalize_dict(self.spec.prompts, self.default_lang)
         self.prompts = LLMPromptsBundle.model_validate(
-            {**normalized_prompts, "fallback_lang": self.fallback_lang}
+            {**self.spec.prompts, "fallback_lang": self.fallback_lang}
         )
+
+        supported_langs = self.spec.prompts.keys()
+        tool_descs: dict[LanguageCode, list[str]] = {k: [] for k in supported_langs}
+
+        for tool_name in self.spec.tools:
+            if not isinstance(tool_name, str):
+                raise ValueError(f"Tool name must be a string, got {type(tool_name)}")
+            tool_name = tool_name.strip()
+
+            tool = self.registry.lookup(ToolNode, tool_name)
+            # TODO: skip if tool is not found with strict=False
+            if not tool:
+                raise LimanError("Tool {tool_name} isn't found")
+
+            for lang in supported_langs:
+                tool_desc = tool.get_tool_description(lang)
+                tool_descs[lang].append(tool_desc)
+
+        for lang, bundle in tool_descs.items():
+            if not bundle:
+                continue
+
+            prompts = getattr(self.prompts, lang, LLMPrompts())
+            prompts.system = (
+                (prompts.system or "")
+                + "\n"
+                + "\n".join(tool_desc for tool_desc in bundle)
+            )

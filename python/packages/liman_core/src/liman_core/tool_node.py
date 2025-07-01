@@ -117,7 +117,9 @@ class ToolNode(BaseNode):
                 strict=True,
                 context={"default_lang": self.default_lang},
             )
-        registry.add(self)
+
+        self.registry = registry
+        self.registry.add(self)
 
     def get_tool_description(self, lang: LanguageCode) -> str:
         template = self._get_tool_prompt_template(lang)

@@ -1,5 +1,9 @@
+from typing import TypeVar
+
 from liman_core.base import BaseNode
 from liman_core.errors import LimanError
+
+T = TypeVar("T", bound=BaseNode)
 
 
 class Registry:
@@ -10,7 +14,7 @@ class Registry:
     def __init__(self) -> None:
         self._nodes: dict[str, BaseNode] = {}
 
-    def lookup(self, kind: BaseNode, name: str) -> BaseNode:
+    def lookup(self, kind: type[T], name: str) -> T:
         """
         Retrieve a node by its name.
 
@@ -20,9 +24,16 @@ class Registry:
         Returns:
             BaseNode: The node associated with the given name.
         """
-        key = f"{kind}:{name}"
-        if name in self._nodes:
-            return self._nodes[key]
+        key = f"{kind.__name__}:{name}"
+        if key in self._nodes:
+            node = self._nodes[key]
+
+            if not isinstance(node, kind):
+                raise TypeError(
+                    f"Retrieved node '{node.name}' is of type {node.__class__.__name__}, "
+                    f"but expected type {kind.__name__}."
+                )
+            return node
         else:
             raise LimanError(f"Node with key '{key}' not found in the registry.")
 
