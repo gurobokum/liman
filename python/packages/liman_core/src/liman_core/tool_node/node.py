@@ -1,4 +1,6 @@
+import asyncio
 from functools import reduce
+from importlib import import_module
 from typing import Any
 
 from dishka import FromDishka
@@ -9,7 +11,11 @@ from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.registry import Registry
 from liman_core.tool_node.schemas import ToolNodeSpec
-from liman_core.tool_node.utils import ToolArgumentJSONSchema, tool_arg_to_jsonschema
+from liman_core.tool_node.utils import (
+    ToolArgumentJSONSchema,
+    noop,
+    tool_arg_to_jsonschema,
+)
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {name} - {description}
@@ -82,6 +88,7 @@ class ToolNode(BaseNode):
         *,
         declaration: dict[str, Any] | None = None,
         yaml_path: str | None = None,
+        strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
@@ -101,8 +108,44 @@ class ToolNode(BaseNode):
                 context={"default_lang": self.default_lang},
             )
 
+        # import implementation function
+        try:
+            func_path = self.spec.func.split(".")
+            module = import_module(".".join(func_path[:-1]))
+            self.func = getattr(module, func_path[-1])
+        except (ImportError, ValueError) as e:
+            if strict:
+                raise InvalidSpecError(
+                    f"Failed to import module for function '{self.spec.func}': {e}"
+                ) from e
+            self.func = noop
+
         self.registry = registry
         self.registry.add(self)
+
+    def invoke(self, *args: Any, **kwargs: Any) -> Any:
+        """
+        Invoke the tool function with the provided arguments.
+        """
+        func = self.func
+        if asyncio.iscoroutinefunction(func):
+            asyncio.run_coroutine_threadsafe(
+                func(*args, **kwargs), asyncio.get_event_loop()
+            )
+
+        return func(*args, **kwargs)
+
+    async def ainvoke(self, *args: Any, **kwargs: Any) -> Any:
+        """
+        Asynchronously invoke the tool function with the provided arguments.
+        """
+        func = self.func
+        if asyncio.iscoroutinefunction(func):
+            return await func(*args, **kwargs)
+
+        return await asyncio.get_event_loop().run_in_executor(
+            None, func, *args, **kwargs
+        )
 
     def get_tool_description(self, lang: LanguageCode) -> str:
         template = self._get_tool_prompt_template(lang)

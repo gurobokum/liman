@@ -1,10 +1,20 @@
 from typing import Any, Self
 from uuid import uuid4
 
+from langchain_core.messages import BaseMessage
+from pydantic import BaseModel, ConfigDict
 from ruamel.yaml import YAML
 
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
+
+
+class Output(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    response: BaseMessage
+
+    next_nodes: list[tuple["BaseNode", dict[str, Any]]] = []
 
 
 class BaseNode:

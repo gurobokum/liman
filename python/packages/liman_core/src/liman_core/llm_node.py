@@ -6,7 +6,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel
 
-from liman_core.base import BaseNode
+from liman_core.base import BaseNode, Output
 from liman_core.dishka import inject
 from liman_core.errors import LimanError
 from liman_core.languages import (
@@ -139,11 +139,13 @@ class LLMNode(BaseNode):
         inputs: list[BaseMessage],
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> BaseMessage:
+    ) -> Output:
         lang = lang or self.default_lang
 
         system_message = self.prompts.to_system_message(lang)
         tools_jsonschema = []
+        tools: dict[str, ToolNode] = {}
+
         for tool in self.spec.tools:
             tool_node = self.registry.lookup(ToolNode, tool)
             if not tool_node:
@@ -151,6 +153,7 @@ class LLMNode(BaseNode):
 
             tool_jsonschema = tool_node.get_json_schema(lang)
             tools_jsonschema.append(tool_jsonschema)
+            tools[tool_node.name] = tool_node
 
         response = await llm.ainvoke(
             [
@@ -161,7 +164,21 @@ class LLMNode(BaseNode):
             **kwargs,
         )
 
-        return response
+        next_nodes: list[tuple[BaseNode, dict[str, Any]]] = []
+
+        if hasattr(response, "tool_calls"):
+            for tool_call in getattr(response, "tool_calls", []):
+                tool_name = tool_call["name"]
+                next_nodes.append(
+                    (
+                        tools[tool_name],
+                        tool_call,
+                    )
+                )
+
+        output = Output(response=response, next_nodes=next_nodes)
+
+        return output
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(

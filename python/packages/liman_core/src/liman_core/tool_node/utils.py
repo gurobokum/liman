@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import (
@@ -70,3 +70,8 @@ def tool_arg_to_jsonschema(
             raise InvalidSpecError(f"Unsupported type in tool specification: {type_}")
 
     return {name: ToolArgumentJSONSchema(description=desc_str, type=type_)}
+
+
+def noop(*args: Any, **kwargs: Any) -> None:
+    """A no-operation function that does nothing."""
+    pass
