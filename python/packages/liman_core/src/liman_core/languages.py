@@ -134,3 +134,50 @@ def get_localized_value(
     raise LocalizationError(
         f"No value found for language '{lang}' or fallback '{fallback_lang}'."
     )
+
+
+def flatten_dict(
+    data: dict[str, Any],
+    prefix: str = "",
+) -> str:
+    """
+    Flatten a dictionary with language keys into a single string in the format "path: value".
+    Each path is a dot-separated string representing the hierarchy of keys.
+
+    ```json
+    {
+
+    "user": {
+        "profile": {
+            "name": "Alice",
+            "age": 30
+        },
+        "contact": {
+            "email": "alice@example.com"
+        }
+    },
+    "product": "Laptop"
+    }
+    ```json
+
+    becomes:
+
+    ```text
+    user.profile.name: Alice
+    user.profile.age: 30
+    user.contact.email: alice@example.com
+    product: Laptop
+    ```
+    """
+    items = []
+    output = []
+    for k, v in data.items():
+        key = f"{prefix}.{k}" if prefix else k
+
+        if isinstance(v, dict):
+            output.append(flatten_dict(v, key))
+        else:
+            items.append((key, v))
+
+    output.append("\n".join(f"{k}: {v}" for k, v in items))
+    return "\n".join(output)
