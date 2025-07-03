@@ -8,7 +8,6 @@ YAML_STYLE_1 = {
     "kind": "LLMNode",
     "name": "StartNode",
     "prompts": {"system": {"en": "You are a helpful assistant.", "ru": "Вы помощник."}},
-    "tools": ["WeatherTool", "EmailTool"],
 }
 
 YAML_STYLE_2 = {
@@ -18,20 +17,16 @@ YAML_STYLE_2 = {
         "en": {"system": "You are a helpful assistant."},
         "ru": {"system": "Вы помощник."},
     },
-    "tools": ["WeatherTool", "EmailTool"],
 }
 
 INVALID_YAML = {
     "kind": "LLMNode",
-    # Missing 'name' and 'prompts'
-    "tools": ["WeatherTool"],
 }
 
 INVALID_YAML_IMPRPOER_KIND = {
     "kind": "InvalidNodeKind",
     "name": "StartNode",
     "prompts": {"system": {"en": "You are a helpful assistant."}},
-    "tools": ["WeatherTool", "EmailTool"],
 }
 
 

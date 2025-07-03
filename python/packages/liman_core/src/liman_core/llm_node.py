@@ -2,6 +2,8 @@ from typing import Any, Literal
 from uuid import uuid4
 
 from dishka import FromDishka
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel
 
 from liman_core.base import BaseNode
@@ -13,7 +15,7 @@ from liman_core.languages import (
     LocalizedValue,
 )
 from liman_core.registry import Registry
-from liman_core.tool_node import ToolNode
+from liman_core.tool_node.node import ToolNode
 
 
 class LLMNodeSpec(BaseModel):
@@ -27,7 +29,18 @@ class LLMPrompts(BaseModel):
     system: str | None = None
 
 
-class LLMPromptsBundle(LanguagesBundle[LLMPrompts]): ...
+class LLMPromptsBundle(LanguagesBundle[LLMPrompts]):
+    def to_system_message(self, lang: LanguageCode) -> SystemMessage:
+        """
+        Convert the prompts for a specific language to a SystemMessage.
+        """
+        if lang not in self.__class__.model_fields:
+            lang = self.fallback_lang
+
+        prompts = getattr(self, lang, None)
+        if not prompts:
+            prompts = getattr(self, self.fallback_lang, None)
+        return SystemMessage(content=prompts.system if prompts else "")
 
 
 class LLMNode(BaseNode):
@@ -93,7 +106,6 @@ class LLMNode(BaseNode):
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
-        print(registry)
         super().__init__(
             name,
             declaration=declaration,
@@ -115,6 +127,36 @@ class LLMNode(BaseNode):
 
     def generate_id(self) -> None:
         self.id = uuid4()
+
+    def invoke(
+        self, llm: BaseChatModel, lang: LanguageCode | None = None, **kwargs: Any
+    ) -> None:
+        raise NotImplementedError("LLMNode.invoke() is not implemented yet")
+
+    async def ainvoke(
+        self,
+        llm: BaseChatModel,
+        inputs: list[BaseMessage],
+        lang: LanguageCode | None = None,
+        **kwargs: Any,
+    ) -> BaseMessage:
+        lang = lang or self.default_lang
+
+        system_message = self.prompts.to_system_message(lang)
+        response = await llm.ainvoke(
+            [
+                system_message,
+                *inputs,
+            ],
+            prompts=self.prompts,
+            **kwargs,
+        )
+
+        # direct to tools
+        if self.spec.tools:
+            ...
+
+        return response
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(

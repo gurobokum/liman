@@ -8,6 +8,12 @@ LANGUAGE_CODES = get_args("LanguageCode")
 LanguageCode = Literal["en", "ru", "zh", "fr", "de", "es", "it", "pt", "ja", "ko"]
 
 
+class LocalizationError(LimanError):
+    """Base class for localization-related errors."""
+
+    code = "localization_error"
+
+
 def is_valid_language_code(code: str) -> TypeGuard[LanguageCode]:
     return code in get_args(LanguageCode)
 
@@ -110,3 +116,21 @@ def normalize_dict(
         d[sub_path[-1]] = value
 
     return dict(result)
+
+
+def get_localized_value(
+    data: dict[LanguageCode, Any],
+    lang: LanguageCode,
+    fallback_lang: LanguageCode = "en",
+) -> Any:
+    """
+    Get a localized value from a dictionary of localized values.
+    If the specified language is not available, fallback to the fallback language.
+    """
+    if lang in data:
+        return data[lang]
+    if fallback_lang in data:
+        return data[fallback_lang]
+    raise LocalizationError(
+        f"No value found for language '{lang}' or fallback '{fallback_lang}'."
+    )

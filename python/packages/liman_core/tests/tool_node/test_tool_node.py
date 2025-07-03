@@ -1,6 +1,6 @@
 from typing import Any
 
-from liman_core.tool_node import ToolNode
+from liman_core.tool_node.node import ToolNode
 
 
 def test_tool_node_minimal(simple_decl: dict[str, Any]) -> None:

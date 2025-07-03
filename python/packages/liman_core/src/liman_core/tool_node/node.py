@@ -1,37 +1,19 @@
-from typing import Any, Literal
+from typing import Any
 
 from dishka import FromDishka
-from pydantic import (
-    BaseModel,
-)
 
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
-from liman_core.errors import LimanError
-from liman_core.languages import LanguageCode, LocalizedValue
+from liman_core.errors import InvalidSpecError
+from liman_core.languages import LanguageCode
 from liman_core.registry import Registry
+from liman_core.tool_node.schemas import ToolNodeSpec
+from liman_core.tool_node.utils import tool_arg_to_jsonschema
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {name} - {description}
 {triggers}
 """.strip()
-
-
-class ToolArgument(BaseModel):
-    name: str
-    type: str
-    description: LocalizedValue
-
-
-class ToolNodeSpec(BaseModel):
-    kind: Literal["ToolNode"] = "ToolNode"
-    name: str
-    description: LocalizedValue
-    func: str
-
-    arguments: list[ToolArgument] | None = None
-    triggers: list[LocalizedValue] | None = None
-    tool_prompt_template: LocalizedValue | None = None
 
 
 class ToolNode(BaseNode):
@@ -142,6 +124,28 @@ class ToolNode(BaseNode):
             triggers=triggers_str,
         ).strip()
 
+    def get_json_schema(self, lang: LanguageCode | None = None) -> dict[str, Any]:
+        if lang is None:
+            lang = self.default_lang
+
+        description = getattr(self.spec.description, lang)
+        if not description:
+            # Fallback to the default language if the specified language is not available
+            description = getattr(self.spec.description, self.fallback_lang)
+            if not description:
+                raise InvalidSpecError("Spec doesnt have a description.")
+
+        args = [
+            tool_arg_to_jsonschema(arg, self.default_lang, self.fallback_lang)
+            for arg in self.spec.arguments or []
+        ]
+
+        return {
+            "name": self.name,
+            "description": description,
+            "args": args,
+        }
+
     def _get_tool_prompt_template(self, lang: LanguageCode) -> str:
         """
         Get the tool prompt template from the declaration or use the default template.
@@ -153,7 +157,7 @@ class ToolNode(BaseNode):
         if hasattr(tool_prompt_template, lang):
             template = tool_prompt_template[lang]
             if not isinstance(template, str):
-                raise LimanError(
+                raise InvalidSpecError(
                     f"Tool prompt template for language '{lang}' must be a string, got {type(template).__name__}."
                 )
             return template
@@ -161,7 +165,7 @@ class ToolNode(BaseNode):
         if hasattr(tool_prompt_template, self.fallback_lang):
             template = tool_prompt_template[self.fallback_lang]
             if not isinstance(template, str):
-                raise LimanError(
+                raise InvalidSpecError(
                     f"Tool prompt template for fallback language '{self.fallback_lang}' must be a string, got {type(template).__name__}."
                 )
 
