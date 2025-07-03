@@ -143,18 +143,23 @@ class LLMNode(BaseNode):
         lang = lang or self.default_lang
 
         system_message = self.prompts.to_system_message(lang)
+        tools_jsonschema = []
+        for tool in self.spec.tools:
+            tool_node = self.registry.lookup(ToolNode, tool)
+            if not tool_node:
+                raise LimanError(f"Tool {tool} isn't found in registry")
+
+            tool_jsonschema = tool_node.get_json_schema(lang)
+            tools_jsonschema.append(tool_jsonschema)
+
         response = await llm.ainvoke(
             [
                 system_message,
                 *inputs,
             ],
-            prompts=self.prompts,
+            tools=tools_jsonschema,
             **kwargs,
         )
-
-        # direct to tools
-        if self.spec.tools:
-            ...
 
         return response
 

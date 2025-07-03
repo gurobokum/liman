@@ -11,12 +11,13 @@ def test_tool_arg_to_jsonschema_string() -> None:
         type="string",
         description={"en": "A string argument", "ru": "Строковый аргумент"},
     )
+
     result = tool_arg_to_jsonschema(arg, default_lang="en", fallback_lang="ru")
     assert result == {
-        "name": "foo",
-        "description": "A string argument",
-        "optional": False,
-        "type": "string",
+        "foo": {
+            "type": "string",
+            "description": "A string argument",
+        }
     }
 
 
@@ -26,9 +27,11 @@ def test_tool_arg_to_jsonschema_number() -> None:
         type="number",
         description={"en": "A number argument"},
     )
+
     result = tool_arg_to_jsonschema(arg, default_lang="en", fallback_lang="ru")
-    assert result["type"] == "number"
-    assert result["description"] == "A number argument"
+    schema = result["bar"]
+    assert schema["type"] == "number"
+    assert schema["description"] == "A number argument"
 
 
 def test_tool_arg_to_jsonschema_boolean() -> None:
@@ -37,21 +40,11 @@ def test_tool_arg_to_jsonschema_boolean() -> None:
         type="boolean",
         description={"en": "A boolean argument"},
     )
+
     result = tool_arg_to_jsonschema(arg, default_lang="en", fallback_lang="ru")
-    assert result["type"] == "boolean"
-    assert result["description"] == "A boolean argument"
-
-
-def test_tool_arg_to_jsonschema_optional() -> None:
-    arg = ToolArgument(
-        name="opt",
-        type="string",
-        description={"en": "Optional argument"},
-    )
-    result = tool_arg_to_jsonschema(
-        arg, default_lang="en", fallback_lang="ru", optional=True
-    )
-    assert result["optional"] is True
+    schema = result["baz"]
+    assert schema["type"] == "boolean"
+    assert schema["description"] == "A boolean argument"
 
 
 def test_tool_arg_to_jsonschema_invalid_type() -> None:

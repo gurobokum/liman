@@ -1,3 +1,4 @@
+from functools import reduce
 from typing import Any
 
 from dishka import FromDishka
@@ -5,10 +6,10 @@ from dishka import FromDishka
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
 from liman_core.errors import InvalidSpecError
-from liman_core.languages import LanguageCode
+from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.registry import Registry
 from liman_core.tool_node.schemas import ToolNodeSpec
-from liman_core.tool_node.utils import tool_arg_to_jsonschema
+from liman_core.tool_node.utils import ToolArgumentJSONSchema, tool_arg_to_jsonschema
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {name} - {description}
@@ -109,6 +110,9 @@ class ToolNode(BaseNode):
         description = self.spec.description.get(lang) or self.spec.description.get(
             self.fallback_lang, ""
         )
+        if isinstance(description, dict):
+            # Flatten the description dictionary if it contains nested structures
+            description = flatten_dict(description)
 
         triggers = [
             trigger.get(lang) or trigger.get(self.fallback_lang, "")
@@ -128,22 +132,39 @@ class ToolNode(BaseNode):
         if lang is None:
             lang = self.default_lang
 
-        description = getattr(self.spec.description, lang)
-        if not description:
+        desc = self.spec.description.get(lang)
+        if not desc:
             # Fallback to the default language if the specified language is not available
-            description = getattr(self.spec.description, self.fallback_lang)
-            if not description:
-                raise InvalidSpecError("Spec doesnt have a description.")
+            desc = self.spec.description.get(self.fallback_lang)
+            if not desc:
+                raise InvalidSpecError("Spec doesn't have a description.")
+        if isinstance(desc, dict):
+            # Flatten the description dictionary if it contains nested structures
+            desc = flatten_dict(desc)
 
         args = [
             tool_arg_to_jsonschema(arg, self.default_lang, self.fallback_lang)
             for arg in self.spec.arguments or []
         ]
+        properties: dict[str, ToolArgumentJSONSchema] = reduce(
+            lambda acc, arg: acc | arg, args, {}
+        )
 
         return {
-            "name": self.name,
-            "description": description,
-            "args": args,
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": desc,
+                "parameters": {
+                    "type": "object",
+                    "properties": properties,
+                    "required": [
+                        arg.name
+                        for arg in self.spec.arguments or []
+                        if not arg.optional
+                    ],
+                },
+            },
         }
 
     def _get_tool_prompt_template(self, lang: LanguageCode) -> str:

@@ -9,6 +9,7 @@ class ToolArgument(BaseModel):
     name: str
     type: str
     description: LocalizedValue
+    optional: bool = False
 
 
 class ToolNodeSpec(BaseModel):
