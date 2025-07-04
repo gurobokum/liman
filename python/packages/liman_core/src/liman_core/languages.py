@@ -1,4 +1,13 @@
-from typing import Annotated, Any, Generic, Literal, TypeGuard, TypeVar, get_args
+from typing import (
+    Annotated,
+    Any,
+    Generic,
+    Literal,
+    TypeAlias,
+    TypeGuard,
+    TypeVar,
+    get_args,
+)
 
 from pydantic import BaseModel, BeforeValidator, ValidationInfo
 
@@ -37,7 +46,7 @@ def validate_localized_value(
     return normalize_dict(value)
 
 
-type LocalizedValue = Annotated[
+LocalizedValue: TypeAlias = Annotated[
     dict[LanguageCode, Any], BeforeValidator(validate_localized_value)
 ]
 

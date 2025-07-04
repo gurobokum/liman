@@ -1,4 +1,5 @@
-from typing import Any, Self
+import sys
+from typing import Any
 from uuid import uuid4
 
 from langchain_core.messages import BaseMessage
@@ -7,6 +8,11 @@ from ruamel.yaml import YAML
 
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class Output(BaseModel):
