@@ -1,16 +1,29 @@
 {
   "separate-pull-requests": true,
+  "always-update": true,
+  "component-no-space": true,
+  "versioning": "prerelease",
+  "changelog-sections": [
+    { "type": "feat", "section": "Features" },
+    { "type": "feat_py", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "fix_py", "section": "Bug Fixes" },
+    { "type": "refactor", "section": "Code Refactoring" },
+    { "type": "refactor_py", "section": "Code Refactoring" },
+    { "type": "perf", "section": "Performance Improvements" },
+    { "type": "docs", "section": "Documentation" },
+    { "type": "test", "section": "Tests" }
+  ],
   "packages": {
     "go": {
       "release-type": "go"
     },
-    "python/packages/liman": {
-      "release-type": "python",
-      "extra-files": ["python/packages/liman_core/VERSION"]
-    },
     "python/packages/liman_core": {
-      "release-type": "python",
-      "extra-files": ["python/packages/liman_core/VERSION"]
+      "pull-request-title-pattern": "release_py(${component}): ${version}",
+      "component": "liman_core",
+      "release-type": "simple",
+      "version-file": "VERSION",
+      "release-as": "0.1.0-rc"
     }
   }
 }
