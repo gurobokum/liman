@@ -4,15 +4,15 @@
   "component-no-space": true,
   "versioning": "prerelease",
   "changelog-sections": [
-    { "type": "feat", "section": "Features" },
-    { "type": "feat_py", "section": "Features" },
-    { "type": "fix", "section": "Bug Fixes" },
-    { "type": "fix_py", "section": "Bug Fixes" },
-    { "type": "refactor", "section": "Code Refactoring" },
-    { "type": "refactor_py", "section": "Code Refactoring" },
-    { "type": "perf", "section": "Performance Improvements" },
-    { "type": "docs", "section": "Documentation" },
-    { "type": "test", "section": "Tests" }
+    { "type": "feat", "section": "✨ Features" },
+    { "type": "feat_py", "section": "✨ Features" },
+    { "type": "fix", "section": "🐛 Bug Fixes" },
+    { "type": "fix_py", "section": "🐛 Bug Fixes" },
+    { "type": "refactor", "section": "🛠 Code Refactoring" },
+    { "type": "refactor_py", "section": "🛠 Code Refactoring" },
+    { "type": "perf", "section": "🚀 Performance Improvements" },
+    { "type": "docs", "section": "📚 Documentation" },
+    { "type": "test", "section": "♻️ Tests" }
   ],
   "packages": {
     "go": {
