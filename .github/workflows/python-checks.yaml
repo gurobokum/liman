@@ -7,11 +7,10 @@ on:
     paths:
       - python/**
       - .github/workflows/python-*.yaml
-  workflow_dispatch:
   pull_request:
-    paths:
-      - python/**
-      - .github/workflows/python-*.yaml
+    branches:
+      - main
+  workflow_dispatch:
 
 defaults:
   run:
