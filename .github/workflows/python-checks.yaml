@@ -9,10 +9,6 @@ on:
       - .github/workflows/python-*.yaml
   workflow_dispatch:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
     branches:
       - main
     paths:

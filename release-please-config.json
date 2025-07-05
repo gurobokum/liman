@@ -19,8 +19,8 @@
       "release-type": "go"
     },
     "python/packages/liman_core": {
-      "pull-request-title-pattern": "release_py(${component}): ${version}",
       "component": "liman_core",
+      "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
       "release-as": "0.1.0-rc"
