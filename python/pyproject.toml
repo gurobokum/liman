@@ -38,6 +38,7 @@ protoc = "protoc --python_out=proto/  --proto_path=../proto --pyi_out=proto/ lim
 # https://docs.astral.sh/ruff/configuration
 line-length = 88 # default
 indent-width = 4
+exclude = ["**/examples/" ]
 
 [tool.ruff.lint]
 extend-select = ["B", "I", "SIM", "UP"]
@@ -68,6 +69,11 @@ warn_return_any = true
 warn_unused_configs = true
 strict_equality = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR"
+exclude = ["examples/"]
+
+[[tool.mypy.overrides]]
+module = ["wrapt.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
