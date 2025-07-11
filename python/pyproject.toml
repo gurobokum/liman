@@ -2,6 +2,7 @@
 liman = { workspace = true }
 liman_core = { workspace = true }
 liman_finops = { workspace = true }
+liman_openapi = { workspace = true }
 proto = { path = "./proto" }
 
 [tool.uv.workspace]

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "liman-openapi"
+dynamic = ["version"]
+description = "Liman AgentOps OpenAPI Library"
+readme = "README.md"
+authors = [
+    { name = "Guro Bokum", email = "jiojiajiu@gmail.com" }
+]
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[tool.hatch.version]
+path = "VERSION"
+pattern = "(?P<version>.+)"
+
+[tool.poe]
+include = "../../shared_poe.toml"
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.mypy]
+extend = "../../pyproject.toml"
