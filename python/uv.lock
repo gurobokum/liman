@@ -6,6 +6,8 @@ requires-python = ">=3.10"
 members = [
     "liman",
     "liman-core",
+    "liman-finops",
+    "liman-openapi",
 ]
 
 [manifest.dependency-groups]
@@ -420,6 +422,14 @@ dev = [
     { name = "types-protobuf", specifier = ">=6.30.2.20250516" },
     { name = "typing-extensions", specifier = ">=4.14.0" },
 ]
+
+[[package]]
+name = "liman-finops"
+source = { editable = "packages/liman_finops" }
+
+[[package]]
+name = "liman-openapi"
+source = { editable = "packages/liman_openapi" }
 
 [[package]]
 name = "markdown-it-py"

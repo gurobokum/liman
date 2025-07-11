@@ -1,6 +1,7 @@
 [tool.uv.sources]
 liman = { workspace = true }
 liman_core = { workspace = true }
+liman_finops = { workspace = true }
 proto = { path = "./proto" }
 
 [tool.uv.workspace]
