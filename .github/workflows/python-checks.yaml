@@ -25,6 +25,8 @@ jobs:
         package:
           - liman
           - liman_core
+          - liman_finops
+          - liman_openapi
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.package }}
@@ -67,6 +69,8 @@ jobs:
         package:
           - liman
           - liman_core
+          - liman_finops
+          - liman_openapi
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.package }}-${{ matrix.python-version }}-${{ matrix.os }}

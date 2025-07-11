@@ -21,11 +21,15 @@ dev = [
 [tool.poe.tasks]
 typing.sequence = [
   { cmd = "poe mypy", cwd = "packages/liman" },
-  { cmd = "poe mypy", cwd = "packages/liman_core" }
+  { cmd = "poe mypy", cwd = "packages/liman_core" },
+  { cmd = "poe mypy", cwd = "packages/liman_finops" },
+  { cmd = "poe mypy", cwd = "packages/liman_openapi" }
 ]
 lint.sequence = [
   { cmd = "poe lint", cwd = "packages/liman" },
-  { cmd = "poe lint", cwd = "packages/liman_core" }
+  { cmd = "poe lint", cwd = "packages/liman_core" },
+  { cmd = "poe lint", cwd = "packages/liman_finops" },
+  { cmd = "poe lint", cwd = "packages/liman_openapi" }
 ]
 protoc = "protoc --python_out=proto/  --proto_path=../proto --pyi_out=proto/ liman.proto"
 
