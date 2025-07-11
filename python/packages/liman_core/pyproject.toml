@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "dishka>=1.6.0",
     "langchain-core>=0.3.67",
+    "liman-finops[finops]",
     "protobuf>=6.31.1",
     "pydantic>=2.11.7",
     "rich>=14.0.0",
@@ -41,6 +42,9 @@ extend = "../../pyproject.toml"
 
 [tool.mypy]
 extend = "../../pyproject.toml"
+
+[tool.uv.sources]
+liman-finops = { workspace = true }
 
 [dependency-groups]
 dev = [
