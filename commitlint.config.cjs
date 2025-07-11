@@ -57,6 +57,8 @@ const Configuration = {
         "liman",
         "liman_core",
         "liman_finops",
+        "liman_openapi",
+        "liman_openapi",
       ],
     ],
   },
