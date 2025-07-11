@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-rc](https://github.com/gurobokum/liman/compare/liman_core-v0.1.0-rc...liman_core-v0.1.0-rc) (2025-07-11)
+
+
+### ✨ Features
+
+* **liman_core:** add liman_finops module ([07a198c](https://github.com/gurobokum/liman/commit/07a198c3a0b5aff36df40c89ba941d20d10f205d))
+
+
+### 🛠 Code Refactoring
+
+* move llm_node to the separated package ([7e6bc22](https://github.com/gurobokum/liman/commit/7e6bc22cf7a850087e1ddf5b3cacb45822e0a69c))
+
 ## 0.1.0-rc (2025-07-05)
 
 
