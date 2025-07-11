@@ -56,6 +56,7 @@ const Configuration = {
         // custom
         "liman",
         "liman_core",
+        "liman_finops",
       ],
     ],
   },
