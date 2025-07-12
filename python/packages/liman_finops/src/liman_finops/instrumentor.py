@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Collection
 from typing import Any
 
@@ -14,9 +15,11 @@ from opentelemetry.semconv.schemas import Schemas
 from opentelemetry.trace import get_tracer
 from wrapt import wrap_function_wrapper
 
-from liman_finops.decorators import node_ainvoke, node_invoke
+from liman_finops.decorators import langchain_ainvoke, node_ainvoke, node_invoke
 from liman_finops.metrics import Metrics
 from liman_finops.version import version
+
+logger = logging.getLogger(__name__)
 
 
 def configure_instrumentor(console: bool = False) -> "LimanInstrumentor":
@@ -48,13 +51,11 @@ class LimanInstrumentor(BaseInstrumentor):  # type: ignore
     """
 
     methods = {
-        "LLMNode.invoke": "liman_core.llm_node.node",
-        "ToolNode.invoke": "liman_core.tool_node.node",
-    }
-
-    amethods = {
-        "LLMNode.ainvoke": "liman_core.llm_node.node",
-        "ToolNode.ainvoke": "liman_core.tool_node.node",
+        "LLMNode.invoke": ("liman_core.llm_node.node", node_invoke),
+        "ToolNode.invoke": ("liman_core.tool_node.node", node_invoke),
+        "LLMNode.ainvoke": ("liman_core.llm_node.node", node_ainvoke),
+        "ToolNode.ainvoke": ("liman_core.tool_node.node", node_ainvoke),
+        "ChatOpenAI.ainvoke": ("langchain_openai", langchain_ainvoke),
     }
 
     def _instrument(self, **kwargs: Any) -> None:
@@ -75,19 +76,15 @@ class LimanInstrumentor(BaseInstrumentor):  # type: ignore
         )
         metrics = Metrics(meter)
 
-        for method, module in self.methods.items():
-            wrap_function_wrapper(
-                module=module,
-                name=method,
-                wrapper=node_invoke(tracer, metrics),
-            )
-
-        for method, module in self.amethods.items():
-            wrap_function_wrapper(
-                module=module,
-                name=method,
-                wrapper=node_ainvoke(tracer, metrics),
-            )
+        for method, (module, fn) in self.methods.items():
+            try:
+                wrap_function_wrapper(
+                    module=module,
+                    name=method,
+                    wrapper=fn(tracer, metrics),
+                )
+            except ImportError as e:
+                logger.warning(f"Failed to instrument {method} in {module}: {e}. ")
 
     def _uninstrument(self, **kwargs: Any) -> None: ...
 
