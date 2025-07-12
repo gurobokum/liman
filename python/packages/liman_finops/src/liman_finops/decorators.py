@@ -1,19 +1,21 @@
 from collections.abc import Awaitable, Callable
-from typing import Any, TypeVar
+from typing import Any, Protocol, TypeVar
 
 from opentelemetry.trace import Tracer
+
+from liman_finops.metrics import Metrics
 
 R = TypeVar("R")
 
 
-class TraceableObject:
+class TraceableObject(Protocol):
     id: str | None
     name: str | None
     kind: str | None
 
 
 def node_invoke(
-    tracer: Tracer,
+    tracer: Tracer, metrics: Metrics
 ) -> Callable[[Callable[..., R], TraceableObject, Any, Any], R]:
     """
     Wrapper for the node invoke method to trace and log events.
@@ -37,13 +39,13 @@ def node_invoke(
             except Exception:
                 raise
             finally:
-                ...
+                metrics.node_calls.add(1, attributes=attrs)
 
     return traced_method
 
 
 def node_ainvoke(
-    tracer: Tracer,
+    tracer: Tracer, metrics: Metrics
 ) -> Callable[[Callable[..., Awaitable[R]], TraceableObject, Any, Any], Awaitable[R]]:
     """
     Wrapper for the node invoke method to trace and log events.
@@ -67,7 +69,7 @@ def node_ainvoke(
             except Exception:
                 raise
             finally:
-                ...
+                metrics.node_calls.add(1, attributes=attrs)
 
     return traced_method
 
@@ -77,7 +79,7 @@ def extract_attrs(instance: TraceableObject) -> dict[str, str]:
     Extract attributes from the instance for tracing.
     """
     return {
-        k: v
+        k: str(v)
         for k in TraceableObject.__annotations__
         if (v := getattr(instance, k, None)) is not None
     }

@@ -2,6 +2,12 @@ from collections.abc import Collection
 from typing import Any
 
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor  # type: ignore
+from opentelemetry.metrics import get_meter
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import (
+    ConsoleMetricExporter,
+    PeriodicExportingMetricReader,
+)
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.semconv.schemas import Schemas
@@ -9,6 +15,7 @@ from opentelemetry.trace import get_tracer
 from wrapt import wrap_function_wrapper
 
 from liman_finops.decorators import node_ainvoke, node_invoke
+from liman_finops.metrics import Metrics
 from liman_finops.version import version
 
 
@@ -19,12 +26,18 @@ def configure_instrumentor(console: bool = False) -> "LimanInstrumentor":
     """
 
     tracer_provider = TracerProvider()
+    meter_provider = None
     if console:
         processor = BatchSpanProcessor(ConsoleSpanExporter())
         tracer_provider.add_span_processor(processor)
 
+        reader = PeriodicExportingMetricReader(ConsoleMetricExporter())
+        meter_provider = MeterProvider(metric_readers=[reader])
+
     instrumentor = LimanInstrumentor()
-    instrumentor.instrument(tracer_provider=tracer_provider)
+    instrumentor.instrument(
+        tracer_provider=tracer_provider, meter_provider=meter_provider
+    )
 
     return instrumentor
 
@@ -53,18 +66,27 @@ class LimanInstrumentor(BaseInstrumentor):  # type: ignore
             schema_url=Schemas.V1_28_0.value,
         )
 
+        meter_provider = kwargs.get("meter_provider")
+        meter = get_meter(
+            __name__,
+            version,
+            meter_provider,
+            schema_url=Schemas.V1_28_0.value,
+        )
+        metrics = Metrics(meter)
+
         for method, module in self.methods.items():
             wrap_function_wrapper(
                 module=module,
                 name=method,
-                wrapper=node_invoke(tracer),
+                wrapper=node_invoke(tracer, metrics),
             )
 
         for method, module in self.amethods.items():
             wrap_function_wrapper(
                 module=module,
                 name=method,
-                wrapper=node_ainvoke(tracer),
+                wrapper=node_ainvoke(tracer, metrics),
             )
 
     def _uninstrument(self, **kwargs: Any) -> None: ...
