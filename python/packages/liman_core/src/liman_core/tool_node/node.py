@@ -1,9 +1,13 @@
 import asyncio
 from functools import reduce
 from importlib import import_module
+from io import StringIO
 from typing import Any
 
 from dishka import FromDishka
+from rich import print as rich_print
+from rich.syntax import Syntax
+from ruamel.yaml import YAML
 
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
@@ -234,3 +238,29 @@ class ToolNode(BaseNode):
                 )
 
         return DEFAULT_TOOL_PROMPT_TEMPLATE
+
+    def print_spec(self, raw: bool = True) -> None:
+        """
+        Print the tool node specification in YAML format.
+        Args:
+            raw (bool): If True, print the raw declaration; otherwise, print the validated spec.
+        """
+        yaml = YAML()
+        yaml.indent(mapping=2, sequence=4, offset=2)
+        yaml.preserve_quotes = True
+
+        yaml_spec = StringIO()
+
+        if raw:
+            yaml.dump(self.declaration, yaml_spec)
+        else:
+            yaml.dump(self.spec.model_dump(exclude_none=True), yaml_spec)
+
+        syntax = Syntax(
+            yaml_spec.getvalue(),
+            "yaml",
+            theme="monokai",
+            background_color="default",
+            word_wrap=True,
+        )
+        rich_print(syntax)
