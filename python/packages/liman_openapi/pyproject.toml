@@ -16,7 +16,10 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = []
+dependencies = [
+    "liman-core",
+    "openapi-spec-validator>=0.7.2",
+]
 
 [tool.hatch.version]
 path = "VERSION"
@@ -33,3 +36,6 @@ extend = "../../pyproject.toml"
 
 [tool.mypy]
 extend = "../../pyproject.toml"
+
+[tool.uv.sources]
+liman-core = { workspace = true }
