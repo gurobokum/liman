@@ -1,6 +1,7 @@
 .python-version
 
 .venv/
+.examples/
 dist/
 __pycache__/
 proto/

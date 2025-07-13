@@ -69,7 +69,7 @@ warn_return_any = true
 warn_unused_configs = true
 strict_equality = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR"
-exclude = ["examples/"]
+exclude = [".examples/"]
 
 [[tool.mypy.overrides]]
 module = ["wrapt.*"]
