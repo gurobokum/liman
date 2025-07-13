@@ -4,6 +4,7 @@ from typing import Any, Protocol, TypeVar
 from opentelemetry.trace import Tracer
 
 from liman_finops.metrics import Metrics
+from liman_finops.token_pricing import get_token_price
 
 R = TypeVar("R")
 
@@ -100,13 +101,14 @@ def langchain_ainvoke(
     ) -> R:
         attrs = {
             "name": instance.__class__.__name__,
+            "model_name": getattr(instance, "model_name", "unknown"),
         }
         result = None
         with tracer.start_as_current_span(
             f"{instance.__class__.__name__}.{wrapped.__name__}",
             attributes=attrs,
             end_on_exit=True,
-        ):
+        ) as span:
             try:
                 result = await wrapped(*args, **kwargs)
                 return result
@@ -114,6 +116,8 @@ def langchain_ainvoke(
                 raise
             finally:
                 attrs = extend_langchain_attrs(attrs, result)
+                span.set_attributes(attrs)
+
                 if (
                     result
                     and (
@@ -127,7 +131,7 @@ def langchain_ainvoke(
                     metrics.output_llm_tokens.add(
                         usage["completion_tokens"], attributes=attrs
                     )
-                    if llm_tokens_cost := get_llm_cost(usage, attrs.get("model_name")):
+                    if llm_tokens_cost := get_llm_cost(usage, attrs["model_name"]):
                         metrics.llm_tokens_cost.add(llm_tokens_cost, attributes=attrs)
 
     return traced_method
@@ -140,7 +144,7 @@ def extend_langchain_attrs(_attrs: dict[str, str], result: Any) -> dict[str, str
 
     if response_metadata := getattr(result, "response_metadata", None):
         if model_name := response_metadata.get("model_name"):
-            attrs["model_name"] = model_name
+            attrs["model_version"] = model_name
 
         if system_fingerprint := response_metadata.get("system_fingerprint"):
             attrs["system_fingerprint"] = system_fingerprint
@@ -151,21 +155,12 @@ def extend_langchain_attrs(_attrs: dict[str, str], result: Any) -> dict[str, str
     return attrs
 
 
-def get_llm_cost(usage: Any, model_name: str | None = None) -> float | None:
+def get_llm_cost(usage: Any, model_name: str) -> float | None:
     """
     Calculate the cost of LLM usage based on the model and token counts.
     """
     input_tokens = float(usage.get("prompt_tokens", 0))
     output_tokens = float(usage.get("completion_tokens", 0))
 
-    match model_name:
-        case "gpt-3.5-turbo":
-            return input_tokens * 0.0000015 + output_tokens * 0.000002
-        case "gpt-4":
-            return input_tokens * 0.00003 + output_tokens * 0.00006
-        case "gpt-4o-2024-08-06":
-            return input_tokens * 0.00003 + output_tokens * 0.00006
-        case "gpt-4-1106-preview":
-            return input_tokens * 0.00003 + output_tokens * 0.00006
-        case _:
-            return None
+    input_price, _, output_price = get_token_price(model_name)
+    return input_tokens * input_price + output_tokens * output_price
