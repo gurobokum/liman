@@ -23,14 +23,21 @@
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0-rc"
+      "release-as": "0.1.0"
     },
     "python/packages/liman_finops": {
       "component": "liman_finops",
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0-rc"
+      "release-as": "0.1.0"
+    },
+    "python/packages/liman_openapi": {
+      "component": "liman_openapi",
+      "pull-request-title-pattern": "release_py(${component}): ${version}",
+      "release-type": "simple",
+      "version-file": "VERSION",
+      "release-as": "0.1.0"
     }
   }
 }
