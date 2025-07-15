@@ -1,10 +1,15 @@
 import sys
-from typing import Any
+from abc import ABC, abstractmethod
+from io import StringIO
+from typing import Any, Generic, TypeAlias, TypeVar
 from uuid import uuid4
 
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, ConfigDict
+from rich import print as rich_print
+from rich.syntax import Syntax
 from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import PreservedScalarString
 
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
@@ -14,26 +19,31 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
+S = TypeVar("S", bound=BaseModel)
 
-class Output(BaseModel):
+
+class Output(Generic[S], BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     response: BaseMessage
 
-    next_nodes: list[tuple["BaseNode", dict[str, Any]]] = []
+    next_nodes: list[tuple["BaseNode[S]", dict[str, Any]]] = []
 
 
-class BaseNode:
+class BaseNode(Generic[S], ABC):
     __slots__ = (
         "id",
         "name",
         "declaration",
+        "spec",
         "yaml_path",
         "default_lang",
         "fallback_lang",
         "kind",
         "_compiled",
     )
+
+    spec: S
 
     def __init__(
         self,
@@ -120,11 +130,12 @@ class BaseNode:
     def generate_id(self) -> None:
         self.id = uuid4()
 
+    @abstractmethod
     def compile(self) -> None:
         """
         Compile the node. This method should be overridden in subclasses to implement specific compilation logic.
         """
-        raise NotImplementedError("Subclasses must implement the compile method.")
+        ...
 
     @property
     def is_llm_node(self) -> bool:
@@ -133,3 +144,55 @@ class BaseNode:
     @property
     def is_tool_node(self) -> bool:
         return self.kind == "ToolNode"
+
+    def print_spec(self, raw: bool = False) -> None:
+        """
+        Print the tool node specification in YAML format.
+        Args:
+            raw (bool): If True, print the raw declaration; otherwise, print the validated spec.
+        """
+        yaml = YAML()
+        yaml.indent(mapping=2, sequence=4, offset=2)
+        yaml.preserve_quotes = True
+
+        yaml_spec = StringIO()
+
+        if raw:
+            to_dump = _preserve_multiline_strings(self.declaration)
+        else:
+            if not self.spec or not isinstance(self.spec, BaseModel):
+                raise LimanError("Node specification is not compiled yet.")
+            to_dump = _preserve_multiline_strings(
+                self.spec.model_dump(exclude_none=True)
+            )
+
+        yaml.dump(to_dump, yaml_spec)
+
+        syntax = Syntax(
+            yaml_spec.getvalue(),
+            "yaml",
+            theme="monokai",
+            background_color="default",
+            word_wrap=True,
+        )
+        rich_print(syntax)
+
+
+YamlValue: TypeAlias = dict[str, Any] | list["YamlValue"] | str
+
+
+def _preserve_multiline_strings(data: YamlValue | None) -> YamlValue | None:
+    """
+    Recursively convert multiline strings to PreservedScalarString
+    so that YAML dumps them as block scalars (|).
+    """
+    if data is None:
+        return None
+
+    if isinstance(data, str) and "\n" in data:
+        return PreservedScalarString(data)
+    elif isinstance(data, dict):
+        return {k: _preserve_multiline_strings(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [v for i in data if (v := _preserve_multiline_strings(i)) is not None]
+    return data

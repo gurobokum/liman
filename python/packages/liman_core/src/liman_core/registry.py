@@ -1,9 +1,9 @@
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from liman_core.base import BaseNode
 from liman_core.errors import LimanError
 
-T = TypeVar("T", bound=BaseNode)
+T = TypeVar("T", bound=BaseNode[Any])
 
 
 class Registry:
@@ -12,7 +12,7 @@ class Registry:
     """
 
     def __init__(self) -> None:
-        self._nodes: dict[str, BaseNode] = {}
+        self._nodes: dict[str, BaseNode[Any]] = {}
 
     def lookup(self, kind: type[T], name: str) -> T:
         """
@@ -37,7 +37,7 @@ class Registry:
         else:
             raise LimanError(f"Node with key '{key}' not found in the registry.")
 
-    def add(self, node: BaseNode) -> None:
+    def add(self, node: BaseNode[Any]) -> None:
         """
         Add a node to the registry.
 

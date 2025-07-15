@@ -1,13 +1,10 @@
 import asyncio
+from collections.abc import Callable
 from functools import reduce
 from importlib import import_module
-from io import StringIO
 from typing import Any
 
 from dishka import FromDishka
-from rich import print as rich_print
-from rich.syntax import Syntax
-from ruamel.yaml import YAML
 
 from liman_core.base import BaseNode
 from liman_core.dishka import inject
@@ -27,7 +24,7 @@ DEFAULT_TOOL_PROMPT_TEMPLATE = """
 """.strip()
 
 
-class ToolNode(BaseNode):
+class ToolNode(BaseNode[ToolNodeSpec]):
     """
     Represents a tool node in a directed graph.
     This node can be used to execute specific tools or functions within a workflow.
@@ -112,20 +109,37 @@ class ToolNode(BaseNode):
                 context={"default_lang": self.default_lang},
             )
 
+        self.strict = strict
+        self.registry = registry
+        self.registry.add(self)
+        self._compiled = False
+
+    def compile(self) -> None:
         # import implementation function
+        if not self.spec.func:
+            raise InvalidSpecError(
+                f"ToolNode '{self.name}' must have a 'func' attribute defined."
+            )
+
         try:
             func_path = self.spec.func.split(".")
             module = import_module(".".join(func_path[:-1]))
             self.func = getattr(module, func_path[-1])
         except (ImportError, ValueError) as e:
-            if strict:
+            if self.strict:
                 raise InvalidSpecError(
                     f"Failed to import module for function '{self.spec.func}': {e}"
                 ) from e
             self.func = noop
+        self._compiled = True
 
-        self.registry = registry
-        self.registry.add(self)
+    def set_func(self, func: Callable[..., Any]) -> None:
+        """
+        Set the function to be executed by the tool node.
+        This function should match the signature defined in the tool node specification.
+        """
+        self.func = func
+        self.spec.func = str(func)
 
     def invoke(self, *args: Any, **kwargs: Any) -> Any:
         """
@@ -238,29 +252,3 @@ class ToolNode(BaseNode):
                 )
 
         return DEFAULT_TOOL_PROMPT_TEMPLATE
-
-    def print_spec(self, raw: bool = True) -> None:
-        """
-        Print the tool node specification in YAML format.
-        Args:
-            raw (bool): If True, print the raw declaration; otherwise, print the validated spec.
-        """
-        yaml = YAML()
-        yaml.indent(mapping=2, sequence=4, offset=2)
-        yaml.preserve_quotes = True
-
-        yaml_spec = StringIO()
-
-        if raw:
-            yaml.dump(self.declaration, yaml_spec)
-        else:
-            yaml.dump(self.spec.model_dump(exclude_none=True), yaml_spec)
-
-        syntax = Syntax(
-            yaml_spec.getvalue(),
-            "yaml",
-            theme="monokai",
-            background_color="default",
-            word_wrap=True,
-        )
-        rich_print(syntax)

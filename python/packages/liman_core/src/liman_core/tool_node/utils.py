@@ -56,6 +56,8 @@ def tool_arg_to_jsonschema(
             ...
         case "str":
             type_ = "string"
+        case "integer":
+            type_ = "number"
         case "int":
             type_ = "number"
         case "float":

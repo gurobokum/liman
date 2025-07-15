@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from uuid import uuid4
 
 from dishka import FromDishka
@@ -43,7 +43,7 @@ class LLMPromptsBundle(LanguagesBundle[LLMPrompts]):
         return SystemMessage(content=prompts.system if prompts else "")
 
 
-class LLMNode(BaseNode):
+class LLMNode(BaseNode[LLMNodeSpec]):
     """
     Represents a node in a graph that uses a Large Language Model (LLM).
 
@@ -120,6 +120,21 @@ class LLMNode(BaseNode):
         self.registry = registry
         self.registry.add(self)
 
+    def add_tools(self, tools: list[ToolNode]) -> None:
+        """
+        Add tools to the LLMNode.
+
+        Args:
+            tools (list[ToolNode]): List of ToolNode instances to add.
+        """
+        if not isinstance(tools, list):
+            raise TypeError("Tools must be a list of ToolNode instances")
+
+        for tool in tools:
+            if not isinstance(tool, ToolNode):
+                raise TypeError(f"Expected ToolNode, got {type(tool)}")
+            self.spec.tools.append(tool.name)
+
     def compile(self) -> None:
         self._init_prompts()
 
@@ -139,7 +154,7 @@ class LLMNode(BaseNode):
         inputs: list[BaseMessage],
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> Output:
+    ) -> Output[Any]:
         lang = lang or self.default_lang
 
         system_message = self.prompts.to_system_message(lang)
@@ -164,7 +179,7 @@ class LLMNode(BaseNode):
             **kwargs,
         )
 
-        next_nodes: list[tuple[BaseNode, dict[str, Any]]] = []
+        next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []
 
         if hasattr(response, "tool_calls"):
             for tool_call in getattr(response, "tool_calls", []):
@@ -212,3 +227,5 @@ class LLMNode(BaseNode):
                 + "\n"
                 + "\n".join(tool_desc for tool_desc in bundle)
             )
+
+        self.spec.prompts = cast(dict[LanguageCode, Any], self.prompts.model_dump())
