@@ -9,7 +9,9 @@
   "description": "Liman Monorepo",
   "scripts": {
     "prepare": "husky",
-    "docs:dev": "pnpm -F docs start",
+    "docs:dev": "pnpm -F @liman/docs dev",
+    "docs:lint": "pnpm -F @liman/docs lint",
+    "docs:format:check": "pnpm -F @liman/docs format:check",
     "go:lint": "cd go && bazel run //:lint",
     "python:lint": "cd python && uv run poe lint",
     "python:typing": "cd python && uv run poe typing",
