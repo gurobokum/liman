@@ -9,7 +9,7 @@ def test_load_openapi() -> None:
     }
 
     schema = load_openapi(test_schema)
-    assert schema == test_schema
+    assert schema.spec.contents() == test_schema
 
 
 def test_load_openapi_with_endpoints() -> None:
@@ -27,10 +27,10 @@ def test_load_openapi_with_endpoints() -> None:
     }
 
     schema = load_openapi(test_schema_with_endpoints)
-    assert schema == test_schema_with_endpoints
+    assert schema.spec.contents() == test_schema_with_endpoints
 
 
 def test_load_openapi_from_file_path() -> None:
     schema = load_openapi("./tests/data/simple_schema.yaml")
-    assert schema["info"]["title"] == "Test API from File"
-    assert "/test" in schema["paths"]
+    assert schema.spec.contents()["info"]["title"] == "Test API from File"
+    assert "/test" in schema.spec.contents()["paths"]
