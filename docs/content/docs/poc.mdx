@@ -1,0 +1,242 @@
+---
+title: Proof of Concept
+description: Liman framework design
+---
+
+import Link from "fumadocs-core/link";
+
+<Callout title="Status: Draft">
+  <p className="text-xs flex items-end flex-col gap-1">
+    <span className="block">
+      <span className="mr-1">Version:</span>
+      <time dateTime="2025-07-17">alpha-01</time>
+    </span>
+    <span className="block">
+      <span className="mr-1">Author:</span>
+      <Link href="https://github.com/gurobokum">@gurobokum</Link>
+    </span>
+    <span className="block">
+      <span className="mr-1">Last updated:</span>
+      <time dateTime="2025-07-17">17/07/2025</time>
+    </span>
+  </p>
+</Callout>
+
+# Overview
+
+**Liman** is a powerful framework engineered to build **scalable, reliable, and maintainable AI Agents**. It achieves this through a **declarative manifest approach** and an **extensible modular architecture**.
+
+The core idea behind Liman is to define agent structures using manifests that incorporate basic, reusable components. These components are easily pluggable and cover key areas such as:
+
+- **Declarative Approach:** Emphasizing a declarative approach through YAML manifests, similar to Kubernetes, augmented with an overlay (kustomize-like) feature for flexible configuration and extension.
+- **Telemetry:** For comprehensive monitoring, insights, and cost optimization (FinOps), leveraging open standards like OpenTelemetry (Otel) for distributed tracing and metrics.
+- **Authorization:** For secure access control, supporting robust mechanisms such as service accounts, assuming roles, and fine-grained access control to manage permissions effectively.
+- **Protocols:** To facilitate diverse communication needs and seamless integration with various systems, including MCP, HTTP, WebSocket, A2A and others
+- **Side Effects:** For managing external interactions throughout the agent's lifecycle, enabling operations such as external API calls, database interactions, and other service integrations in a controlled and defined manner.
+- **Extensible State:** For highly flexible data management, allowing agents to utilize any datastore and any data format required, ensuring adaptability to diverse operational needs.
+
+Should this specification be widely adopted, it could foster a **common ecosystem of reusable components** for AI Agents, paving the way for an "Agents Store" where shared functionalities can be discovered and integrated across diverse projects.
+
+# YAML Manifests
+
+Liman represents AI Agents as a **Graph of Nodes**, similar to frameworks like LangGraph. In this graph:
+
+- Each **Node** acts as a computational unit with its own configuration and behavior.
+- **Edges** define the flow of data between these nodes.
+
+This entire structure is defined in a **YAML manifest file** (JSON is also supported), which explicitly describes nodes, their properties, and their interconnections. The manifest uses a declarative approach, much like Kubernetes manifests, and supports an **overlay design** (similar to Kustomize) for extending base manifests with additional configurations.
+
+This declarative methodology enables the creation of **language-agnostic AI Agents**. The agent's logic is defined solely in the manifest, allowing its underlying implementation to be in any programming language. Think of it like OpenAPI specifications with custom code generation: the manifest can be used to generate code in various languages such as Python, JavaScript, Go, and others.
+
+Liman currently supports three primary Node types: `LLMNode`, `ToolNode`, and `CustomNode`.
+
+### LLMNode
+
+An `LLMNode` encapsulates the logic for interacting with **Large Language Models (LLMs)**. Its primary function is to define prompts, often for multiple languages.
+
+```yaml
+kind: LLMNode
+name: StartNode
+prompts: # <- LanguageBundle
+  system:
+    en: |
+      You are a helpful assistant.
+    ru: |
+      Ты полезный помощник.
+  notes:
+    en: { notes }
+tools:
+  - OpenAPI_getUser
+```
+
+A core feature of Liman is the `LanguageBundle`, which is used to parse every text section within the manifests. `LanguageBundle` supports a **fallback** language. If text is not defined for a specific language, the system automatically uses the designated fallback language.
+
+For example, in the `LLMNode` snippet above, if `notes` were not defined for `ru`, the `en` version would be used as a **fallback**. This mechanism applies to any text section, regardless of its depth.
+
+Here's how `LanguageBundle` handles **fallback** language:
+
+```yaml
+promtps:
+  system:
+    en: You are a helpful assistant.
+  notes:
+    intro:
+      en: Hello
+      ru: Привет
+    bye:
+      de: Auf Wiedersehen
+```
+
+If `en` is set as the fallback language, the system would process the above into:
+
+```yaml
+prompts:
+  system:
+    en: You are a helpful assistant.
+    ru: You are a helpful assistant.
+    de: You are a helpful assistant.
+  notes:
+    en:
+      intro: Hello
+    ru:
+      intro: Привет
+    de:
+      intro: Hello # Fallback applied for 'intro'
+      bye: Auf Wiedersehen
+```
+
+#### Overlays
+
+`Overlays` extend base manifests with additional configurations. They allow you to define extra properties for a node, such as `tools`, `prompts`, and more. A common use case is defining different prompts for various languages.
+
+Overlays are applied in a specific order, based on their directory level and file name. Consider the following structure:
+
+```text
+specs/
+└── start_node/
+    ├── llm_node.yaml
+    └── langs/
+            ├── en.yaml
+            ├── ru.yaml
+            └── de.yaml
+```
+
+Given these manifest files:
+
+```yaml
+# start_llm_node.yaml
+kind: LLMNode
+name: StartNode
+tools:
+  - OpenAPI_getUser
+
+# langs/en.yaml
+kind: Overlay
+to: LLMNode:StartNode
+prompts:
+  system: |
+    You are a helpful assistant.
+  notes:
+    intro: Hello
+    bye: Goodbye
+
+# langs/ru.yaml
+kind: Overlay
+to: LLMNode:StartNode
+prompts:
+  system: |
+    Ты полезный помощник.
+  notes:
+    intro: Привет
+    bye: Пока
+
+# langs/de.yaml
+kind: Overlay
+to: LLMNode:StartNode
+prompts:
+  system: |
+    Du bist ein hilfreicher Assistent.
+  notes:
+    intro: Hallo
+    bye: Auf Wiedersehen
+```
+
+These separate files would be merged into a single `LLMNode` manifest. Overlays are versatile and can be applied to any node type, not just `LLMNode`, to extend its properties.
+
+### ToolNode
+
+A `ToolNode` defines the logic for LLM function calling. It specifies a tool's signature and associated prompts.
+
+```yaml
+kind: ToolNode
+name: GetUser
+description: # <- LanguageBundle
+  en: Get user by ID
+  ru: Получить пользователя по ID
+  de: Benutzer nach ID abrufen
+func: lib.tools.get_user # <- Function to call, would be imported during the parsing
+arguments:
+  - name: user_id
+    type: string
+    description: # <- LanguageBundle
+      en: User ID to get
+      ru: ID пользователя для получения
+      de: Benutzer-ID zum Abrufen
+triggers: # <- LanguageBundle, optional
+  en:
+    - Give me the user X
+    - What is the user X?
+  ru:
+    - Дай мне пользователя X
+    - Какой пользователь X?
+  de:
+    - Gib mir den Benutzer X
+    - Was ist der Benutzer X?
+tool_prompt_template: # <- LanguageBundle, optional
+  en: |
+    Supported tools:
+      {name} - {description}
+      Examples that can trigger this tool:
+        {triggers}
+  ru: |
+    Поддерживаемые функции:
+      {name} - {description}
+      Примеры, которые могут вызвать эту функцию:
+        {triggers}
+  de: |
+    Unterstützte Werkzeuge:
+      {name} - {description}
+      Beispiele, die dieses Tool auslösen können:
+        {triggers}
+```
+
+During parsing, this `ToolNode` allows for easy generation of the tool calling signature for the LLM, which is then provided to the `func`.
+
+The `triggers` and `tool_prompt_template` fields are optional. However, they are highly useful for providing extra information about the tool and how it can be invoked.
+
+When you link a `ToolNode` to an `LLMNode`, as shown below:
+
+```yaml
+kind: LLMNode
+name: StartNode
+prompts:
+  system:
+    en: You are a helpful assistant.
+tools:
+  - GetUser
+```
+
+By default, the `LLMNode.prompts.system` will automatically incorporate the `tool_prompt_template` for each tool to [improve function calling accuracy](https://composio.dev/blog/gpt-4-function-calling-example)
+
+So, the system prompt for the English (`en`) language would be augmented as follows:
+
+```tsx
+You are a helpful assistant.
+Supported tools: // [!code ++]
+  GetUser - User ID to get  // [!code ++]
+  Examples that can trigger this tool:  // [!code ++]
+    - Give me the user X  // [!code ++]
+    - What is the user X?  // [!code ++]
+```
+
+This automatic integration also applies to other languages, ensuring consistent prompt enhancement across all supported locales.

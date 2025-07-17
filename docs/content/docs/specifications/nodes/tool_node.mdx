@@ -1,0 +1,37 @@
+---
+title: ToolNode
+description: ToolNode is a node that holds a wrapper for a function calling by LLM.
+---
+
+## Specification
+
+```yaml
+# ToolNode
+
+kind: ToolNode
+name: string
+description: LanguageBundle
+func: string
+arguments: ToolArgument[]
+triggers: LanguageBundle[]
+tool_prompt_template: Optional[LanguageBundle]
+```
+
+```yaml
+# ToolArgument
+
+name: string
+type: string
+description: Optional[LanguageBundle]
+```
+
+## References [!toc]
+
+<Cards>
+  <Card
+    href="/docs/specifications/internal_types#languagebundle"
+    title="LanguageBundle"
+  >
+    Block with text supported localization.
+  </Card>
+</Cards>

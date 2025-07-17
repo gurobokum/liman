@@ -1,0 +1,41 @@
+---
+title: Internal Types
+description: Internal types used in the system.
+---
+
+## LanguageBundle
+
+LanguageBundle is string or dict with text supported localization
+It uses language codes as keys on any depth
+any text without the language code is considered as a default language text
+It's possible to use `{template_variable}` syntax there
+
+```yaml
+prompts:
+  system:
+    en: You are a helpful assistant.
+    ru: Ты полезный помощник.
+  notes:
+    en: |
+      Notes: {notes}
+    de: |
+      Notizen: {notes}
+```
+
+would be converted to if `en` is the fallback and default language:
+
+```yaml
+prompts:
+  en:
+    system: You are a helpful assistant.
+    notes: |
+      Notes: {notes}
+  ru:
+    system: Ты полезный помощник.
+    notes: |
+      Notes: {notes}
+  ru:
+    system: You are a helpful assistant.
+    notes: |
+      Notizen: {notes}
+```

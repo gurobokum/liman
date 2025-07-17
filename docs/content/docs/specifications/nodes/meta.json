@@ -1,0 +1,4 @@
+{
+  "defaultOpen": true,
+  "pages": ["llm_node", "tool_node", "custom_node"]
+}
