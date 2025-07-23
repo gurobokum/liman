@@ -1,22 +1,22 @@
-import Link from "next/link";
+import { Toaster } from "@/src/components/ui/sonner";
+
+import Community from "./_components/Community";
+import Features from "./_components/Features";
+import Footer from "./_components/Footer";
+import GettingStarted from "./_components/GettingStarted";
+import Hero from "./_components/Hero";
+import Subscribe from "./_components/Subscribe";
 
 export default function HomePage() {
   return (
-    <main className="flex flex-1 flex-col justify-center text-center">
-      <h1 className="mb-4 text-4xl font-bold">Liman</h1>
-      <p className="text-fd-muted-foreground mb-4">
-        Framework for buiding distributed and reliable AI Agents
-      </p>
-      <p className="text-fd-muted-foreground">
-        You can open{" "}
-        <Link
-          href="/docs/poc"
-          className="text-fd-foreground font-semibold underline"
-        >
-          PoC
-        </Link>{" "}
-        and see the documentation.
-      </p>
+    <main className="flex flex-1 flex-col justify-center">
+      <Hero />
+      <Features />
+      <GettingStarted />
+      <Subscribe />
+      <Community />
+      <Footer />
+      <Toaster />
     </main>
   );
 }

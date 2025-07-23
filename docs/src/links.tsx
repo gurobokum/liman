@@ -1,0 +1,19 @@
+export const Github = {
+  title: "GitHub",
+  url: "https://github.com/gurobokum/liman",
+};
+
+export const Discord = {
+  title: "Discord",
+  url: "https://discord.gg",
+};
+
+export const Twitter = {
+  title: "X",
+  url: "https://x.com/gurobokum",
+};
+
+export const RuTelegram = {
+  title: "Telegram (RU)",
+  url: "https://t.me/liman_ai",
+};
