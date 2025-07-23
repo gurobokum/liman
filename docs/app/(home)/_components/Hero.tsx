@@ -1,7 +1,9 @@
-import { Button } from "@/src/components/ui/button";
-import { Badge } from "@/src/components/ui/badge";
-import { ArrowRight, Github, NotebookPen } from "lucide-react";
 import Link from "fumadocs-core/link";
+import { ArrowRight, Github, NotebookPen } from "lucide-react";
+
+import { Badge } from "@/src/components/ui/badge";
+import { Button } from "@/src/components/ui/button";
+import * as links from "@/src/links";
 
 export default function Hero() {
   return (
@@ -59,17 +61,22 @@ export default function Hero() {
 
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="glow-effect group">
-              Get Started
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            <Button asChild size="lg" className="glow-effect group">
+              <Link href="/docs/poc" external={true}>
+                Get Started
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </Button>
             <Button
+              asChild
               variant="outline"
               size="lg"
               className="border-animated glow-effect"
             >
-              <Github className="w-4 h-4 mr-2" />
-              View on GitHub
+              <Link href={links.Github.url}>
+                <Github className="w-4 h-4 mr-2" />
+                View on GitHub
+              </Link>
             </Button>
           </div>
 
