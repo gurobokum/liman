@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, CheckCircle, ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle, Mail } from "lucide-react";
+import React, { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/src/components/ui/button";
@@ -18,6 +18,7 @@ export default function Subscribe() {
     if (!email) {
       toast.error("Email required", {
         description: "Please enter your email address",
+        position: "top-center",
       });
       return;
     }
@@ -26,21 +27,35 @@ export default function Subscribe() {
     if (!emailRegex.test(email)) {
       toast.error("Invalid email", {
         description: "Please enter a valid email address",
+        position: "top-center",
       });
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate API call
-    // TODO
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const res = await fetch("/api/subscribe", {
+      body: JSON.stringify({ email }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) {
+      setIsLoading(false);
+      const error = await res.text();
+      toast.error("Subscription failed", {
+        description: error || "Something went wrong. Please try again later.",
+        position: "top-center",
+      });
+      return;
+    }
 
     setIsSubscribed(true);
     setIsLoading(false);
 
     toast.success("Successfully subscribed!", {
       description: "You'll receive updates about Liman development",
+      position: "top-center",
     });
 
     setEmail("");
