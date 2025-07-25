@@ -5,14 +5,14 @@ description: Internal types used in the system.
 
 ## BaseNode
 
-BaseNode is a base type for all nodes in the system - LLMNode, ToolNode or CustomNode. If you see such node in the specification, it means that the node can be any of these types.
+BaseNode is a base type for all nodes in the system - LLMNode, ToolNode or Node. If you see such node in the specification, it means that the node can be any of these types.
 
 ## Edge
 
 An Edge allows you to define a connection between nodes using a DSL condition
 
 ```yaml
-when: EdgeDSLCondition
+when: LimanCE | FunctionRef
 target: BaseNode | BaseNode[]
 id: Optional[ID]
 depends: Optional[ID | ID[]]
@@ -23,7 +23,7 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
 <TypeTable
   type={{
     when: {
-      type: "EdgeDSLCondition",
+      type: "LimanCE | FunctionRef",
       description: "Condition that must be met for the edge to be followed.",
       required: true,
     },
@@ -33,38 +33,76 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
       required: true,
     },
     id: {
-      type: "ID",
+      type: "EdgeID",
       description:
         "Optional ID for the edge, can be used to reference the edge. Must be unique with the same parent node.",
       required: false,
     },
     depends: {
-      type: "ID | ID[]",
+      type: "EdgeID | EdgeID[]",
       description:
-        "Optional ID or array of IDs that this edge depends on. The edge will only be followed if the dependencies are resolved.",
+        "Optional EdgeID or array of EdgeIDs that this edge depends on. The edge will only be followed if the dependencies are resolved.",
       required: false,
     },
   }}
 />
 
-### EdgeDSLCondition
+### EdgeID
 
-EdgeDSLCondition is an expression that determines whether an edge should be followed, based on the current context or state. It is typically a string that uses a simple domain-specific language (DSL) to reference variables, node outputs, or other conditions.
+Any string or number that is used to identify an edge in the node. It must be unique within the same parent node.
 
-<ul>
-  <li>
-    <code>module.path.to.method</code>
-  </li>
-  <li>
-    <code>value == True</code>
-  </li>
-  <li>
-    <code>value != 1</code>
-  </li>
-  <li>
-    <code>another_value == "string"</code>
-  </li>
-</ul>
+```
+<edge-id> ::= <string> | <number>
+```
+
+### LimanCE
+
+LimanCE is a DSL CE (Condition Expression) that is used to determine whether an edge should be followed, based on the current context or state. It is typically a string that uses a simple domain-specific language (DSL) to reference variables, node outputs, or builtin functions.
+
+#### Builtin Functions
+
+These functions provide access to common operations and context information within LimanCE conditions.
+
+- `$is_error(error_type?: string, ...)`  
+  Checks if the current execution context contains any active error. Returns True if an error is present, False otherwise.
+  Can optionally check for a specific error type (e.g., `UnauthorizedError`) or multiple error types.
+- `$now()`  
+  Returns the current UTC timestamp.  
+  **Example:** `$now() > some_variable_timestamp`
+
+#### Example
+
+```js
+value == true && another_value != 1 || $is_error(UnauthorizedError)"
+```
+
+#### BNF
+
+```
+<liman-ce> ::= <term> (("&&" | "and" | "||" | "or") <term>)*
+
+<term> ::= <factor> (("==" | "!=" | ">" | "<" | ">=" | "<=" | "in" | "not in") <factor>)*
+         | ("!" | "not") <term>
+         | "(" <expression> ")"
+
+<factor> ::= <literal> | <variable> | <function_call>
+
+<literal> ::= <string> | <number> | "true" | "false" | "null"
+
+<variable> ::= IDENTIFIER ("." IDENTIFIER)*
+
+<function_call> ::= BUILTIN_IDENTIFIER "(" [<arg_list>] ")"
+
+<arg_list> ::= <variable> ("," <variable>)*
+
+(* --- Token Definitions --- *)
+(* IDENTIFIER: A standard variable name, e.g., 'user', 'role'. *)
+(* BUILTIN_IDENTIFIER: A function name prefixed with '$', e.g., '$is_error', '$now'. *)
+```
+
+## FunctionRef
+
+FunctionRef is a reference to a function that can be called when the edge is followed. It is typically a string that represents the path to the function, such as `module.path.to.method`. The function should return a boolean value indicating whether the edge should be followed.
 
 ## LanguageBundle
 
