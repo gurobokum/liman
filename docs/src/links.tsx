@@ -10,7 +10,7 @@ export const Discord = {
 
 export const Twitter = {
   title: "X",
-  url: "https://x.com/gurobokum",
+  url: "https://x.com/liman_ai",
 };
 
 export const RuTelegram = {
