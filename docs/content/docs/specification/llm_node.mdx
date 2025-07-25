@@ -1,0 +1,63 @@
+---
+title: LLMNode
+description: LLMNode is a node that use LLM to generate text.
+---
+
+## Specification
+
+```yaml
+kind: LLMNode
+name: string
+prompts: LanguageBundle
+tools: ToolNode[]
+nodes: Node[]
+```
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+<TypeTable
+  type={{
+    kind: {
+      description: "The kind of the node, must be 'LLMNode'.",
+      required: true,
+      type: "LLMNode",
+    },
+    name: {
+      type: "string",
+      required: true,
+    },
+    prompts: {
+      type: "LanguageBundle",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description:
+        "The prompts for the LLMNode, including system and user prompts.",
+      required: true,
+    },
+    tools: {
+      type: "ToolNode[]",
+      typeDescriptionLink: "/docs/specification/tool_node",
+      description: "The tools that the LLMNode can use.",
+      required: false,
+    },
+    nodes: {
+      type: "Node[]",
+      typeDescriptionLink: "/docs/specification/node",
+      description:
+        "The nodes that the LLMNode can use, can be used to chain nodes together.",
+      required: false,
+    },
+  }}
+/>
+
+<Cards>
+  <Card
+    href="/docs/specification/internal_types#languagebundle"
+    title="LanguageBundle"
+  >
+    Block with text supported localization.
+  </Card>
+  <Card href="/docs/specification/internal_types#edge" title="Edge">
+    An Edge allows you to define a connection between nodes using a DSL
+    condition.
+  </Card>
+</Cards>

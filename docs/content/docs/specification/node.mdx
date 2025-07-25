@@ -1,0 +1,83 @@
+---
+title: Node
+description: Node that can be used to create custom functionality in the system.
+---
+
+## Specification
+
+```yaml
+kind: Node
+name: string
+func: string
+description: Optional[LanguageBundle]
+prompts: Optional[LanguageBundle]
+nodes: (Node | Edge<Node>)[]
+llm_nodes: (LLMNode | Edge<LLMNode>)[]
+tools: ToolNode[]
+```
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+<TypeTable
+  type={{
+    kind: {
+      description: "The kind of the node, must be 'Node'.",
+      required: true,
+      type: "Node",
+    },
+    name: {
+      type: "string",
+      required: true,
+    },
+    func: {
+      type: "string",
+      description:
+        "The function to call when the node is used. It would be imported on compiling the node.",
+      required: true,
+    },
+    description: {
+      type: "LanguageBundle",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description: "A description of the node, can be localized.",
+    },
+    prompts: {
+      type: "LanguageBundle",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description:
+        "The prompts for the node, can be used to provide additional context or instructions.",
+      required: false,
+    },
+    nodes: {
+      type: "(Node | Edge<Node>)[]",
+      typeDescriptionLink: "/docs/specification/internal_types#edge",
+      description:
+        "The nodes that the Node can connect to, can be used to chain nodes together.",
+      required: false,
+    },
+    llm_nodes: {
+      type: "(LLMNode | Edge<LLMNode>)[]",
+      typeDescriptionLink: "/docs/specification/internal_types#edge",
+      description: "The LLMNodes that the Node can connect to",
+      required: false,
+    },
+    tools: {
+      type: "ToolNode[]",
+      typeDescriptionLink: "/docs/specification/tool_node",
+      description: "The tools that the Node can use.",
+      required: false,
+    },
+  }}
+/>
+
+<Cards>
+  <Card
+    href="/docs/specification/internal_types#languagebundle"
+    title="LanguageBundle"
+  >
+    Block with text supported localization.
+  </Card>
+  <Card href="/docs/specification/internal_types#edge" title="Edge">
+    An Edge allows you to define a connection between nodes using a DSL
+    condition.
+  </Card>
+</Cards>

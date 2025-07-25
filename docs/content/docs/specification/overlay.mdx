@@ -1,0 +1,37 @@
+---
+title: Overlay
+description: Overlay allows to extend nodes and other manifests
+---
+
+## Specification
+
+```yaml
+kind: Overlay
+to: {kind}:{name}
+strategy: merge | replace
+... # any options {kind} supports
+```
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+<TypeTable
+  type={{
+    kind: {
+      description: "The kind of the manifest, must be 'Overlay'.",
+      required: true,
+      type: "Overlay",
+    },
+    to: {
+      type: "{kind}:{name}",
+      description:
+        "Target manifest to apply the overlay to, in the format {kind}:{name} like LLMNode:StartNode.",
+      required: true,
+    },
+    strategy: {
+      type: "merge | replace",
+      description:
+        "Strategy to apply the overlay, 'merge' will merge the overlay with the target manifest, 'replace' will replace the target manifest with the overlay.",
+      default: "merge",
+    },
+  }}
+/>

@@ -1,0 +1,101 @@
+---
+title: ToolNode
+description: ToolNode is a node that holds a wrapper for a function calling by LLM.
+---
+
+## Specification
+
+### ToolNode
+
+```yaml
+kind: ToolNode
+name: string
+description: LanguageBundle
+func: string
+arguments: ToolArgument[]
+triggers: LanguageBundle[]
+tool_prompt_template: Optional[LanguageBundle]
+```
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+<TypeTable
+  type={{
+    kind: {
+      description: "The kind of the node, must be 'ToolNode'.",
+      required: true,
+      type: "ToolNode",
+    },
+    name: {
+      type: "string",
+      required: true,
+    },
+    description: {
+      type: "LanguageBundle",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description: "A description of the tool, can be localized.",
+      required: true,
+    },
+    func: {
+      type: "string",
+      description:
+        "The function to call when the tool is used. It would be imported on compiling the node.",
+      required: true,
+    },
+    arguments: {
+      type: "ToolArgument[]",
+      description:
+        "The arguments for the tool, each argument has a name, type and optional description.",
+      required: false,
+    },
+    triggers: {
+      type: "LanguageBundle[]",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description:
+        "Examples of user prompts that can trigger this tool, can be localized.",
+      required: false,
+    },
+    tool_prompt_template: {
+      type: "LanguageBundle",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description:
+        "Template for the tool prompt that will be used in parent LLMNode system prompt.",
+      required: false,
+    },
+  }}
+/>
+
+### ToolArgument
+
+```yaml
+name: string
+type: string
+description: Optional[LanguageBundle]
+```
+
+<TypeTable
+  type={{
+    name: {
+      required: true,
+      type: "string",
+    },
+    type: {
+      type: "string | number | boolean",
+      required: true,
+    },
+    description: {
+      type: "LanguageBundle",
+      typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
+      description: "Optional description of the argument.",
+    },
+  }}
+/>
+
+<Cards>
+  <Card
+    href="/docs/specification/internal_types#languagebundle"
+    title="LanguageBundle"
+  >
+    Block with text supported localization.
+  </Card>
+</Cards>
