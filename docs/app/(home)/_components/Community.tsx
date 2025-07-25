@@ -7,11 +7,13 @@ import { Card } from "@/src/components/ui/card";
 import Discord from "@/src/components/ui/icons/Discord";
 import Link from "fumadocs-core/link";
 
+import * as links from "@/src/links";
+
 const communityLinks = [
   {
     icon: Github,
-    title: "GitHub",
-    href: "https://github.com/gurobokum/liman",
+    title: links.Github.title,
+    url: links.Github.url,
     description:
       "Contribute to the code, report issues, and join discussions with the community",
     buttonText: "View Repository",
@@ -20,8 +22,8 @@ const communityLinks = [
   },
   {
     icon: Discord,
-    title: "Discord",
-    href: "https://discord.gg",
+    title: links.Discord.title,
+    url: links.Discord.url,
     description:
       "Chat with developers in real-time and get help from the community",
     buttonText: "Join Discord",
@@ -31,7 +33,7 @@ const communityLinks = [
   {
     icon: BookOpen,
     title: "Documentation",
-    href: "/docs/poc",
+    url: "/docs/poc",
     description: "Explore comprehensive API documentation and usage examples",
     buttonText: "Read Docs",
     color:
@@ -86,7 +88,7 @@ export default function Community() {
                     {link.description}
                   </p>
                   <Button variant="ghost" asChild={true}>
-                    <Link href={link.href}>
+                    <Link href={link.url}>
                       {link.buttonText}
                       <ArrowRight className="ml-1 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
