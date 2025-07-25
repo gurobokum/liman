@@ -5,7 +5,7 @@ export const Github = {
 
 export const Discord = {
   title: "Discord",
-  url: "https://discord.gg",
+  url: "https://discord.gg/rmucxEzSyY",
 };
 
 export const Twitter = {

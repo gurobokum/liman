@@ -1,10 +1,11 @@
-# Liman (WIP)
+# Liman
+
+[![](https://dcbadge.limes.pink/api/server/https://discord.gg/rmucxEzSyY?compact=true&style=flat)](https://discord.gg/rmucxEzSyY) [![Docs](https://img.shields.io/badge/docs-read-brightgreen?logo=nextdotjs)](https://liman-ai.vercel.app/docs/poc)
 
 **Declarative AgentOps framework for building composable AI agents.**
 
 > ⚠️ **Note:** This repository is in the early design phase.  
 > It serves as a foundation for developing the Liman framework.  
-> **No functional features have been implemented yet.**  
 > Follow the repo to stay updated as development progresses!
 
 - [ ] **🧠 Declarative agent design** — define agents, tools, workflows via simple YAML.
