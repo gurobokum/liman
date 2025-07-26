@@ -20,6 +20,7 @@ classifiers = [
 dependencies = [
     "dishka>=1.6.0",
     "langchain-core>=0.3.67",
+    "lark>=1.2.2",
     "liman-finops[finops]",
     "protobuf>=6.31.1",
     "pydantic>=2.11.7",
