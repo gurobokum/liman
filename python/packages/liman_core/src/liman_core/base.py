@@ -2,7 +2,7 @@ import sys
 from abc import ABC, abstractmethod
 from io import StringIO
 from typing import Any, Generic, TypeAlias, TypeVar
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, ConfigDict
@@ -19,7 +19,13 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-S = TypeVar("S", bound=BaseModel)
+
+class BaseSpec(BaseModel):
+    kind: str
+    name: str
+
+
+S = TypeVar("S", bound=BaseSpec)
 
 
 class Output(Generic[S], BaseModel):
@@ -34,12 +40,15 @@ class BaseNode(Generic[S], ABC):
     __slots__ = (
         "id",
         "name",
-        "declaration",
+        "strict",
+        # spec
         "spec",
         "yaml_path",
+        # lang
         "default_lang",
         "fallback_lang",
-        "kind",
+        # private
+        "_initial_data",
         "_compiled",
     )
 
@@ -47,10 +56,11 @@ class BaseNode(Generic[S], ABC):
 
     def __init__(
         self,
-        name: str,
+        spec: S,
         *,
-        declaration: dict[str, Any] | None = None,
+        initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
+        strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
@@ -62,47 +72,51 @@ class BaseNode(Generic[S], ABC):
             raise LimanError(f"Invalid fallback language code: {fallback_lang}")
         self.fallback_lang: LanguageCode = fallback_lang
 
-        self.declaration = declaration
+        self._initial_data = initial_data
+        self.spec = spec
         self.yaml_path = yaml_path
 
-        self.kind = "BaseNode"
-        self.name = name
+        self.id = self.generate_id()
+        self.name = self.spec.name
 
-        self.generate_id()
+        self.strict = strict
         self._compiled = False
 
+    def __repr__(self) -> str:
+        return f"{self.spec.kind}:{self.name}"
+
     @classmethod
-    def from_yaml(
+    @abstractmethod
+    def from_dict(
         cls,
-        yaml_data: dict[str, Any],
+        data: dict[str, Any],
         *,
+        yaml_path: str | None = None,
+        strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> Self:
         """
-        Create a BaseNode instance from a YAML dictionary.
+        Create a BaseNode instance from a dict spec
 
         Args:
-            yaml_data (dict[str, Any]): Dictionary containing YAML data.
+            data (dict[str, Any]): Dictionary containing the BaseNode spec.
+            yaml_path (str | None): Path to the YAML file if the data is loaded from a YAML file.
+            strict (bool): Whether to enforce strict validation of the spec and other internal checks.
+            default_lang (str): Default language for the node.
+            fallback_lang (str): Fallback language for the node.
 
         Returns:
-            BaseNode: An instance of BaseNode initialized with the YAML data.
+            BaseNode: An instance of initialized BaseMNode
         """
-        name = yaml_data.get("name")
-        if not name:
-            raise LimanError("YAML data must contain a 'name' field.")
-        return cls(
-            name=name,
-            declaration=yaml_data,
-            default_lang=default_lang,
-            fallback_lang=fallback_lang,
-        )
+        ...
 
     @classmethod
     def from_yaml_path(
         cls,
         yaml_path: str,
         *,
+        strict: bool = True,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> Self:
@@ -116,19 +130,16 @@ class BaseNode(Generic[S], ABC):
             BaseNode: An instance of BaseNode initialized with the YAML data.
         """
         yaml_data = YAML().load(yaml_path).dict()
-        name = yaml_data.get("name")
-        if not name:
-            raise LimanError("YAML data must contain a 'name' field.")
-        return cls(
-            name,
-            declaration=yaml_data,
+        return cls.from_dict(
+            yaml_data,
             yaml_path=yaml_path,
+            strict=strict,
             default_lang=default_lang,
             fallback_lang=fallback_lang,
         )
 
-    def generate_id(self) -> None:
-        self.id = uuid4()
+    def generate_id(self) -> UUID:
+        return uuid4()
 
     @abstractmethod
     def compile(self) -> None:
@@ -139,13 +150,13 @@ class BaseNode(Generic[S], ABC):
 
     @property
     def is_llm_node(self) -> bool:
-        return self.kind == "LLMNode"
+        return self.spec.kind == "LLMNode"
 
     @property
     def is_tool_node(self) -> bool:
-        return self.kind == "ToolNode"
+        return self.spec.kind == "ToolNode"
 
-    def print_spec(self, raw: bool = False) -> None:
+    def print_spec(self, initial: bool = False) -> None:
         """
         Print the tool node specification in YAML format.
         Args:
@@ -157,17 +168,14 @@ class BaseNode(Generic[S], ABC):
 
         yaml_spec = StringIO()
 
-        if raw:
-            to_dump = _preserve_multiline_strings(self.declaration)
+        if initial:
+            to_dump = _preserve_multiline_strings(self._initial_data)
         else:
-            if not self.spec or not isinstance(self.spec, BaseModel):
-                raise LimanError("Node specification is not compiled yet.")
             to_dump = _preserve_multiline_strings(
                 self.spec.model_dump(exclude_none=True)
             )
 
         yaml.dump(to_dump, yaml_spec)
-
         syntax = Syntax(
             yaml_spec.getvalue(),
             "yaml",

@@ -8,13 +8,12 @@ from liman_core.tool_node.node import ToolNode
 
 
 def make_tool_node(
-    declaration: dict[str, Any],
+    data: dict[str, Any],
     default_lang: LanguageCode = "en",
     fallback_lang: LanguageCode = "en",
 ) -> ToolNode:
-    return ToolNode(
-        name=declaration["name"],
-        declaration=declaration,
+    return ToolNode.from_dict(
+        data,
         default_lang=default_lang,
         fallback_lang=fallback_lang,
     )

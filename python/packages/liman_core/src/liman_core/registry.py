@@ -6,6 +6,12 @@ from liman_core.errors import LimanError
 T = TypeVar("T", bound=BaseNode[Any])
 
 
+class NodeNotFoundError(LimanError):
+    """Raised when a node is not found in the registry."""
+
+    code: str = "node_not_found"
+
+
 class Registry:
     """
     A registry that stores nodes and allows for retrieval by name.
@@ -35,7 +41,7 @@ class Registry:
                 )
             return node
         else:
-            raise LimanError(f"Node with key '{key}' not found in the registry.")
+            raise NodeNotFoundError(f"Node with key '{key}' not found in the registry.")
 
     def add(self, node: BaseNode[Any]) -> None:
         """
@@ -44,7 +50,7 @@ class Registry:
         Args:
             node (BaseNode): The node to add to the registry.
         """
-        key = f"{node.kind}:{node.name}"
+        key = f"{node.spec.kind}:{node.name}"
         if self._nodes.get(key):
             raise LimanError(f"Node with key '{key}' already exists in the registry.")
         self._nodes[key] = node

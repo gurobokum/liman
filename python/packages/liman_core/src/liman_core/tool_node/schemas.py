@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from liman_core.base import BaseSpec
 from liman_core.languages import LocalizedValue
 
 
@@ -12,7 +13,7 @@ class ToolArgument(BaseModel):
     optional: bool = False
 
 
-class ToolNodeSpec(BaseModel):
+class ToolNodeSpec(BaseSpec):
     kind: Literal["ToolNode"] = "ToolNode"
     name: str
     description: LocalizedValue

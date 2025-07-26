@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from collections.abc import Callable
 from functools import reduce
 from importlib import import_module
@@ -17,6 +18,11 @@ from liman_core.tool_node.utils import (
     noop,
     tool_arg_to_jsonschema,
 )
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {name} - {description}
@@ -83,33 +89,25 @@ class ToolNode(BaseNode[ToolNodeSpec]):
     @inject
     def __init__(
         self,
-        name: str,
+        spec: ToolNodeSpec,
         # injections
         registry: FromDishka[Registry],
         *,
-        declaration: dict[str, Any] | None = None,
+        initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
         strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
         super().__init__(
-            name,
-            declaration=declaration,
+            spec,
+            initial_data=initial_data,
             yaml_path=yaml_path,
+            strict=strict,
             default_lang=default_lang,
             fallback_lang=fallback_lang,
         )
-        self.kind = "ToolNode"
 
-        if declaration:
-            self.spec = ToolNodeSpec.model_validate(
-                self.declaration,
-                strict=True,
-                context={"default_lang": self.default_lang},
-            )
-
-        self.strict = strict
         self.registry = registry
         self.registry.add(self)
         self._compiled = False
@@ -132,6 +130,28 @@ class ToolNode(BaseNode[ToolNodeSpec]):
                 ) from e
             self.func = noop
         self._compiled = True
+
+    @classmethod
+    def from_dict(
+        cls,
+        data: dict[str, Any],
+        *,
+        yaml_path: str | None = None,
+        strict: bool = False,
+        default_lang: str = "en",
+        fallback_lang: str = "en",
+    ) -> Self:
+        spec = ToolNodeSpec.model_validate(
+            data, strict=strict, context={"default_lang": default_lang}
+        )
+        return cls(
+            spec=spec,
+            initial_data=data,
+            yaml_path=yaml_path,
+            strict=strict,
+            default_lang=default_lang,
+            fallback_lang=fallback_lang,
+        )
 
     def set_func(self, func: Callable[..., Any]) -> None:
         """
@@ -160,10 +180,8 @@ class ToolNode(BaseNode[ToolNodeSpec]):
         func = self.func
         if asyncio.iscoroutinefunction(func):
             return await func(*args, **kwargs)
-
-        return await asyncio.get_event_loop().run_in_executor(
-            None, func, *args, **kwargs
-        )
+        else:
+            return func(*args, **kwargs)
 
     def get_tool_description(self, lang: LanguageCode) -> str:
         template = self._get_tool_prompt_template(lang)

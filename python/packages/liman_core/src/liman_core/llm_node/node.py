@@ -1,46 +1,22 @@
-from typing import Any, Literal, cast
-from uuid import uuid4
+import sys
+from typing import Any, cast
 
 from dishka import FromDishka
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage, SystemMessage
-from pydantic import BaseModel
+from langchain_core.messages import BaseMessage
 
 from liman_core.base import BaseNode, Output
 from liman_core.dishka import inject
 from liman_core.errors import LimanError
-from liman_core.languages import (
-    LanguageCode,
-    LanguagesBundle,
-    LocalizedValue,
-)
+from liman_core.languages import LanguageCode
+from liman_core.llm_node.schemas import LLMNodeSpec, LLMPrompts, LLMPromptsBundle
 from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
 
-
-class LLMNodeSpec(BaseModel):
-    kind: Literal["LLMNode"] = "LLMNode"
-    name: str
-    prompts: LocalizedValue
-    tools: list[str] = []
-
-
-class LLMPrompts(BaseModel):
-    system: str | None = None
-
-
-class LLMPromptsBundle(LanguagesBundle[LLMPrompts]):
-    def to_system_message(self, lang: LanguageCode) -> SystemMessage:
-        """
-        Convert the prompts for a specific language to a SystemMessage.
-        """
-        if lang not in self.__class__.model_fields:
-            lang = self.fallback_lang
-
-        prompts = getattr(self, lang, None)
-        if not prompts:
-            prompts = getattr(self, self.fallback_lang, None)
-        return SystemMessage(content=prompts.system if prompts else "")
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class LLMNode(BaseNode[LLMNodeSpec]):
@@ -88,8 +64,6 @@ class LLMNode(BaseNode[LLMNodeSpec]):
     """
 
     __slots__ = BaseNode.__slots__ + (
-        "kind",
-        "spec",
         "prompts",
         "registry",
     )
@@ -97,25 +71,24 @@ class LLMNode(BaseNode[LLMNodeSpec]):
     @inject
     def __init__(
         self,
-        name: str,
+        spec: LLMNodeSpec,
         # injections
         registry: FromDishka[Registry],
         *,
-        declaration: dict[str, Any] | None = None,
+        initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
+        strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
         super().__init__(
-            name,
-            declaration=declaration,
+            spec,
+            initial_data=initial_data,
             yaml_path=yaml_path,
             default_lang=default_lang,
             fallback_lang=fallback_lang,
+            strict=strict,
         )
-
-        self.spec = LLMNodeSpec.model_validate(self.declaration, strict=True)
-        self.kind = "LLMNode"
 
         self.registry = registry
         self.registry.add(self)
@@ -127,21 +100,17 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         Args:
             tools (list[ToolNode]): List of ToolNode instances to add.
         """
-        if not isinstance(tools, list):
-            raise TypeError("Tools must be a list of ToolNode instances")
-
         for tool in tools:
             if not isinstance(tool, ToolNode):
                 raise TypeError(f"Expected ToolNode, got {type(tool)}")
             self.spec.tools.append(tool.name)
 
     def compile(self) -> None:
+        if self._compiled:
+            raise LimanError("LLMNode is already compiled")
+
         self._init_prompts()
-
         self._compiled = True
-
-    def generate_id(self) -> None:
-        self.id = uuid4()
 
     def invoke(
         self, llm: BaseChatModel, lang: LanguageCode | None = None, **kwargs: Any
@@ -155,6 +124,11 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         lang: LanguageCode | None = None,
         **kwargs: Any,
     ) -> Output[Any]:
+        if not self._compiled:
+            raise LimanError(
+                "LLMNode must be compiled before invoking. Use `compile()` method."
+            )
+
         lang = lang or self.default_lang
 
         system_message = self.prompts.to_system_message(lang)
@@ -195,11 +169,30 @@ class LLMNode(BaseNode[LLMNodeSpec]):
 
         return output
 
+    @classmethod
+    def from_dict(
+        cls,
+        data: dict[str, Any],
+        *,
+        yaml_path: str | None = None,
+        strict: bool = False,
+        default_lang: str = "en",
+        fallback_lang: str = "en",
+    ) -> Self:
+        spec = LLMNodeSpec.model_validate(data, strict=strict)
+        return cls(
+            spec=spec,
+            initial_data=data,
+            yaml_path=yaml_path,
+            strict=strict,
+            default_lang=default_lang,
+            fallback_lang=fallback_lang,
+        )
+
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(
             {**self.spec.prompts, "fallback_lang": self.fallback_lang}
         )
-
         supported_langs = self.spec.prompts.keys()
         tool_descs: dict[LanguageCode, list[str]] = {k: [] for k in supported_langs}
 
