@@ -1,7 +1,11 @@
 .python-version
 
+__pycache__/
+
 .venv/
 .examples/
+.archive/
+.scripts/
+
 dist/
-__pycache__/
 proto/
