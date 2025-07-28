@@ -1,9 +1,11 @@
 import sys
+from collections.abc import Sequence
 from typing import Any
 
 from dishka import FromDishka
+from langchain_core.messages import BaseMessage
 
-from liman_core.base import BaseNode
+from liman_core.base import BaseNode, Output
 from liman_core.dishka import inject
 from liman_core.errors import LimanError
 from liman_core.node.schemas import NodeSpec
@@ -66,3 +68,17 @@ class Node(BaseNode[NodeSpec]):
             default_lang=default_lang,
             fallback_lang=fallback_lang,
         )
+
+    def invoke(self, inputs: Sequence[BaseMessage], **kwargs: Any) -> Output[Any]:
+        """
+        Invoke method for the Node.
+        """
+        raise NotImplementedError("Node.invoke() is not implemented yet")
+
+    async def ainvoke(
+        self, inputs: Sequence[BaseMessage], **kwargs: Any
+    ) -> Output[Any]:
+        """
+        Asynchronous invoke method for the Node.
+        """
+        raise NotImplementedError("Node.ainvoke() is not implemented yet")

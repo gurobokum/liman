@@ -1,4 +1,5 @@
 import sys
+from collections.abc import Sequence
 from typing import Any, cast
 
 from dishka import FromDishka
@@ -113,14 +114,18 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         self._compiled = True
 
     def invoke(
-        self, llm: BaseChatModel, lang: LanguageCode | None = None, **kwargs: Any
-    ) -> None:
+        self,
+        llm: BaseChatModel,
+        inputs: Sequence[BaseMessage],
+        lang: LanguageCode | None = None,
+        **kwargs: Any,
+    ) -> Output[Any]:
         raise NotImplementedError("LLMNode.invoke() is not implemented yet")
 
     async def ainvoke(
         self,
         llm: BaseChatModel,
-        inputs: list[BaseMessage],
+        inputs: Sequence[BaseMessage],
         lang: LanguageCode | None = None,
         **kwargs: Any,
     ) -> Output[Any]:
