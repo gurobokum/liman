@@ -8,8 +8,13 @@ class LimanError(Exception):
         self, message: str, code: str | int | None = None, **kwargs: Any
     ) -> None:
         super().__init__(message)
-        self.code = code
+        if code:
+            self.code = code
         self.kwargs = kwargs
+
+    def __getattr__(self, item: str) -> Any:
+        """Get attribute or return None if it doesn't exist."""
+        return self.kwargs.get(item, None)
 
 
 class InvalidSpecError(LimanError):
