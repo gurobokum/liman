@@ -13,6 +13,7 @@ dev = [
     "mypy>=1.16.0",
     "poethepoet>=0.35.0",
     "pytest>=8.4.0",
+    "pytest-asyncio>=0.25.0",
     "pytest-cov>=6.2.1",
     "pytest-dotenv>=0.5.2",
     "ruff>=0.11.13",
@@ -38,7 +39,7 @@ protoc = "protoc --python_out=proto/  --proto_path=../proto --pyi_out=proto/ lim
 # https://docs.astral.sh/ruff/configuration
 line-length = 88 # default
 indent-width = 4
-exclude = ["**/examples/" ]
+respect-gitignore = true
 
 [tool.ruff.lint]
 extend-select = ["B", "I", "SIM", "UP"]
@@ -69,7 +70,7 @@ warn_return_any = true
 warn_unused_configs = true
 strict_equality = true
 mypy_path = "$MYPY_CONFIG_FILE_DIR"
-exclude = [".examples/"]
+exclude_gitignore = true
 
 [[tool.mypy.overrides]]
 module = ["wrapt.*"]
