@@ -12,7 +12,7 @@ class LimanError(Exception):
             self.code = code
         self.kwargs = kwargs
 
-    def __getattr__(self, item: str) -> Any:
+    def __getitem__(self, item: str) -> Any:
         """Get attribute or return None if it doesn't exist."""
         return self.kwargs.get(item, None)
 

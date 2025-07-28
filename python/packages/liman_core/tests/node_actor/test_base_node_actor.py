@@ -155,12 +155,12 @@ def test_create_error_helper(test_actor: MockNodeActor) -> None:
 
     assert isinstance(error, NodeActorError)
     assert str(error) == "Test error"
-    assert error.actor_id == test_actor.id
+    assert error["actor_id"] == test_actor.id
     assert error.code == "node_actor_error"
-    assert error.actor_composite_id == test_actor.composite_id
-    assert error.node_kind == "Node"
-    assert error.node_name == "test_node"
-    assert error.execution_id == execution_id
+    assert error["actor_composite_id"] == test_actor.composite_id
+    assert error["node_kind"] == "Node"
+    assert error["node_name"] == "test_node"
+    assert error["execution_id"] == execution_id
 
 
 def test_repr_format(test_actor: MockNodeActor) -> None:
