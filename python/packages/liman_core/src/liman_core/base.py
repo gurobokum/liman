@@ -28,7 +28,7 @@ class BaseSpec(BaseModel):
 S = TypeVar("S", bound=BaseSpec)
 
 
-class Output(Generic[S], BaseModel):
+class Output(BaseModel, Generic[S]):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     response: BaseMessage
@@ -147,6 +147,12 @@ class BaseNode(Generic[S], ABC):
         Compile the node. This method should be overridden in subclasses to implement specific compilation logic.
         """
         ...
+
+    @abstractmethod
+    def invoke(self, *args: Any, **kwargs: Any) -> Output[Any]: ...
+
+    @abstractmethod
+    async def ainvoke(self, *args: Any, **kwargs: Any) -> Output[Any]: ...
 
     @property
     def is_llm_node(self) -> bool:
