@@ -1,80 +1,81 @@
-# Liman (WIP)
+# Liman
 
 [![Docs](https://img.shields.io/badge/docs-read-brightgreen?logo=nextdotjs)](https://liman-ai.vercel.app/docs/poc)
-
-**Socials**
-
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/rmucxEzSyY?compact=true&style=flat)](https://discord.gg/rmucxEzSyY) [![X Follow](https://img.shields.io/twitter/follow/liman_ai?style=social)](https://x.com/liman_ai)
 
-**Declarative AgentOps framework for building composable AI agents.**
+Declarative framework for building composable AI agents using YAML manifests and node-based architecture.
 
-> ⚠️ **Note:** This repository is in the early design phase.  
-> It serves as a foundation for developing the Liman framework.  
-> Follow the repo to stay updated as development progresses!
+> ⚠️ **Warning:** This project is in active development and not ready for production use.
 
-- [ ] **🧠 Declarative agent design** — define agents, tools, workflows via simple YAML.
-- [ ] **📊 Built-in observability** — OpenTelemetry support out of the box.
-- [ ] **🌐 OpenAPI parsing** — generate agents automatically from OpenAPI specifications.
-- [ ] **🔁 Multi-runtime** — Python & Go support for execution.
-- [ ] **🧱 Composable architecture** — modular nodes and chains like LangGraph.
+## Features
 
-## Design philosophy
+- **Declarative YAML Configuration**: Define agents using simple YAML manifests
+- **Multi-language Support**: Built-in localization for prompts and descriptions
+- **Node-based Architecture**: Compose workflows from LLM, Tool, and custom nodes
+- **Edge DSL**: Connect nodes with conditional expressions and function references
+- **OpenAPI Integration**: Auto-generate tools from OpenAPI specifications
+- **Built-in Observability**: OpenTelemetry support with FinOps tracking
+- **Multi-runtime**: Python implementation (Go planned)
 
-Liman is similar to Kubernetes manifests and Kustomize-style overlays:
+## Architecture
 
-- Define your agents declaratively, just like Kubernetes manifests.
-- Layer configurations with overlays to adapt agents to different environments and languages.
-- Compose reusable building blocks — tools, LLMs, workflows — in a modular, pluggable way.
+Liman represents AI agents as graphs of interconnected nodes, similar to Kubernetes manifests with Kustomize-style overlays:
 
-## Declaration
+- **LLMNode**: Wraps LLM requests with system prompts and tool integration
+- **ToolNode**: Defines function calls for LLM tool integration
+- **Node**: Custom logic nodes for complex workflows
+- **Edges**: Connect nodes with conditional execution using custom DSL
+
+## Quick Start
 
 ```yaml
 kind: LLMNode
-name: StartNode
+name: assistant
 prompts:
   system:
-    en: |
-      You are a helpful agent that can answer questions about the weather.
-    es: |
-      Eres un agente útil que puede responder preguntas sobre el clima.
-  tools:
-    - GetWeather
-
+    en: You are a helpful assistant.
+    es: Eres un asistente útil.
+tools:
+  - calculator
+nodes:
+  - target: analyzer
+    when: "result == 'success'"
+---
 kind: ToolNode
-name: GetWeather
+name: calculator
 description:
-  en: Get current weather information
-  es: Obtiene información actual del clima
-func: mypackage.get_weather
+  en: Performs mathematical calculations
+func: my_module.calculate
 arguments:
-  - name: latitude
-    type: float
+  - name: expression
+    type: str
     description:
-      en: Latitude of the location
-      es: Latitud de la ubicación
-  - name: longitude
-    type: float
-    description:
-      en: Longitude of the location
-      es: Longitud de la ubicaciónk
-triggers:
-  en:
-    - What is the weather in {latitude}, {longitude}?
-    - What is the temperature in {latitude}, {longitude}?
-  es:
-    - ¿Cuál es el clima en {latitude}, {longitude}?
-    - ¿Cuál es la temperatura en {latitude}, {longitude}?
-tool_prompt_template:
-  en: |
-    {name} - {description}
-    Examples:
-      {triggers}
-  es: |
-    {name} - {description}
-    Ejemplos:
-      {triggers}
+      en: Mathematical expression to evaluate
 ```
 
-## Papers
+## Development
 
-- [arxiv: A Survey of AI Agent Protocols](https://arxiv.org/abs/2504.16736)
+### Python
+
+```bash
+# Install dependencies
+pip install -e python/packages/liman_core
+
+# Development commands
+cd python
+poe -C packages/liman_core format
+poe -C packages/liman_core lint
+poe -C packages/liman_core test
+poe -C packages/liman_core mypy
+```
+
+## Packages
+
+- **liman_core**: Core library with node types and YAML processing
+- **liman_finops**: OpenTelemetry instrumentation and cost tracking
+- **liman_openapi**: OpenAPI to ToolNode generation
+
+## Resources
+
+- [📖 Documentation](https://liman-ai.vercel.app/docs/poc)
+- [🔧 Specification](https://liman-ai.vercel.app/docs/specification/node)
