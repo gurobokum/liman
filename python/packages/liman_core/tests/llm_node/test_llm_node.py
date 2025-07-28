@@ -23,12 +23,6 @@ INVALID_YAML = {
     "kind": "LLMNode",
 }
 
-INVALID_YAML_IMPRPOER_KIND = {
-    "kind": "InvalidNodeKind",
-    "name": "StartNode",
-    "prompts": {"system": {"en": "You are a helpful assistant."}},
-}
-
 
 def test_llmnode_parses_style_1() -> None:
     node = LLMNode.from_dict(YAML_STYLE_1)
