@@ -19,7 +19,8 @@
   ],
   "packages": {
     "go": {
-      "release-type": "go"
+      "release-type": "go",
+      "label": "go"
     },
     "python/packages/liman_core": {
       "component": "liman_core",
@@ -27,7 +28,7 @@
       "release-type": "simple",
       "version-file": "VERSION",
       "release-as": "0.1.0",
-      "label": ["python"]
+      "label": "python"
     },
     "python/packages/liman_finops": {
       "component": "liman_finops",
@@ -35,7 +36,7 @@
       "release-type": "simple",
       "version-file": "VERSION",
       "release-as": "0.1.0",
-      "label": ["python"]
+      "label": "python"
     },
     "python/packages/liman_openapi": {
       "component": "liman_openapi",
@@ -43,13 +44,13 @@
       "release-type": "simple",
       "version-file": "VERSION",
       "release-as": "0.1.0",
-      "label": ["python"]
+      "label": "python"
     },
     "typescript/packages/liman_core": {
       "component": "liman_core_ts",
       "pull-request-title-pattern": "release_ts(liman_core): ${version}",
       "release-type": "node",
-      "label": ["typescript"]
+      "label": "typescript"
     }
   }
 }
