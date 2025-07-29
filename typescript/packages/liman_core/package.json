@@ -1,0 +1,11 @@
+{
+  "name": "@liman/core",
+  "version": "0.1.0",
+  "description": "Liman AgentOps Core Library",
+  "packageManager": "pnpm@10.11.1",
+  "main": "index.js",
+  "scripts": {},
+  "keywords": [],
+  "author": "Guro Bokum <jiojiajiu@gmail.com>",
+  "license": "MIT"
+}

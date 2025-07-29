@@ -1,0 +1,14 @@
+{
+  "name": "@liman/ts-monorepo",
+  "version": "0.1.0",
+  "description": "Liman TS Monorepo",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.11.1",
+  "scripts": {},
+  "keywords": [],
+  "author": "Guro Bokum <jiojiajiu@gmail.com>",
+  "license": "MIT"
+}
