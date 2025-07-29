@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { Anchor } from "lucide-react";
+import { AlbumIcon, Anchor, Book } from "lucide-react";
 
 /**
  * Shared layout configurations
@@ -18,6 +18,19 @@ export const baseOptions: BaseLayoutProps = {
     ),
   },
   // see https://fumadocs.dev/docs/ui/navigation/links
-  links: [],
+  links: [
+    {
+      text: "Docs",
+      url: "/docs/poc",
+      icon: <Book />,
+      active: "nested-url",
+    },
+    {
+      text: "Blog",
+      url: "/blog",
+      icon: <AlbumIcon />,
+      active: "nested-url",
+    },
+  ],
   githubUrl: "https://github.com/gurobokum/liman",
 };
