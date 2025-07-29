@@ -17,3 +17,8 @@ export const RuTelegram = {
   title: "Telegram (RU)",
   url: "https://t.me/liman_ai",
 };
+
+export const Liman = {
+  title: "Liman AI",
+  url: "https://liman-ai.vercel.app",
+};
