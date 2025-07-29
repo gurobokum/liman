@@ -6,10 +6,13 @@
   "changelog-sections": [
     { "type": "feat", "section": "✨ Features" },
     { "type": "feat_py", "section": "✨ Features" },
+    { "type": "feat_ts", "section": "✨ Features" },
     { "type": "fix", "section": "🐛 Bug Fixes" },
     { "type": "fix_py", "section": "🐛 Bug Fixes" },
+    { "type": "fix_ts", "section": "🐛 Bug Fixes" },
     { "type": "refactor", "section": "🛠 Code Refactoring" },
     { "type": "refactor_py", "section": "🛠 Code Refactoring" },
+    { "type": "refactor_ts", "section": "🛠 Code Refactoring" },
     { "type": "perf", "section": "🚀 Performance Improvements" },
     { "type": "docs", "section": "📚 Documentation" },
     { "type": "test", "section": "♻️ Tests" }
@@ -23,21 +26,30 @@
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0"
+      "release-as": "0.1.0",
+      "label": ["python"]
     },
     "python/packages/liman_finops": {
       "component": "liman_finops",
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0"
+      "release-as": "0.1.0",
+      "label": ["python"]
     },
     "python/packages/liman_openapi": {
       "component": "liman_openapi",
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0"
+      "release-as": "0.1.0",
+      "label": ["python"]
+    },
+    "typescript/packages/liman_core": {
+      "component": "liman_core_ts",
+      "pull-request-title-pattern": "release_ts(liman_core): ${version}",
+      "release-type": "node",
+      "label": ["typescript"]
     }
   }
 }
