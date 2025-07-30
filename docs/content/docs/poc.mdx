@@ -17,7 +17,7 @@ import Link from "fumadocs-core/link";
     </span>
     <span className="block">
       <span className="mr-1">Last updated:</span>
-      <time dateTime="2025-07-17">17/07/2025</time>
+      <time dateTime="2025-07-17">30/07/2025</time>
     </span>
   </p>
 </Callout>
@@ -48,7 +48,7 @@ This entire structure is defined in a **YAML manifest file** (JSON is also suppo
 
 This declarative methodology enables the creation of **language-agnostic AI Agents**. The agent's logic is defined solely in the manifest, allowing its underlying implementation to be in any programming language. Think of it like OpenAPI specifications with custom code generation: the manifest can be used to generate code in various languages such as Python, JavaScript, Go, and others.
 
-Liman currently supports three primary Node types: `LLMNode`, `ToolNode`, and `CustomNode`.
+Liman currently supports three primary Node types: `LLMNode`, `ToolNode`, and `Node`.
 
 ### LLMNode
 
@@ -240,3 +240,231 @@ Supported tools: // [!code ++]
 ```
 
 This automatic integration also applies to other languages, ensuring consistent prompt enhancement across all supported locales.
+
+## OpenAPI → ToolNode Generation
+
+One of Liman's powerful features is the ability to automatically generate `ToolNode` definitions from OpenAPI specifications. This means your existing REST APIs can become AI agent tools without writing custom integration code.
+
+When developing chat systems, many organizations already have REST APIs that could be useful as tools. OpenAPI specifications contain all the needed information to generate a `ToolNode` and make it available to the agent.
+
+### Automatic Conversion
+
+Here's how a simple OpenAPI endpoint gets converted. Given this OpenAPI specification:
+
+```yaml
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      summary: Get user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The user's unique identifier
+      responses:
+        "200":
+          description: User information
+```
+
+It automatically becomes this `ToolNode`:
+
+```yaml
+kind: ToolNode
+name: OpenAPI__GetUserById
+description:
+  en: Get user by ID
+func: liman_openapi.gen.id_4341576960.getUserById # Auto-generated function by SDK
+arguments:
+  - name: userId
+    type: str
+    required: true
+    description:
+      en: The user's unique identifier
+```
+
+### Extending Generated Tools
+
+The generated `ToolNode` can be extended using overlays to add additional functionality:
+
+```yaml
+kind: Overlay
+to: ToolNode:OpenAPI__GetUserById
+strategy: merge
+nodes:
+  - target: OpenAPIErrorHandler
+    when: status_code != 200
+```
+
+This approach eliminates the need to manually create MCP servers or write custom tool definitions, significantly accelerating the development of AI agents that integrate with existing APIs.
+
+## NodeActor Architecture
+
+In Liman, **every node is executed by its own dedicated NodeActor** with limited scope and authorization. This isolation ensures security, resource control, and fault tolerance across distributed agent systems.
+Each node runs within its own execution context, similar to how containers isolate processes in containerized environments. The **NodeActor** is an internal component that wraps each node's execution.
+
+### Authorization Scoping
+
+Each **NodeActor** operates with **minimal required permissions** defined at the node level. The authorization system is built around **role assumption** and **credential provisioning** to ensure secure access to external resources.
+
+#### ActorNode Role Assumption
+
+When a **NodeActor** needs to execute a node, it can **assume specific roles** required for that operation. This follows the principle of least privilege - each node only gets the permissions it absolutely needs.
+
+For example, a user lookup tool would only assume a "user-data-reader" role with read permissions for user data, while a ticket creation tool would assume a "ticket-creator" role with write permissions only for the ticketing system.
+
+#### CredentialsProvider Integration
+
+The **CredentialsProvider** is responsible for supplying the necessary credentials when a **NodeActor** assumes a role. This abstraction allows for flexible credential management across different environments and services.
+
+For OpenAPI calls, the **CredentialsProvider** automatically provides the appropriate authentication headers based on the assumed role and target service.  
+For example, when a **ToolNode** makes an OpenAPI call to retrieve user data, the **NodeActor** assumes the "user-data-reader" role, and the **CredentialsProvider** automatically injects the required Bearer token into the HTTP request headers.
+
+#### Dynamic Credential Resolution
+
+The **CredentialsProvider** resolves credentials dynamically based on the assumed role and target service:
+
+- **API calls**: Provides Bearer tokens, API keys, or OAuth credentials
+- **Cloud services**: Delivers service account tokens or IAM role credentials
+
+This approach ensures that sensitive credentials are never hardcoded in manifests and are only provided to **NodeActors** that have explicitly assumed the necessary roles.
+
+## CE DSL: Condition Expression Language
+
+One of Liman's most powerful features is **CE DSL (Condition Expression Domain Specific Language)** - a custom language for defining intelligent flow control between nodes. Rather than writing repetitive conditional logic in code, you can express complex routing decisions declaratively in YAML.
+
+### Declarative Flow Control
+
+CE DSL allows you to define when transitions between nodes should occur using expressive conditional statements:
+
+```yaml
+nodes:
+  # Simple condition
+  - target: SuccessHandler
+    when: status == 'complete'
+
+  # Complex logical expressions
+  - target: RetryHandler
+    when: failed and (retry_count < 3 or priority == 'high')
+
+  # Function references for custom logic
+  - target: CustomValidator
+    when: business_rules.validate_transaction
+
+  # Built-in functions
+  - target: ErrorHandler
+    when: $is_error('UnauthorizedError') or $is_error('TimeoutError')
+
+  # Context-aware routing
+  - target: HighPriorityPath
+    when: user.tier == 'enterprise' and (urgent == true or customer_complaint == true)
+```
+
+### Supported Operators and Functions
+
+CE DSL provides a rich set of operators and built-in functions:
+
+#### Comparison Operators
+
+- `==`, `!=`: Equality and inequality
+- `>`, `<`, `>=`, `<=`: Numerical comparisons
+- String and type-aware comparisons
+
+#### Logical Operators
+
+- `and` / `&&`: Logical AND
+- `or` / `||`: Logical OR
+- `not` / `!`: Logical NOT
+- Parentheses for grouping: `(condition1 and condition2) or condition3`
+
+#### Built-in Functions
+
+- `$is_error(error_type)`: Check for specific error types
+- `$now()`: Current timestamp for time-based conditions
+
+#### Function References
+
+CE DSL can call external functions for complex business logic:
+
+```yaml
+nodes:
+  - target: ApprovalRequired
+    when: business_rules.requires_approval
+  - target: AutoProcess
+    when: validation.is_safe_transaction
+```
+
+### Context Variables
+
+CE DSL has access to rich context information:
+
+- **Node Results**: Access outputs from previous nodes
+- **User Data**: User profile, permissions, session information
+- **System State**: Current system status, configuration values
+- **Request Context**: Incoming request data, headers, metadata
+
+### Expression Evaluation
+
+CE DSL expressions are evaluated at runtime with full access to the current execution context. This allows for dynamic routing based on:
+
+- **Data-driven decisions**: Route based on content analysis
+- **User-specific flows**: Different paths for different user types
+- **Error handling**: Sophisticated error recovery strategies
+
+This approach transforms static agent definitions into dynamic, intelligent systems that can adapt their behavior based on runtime conditions and context.
+
+## Executor
+
+The **Executor** is the orchestration engine that processes agent graphs. It intelligently manages execution across different models - from single-threaded to fully distributed systems - while traversing edges using CE DSL conditions.
+
+### Execution Modes
+
+The Executor supports flexible execution approaches:
+
+- **Single Node Execution**: Execute specific nodes in isolation for testing or partial workflows
+- **Full Graph Traversal**: Process entire agent graphs following CE DSL edge conditions
+- **Subgraph Execution**: Start execution from any node for workflow resumption
+
+### Intelligent Concurrency
+
+The Executor adapts to different performance requirements and can run nodes in various modes:
+
+- **Threaded**: Nodes run in separate threads for I/O-bound operations with shared memory
+- **Asynchronous**: High-concurrency execution using async/await patterns for efficient resource utilization
+- **Process-based**: Complete isolation with nodes in separate processes for CPU-intensive tasks
+- **Distributed**: Nodes execute across machines, containers, or cloud functions for unlimited scalability
+
+### Parallel Execution & Synchronization
+
+The Executor supports sophisticated parallel execution patterns:
+
+- **Fan-out**: Automatically launch multiple nodes in parallel when CE DSL conditions allow concurrent execution
+- **Dependency Management**: Track node dependencies and ensure execution order compliance
+- **Sink Operations**: Wait for all parallel branches to complete before proceeding to dependent nodes
+- **Selective Synchronization**: Continue execution as soon as required dependencies finish, without waiting for all parallel branches
+
+This enables complex execution patterns where independent operations run concurrently while dependent operations wait for their prerequisites to complete.
+
+### Smart Edge Traversal
+
+The Executor uses CE DSL to intelligently determine execution paths, evaluating conditions at runtime based on node results, context, and system state.
+
+### Built-in Resilience
+
+- **Fault Isolation**: Node failures don't crash the entire graph
+- **Retry Policies**: Configurable retry logic for transient failures
+- **Circuit Breakers**: Prevent cascading failures in distributed scenarios
+- **Graceful Degradation**: Continue execution when non-critical nodes fail
+
+This intelligent execution model allows Liman agents to scale seamlessly from simple applications to complex distributed systems while maintaining consistent behavior and comprehensive observability.
+
+---
+
+<Callout type="info" title="To Be Continued...">
+This specification is actively being developed. More sections covering advanced features, implementation details, and practical examples will be added soon.
+
+Stay tuned for updates on distributed state management, plugin architecture, observability patterns, and real-world deployment scenarios.
+
+</Callout>
