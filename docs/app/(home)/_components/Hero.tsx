@@ -28,7 +28,10 @@ export default function Hero() {
 
       <div className="container mx-auto px-4 text-center relative z-10">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="flex justify-center my-4 md:mt-0 md:mb-8">
+          <div className="flex flex-col items-center gap-2 my-4 md:mt-0 md:mb-8">
+            <Badge variant="destructive" className="animate-pulse">
+              ⚠️ In Development - Not Ready for Production
+            </Badge>
             <HeroBadge url="/docs/poc">Checkout the POC</HeroBadge>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight text-foreground">
