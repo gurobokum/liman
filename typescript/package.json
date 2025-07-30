@@ -7,16 +7,20 @@
     "node": ">=20"
   },
   "packageManager": "pnpm@10.11.1",
-  "scripts": {},
+  "scripts": {
+    "liman_core:lint": "pnpm -F @liman/core lint"
+  },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@eslint/json": "^0.13.1",
+    "@eslint/markdown": "^7.1.0",
     "eslint": "^9.32.0",
     "globals": "^16.3.0",
     "jiti": "^2.5.1",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0"
   }
 }
