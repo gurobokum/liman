@@ -8,7 +8,8 @@
   },
   "packageManager": "pnpm@10.11.1",
   "scripts": {
-    "liman_core:lint": "pnpm -F @liman/core lint"
+    "liman_core:lint": "pnpm -F @liman/core lint",
+    "liman_core:format:check": "pnpm -F @liman/core format:check"
   },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",

@@ -5,7 +5,9 @@
   "packageManager": "pnpm@10.11.1",
   "scripts": {
     "build": "tsc --build",
-    "lint": "eslint --max-warnings=0 ."
+    "lint": "eslint --max-warnings=0 .",
+    "format": "prettier --write '**/*.{ts,js,json,md}'",
+    "format:check": "pnpm format --check"
   },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",
@@ -14,9 +16,12 @@
     "@eslint/js": "^9.32.0",
     "@eslint/json": "^0.13.1",
     "@eslint/markdown": "^7.1.0",
+    "base": "link:packages/liman_core/base",
     "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
     "jiti": "^2.5.1",
+    "prettier": "^3.6.2",
     "typescript-eslint": "^8.38.0"
   }
 }
