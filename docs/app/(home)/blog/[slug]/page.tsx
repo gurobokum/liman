@@ -8,6 +8,7 @@ import { FaXTwitter, FaLinkedin } from "react-icons/fa6";
 import path from "node:path";
 
 import { blog } from "@/src/lib/source";
+import { getMDXComponents } from "@/src/mdx-components";
 import { createMetadata } from "@/src/lib/metadata";
 import { buttonVariants } from "@/src/components/ui/button";
 
@@ -49,7 +50,7 @@ export default async function Page(props: {
       <article className="container flex flex-col px-0 py-8 lg:flex-row lg:px-4">
         <div className="prose min-w-0 flex-1 p-4">
           <InlineTOC items={toc} />
-          <Mdx />
+          <Mdx components={getMDXComponents()} />
         </div>
         <div className="flex flex-col gap-4 border-l p-4 text-sm lg:w-[250px]">
           <div>

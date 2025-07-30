@@ -1,0 +1,276 @@
+---
+title: Liman Introduction
+description: Declarative YAML Agentic framework with Custom DSL
+
+author: Guro Bokum
+authorTwitterUrl: https://x.com/gurobokum
+authorGithubUrl: https://github.com/gurobokum
+authorGravatarUrl: https://www.gravatar.com/avatar/68c8c4b26df92def3625206cd301c308618a27bd73e23bc2058bd00e9994ccdb
+authorLinkedInUrl: https://www.linkedin.com/in/gurobokum
+
+date: 2025-07-30
+---
+
+Building AI agents today feels like reinventing the wheel every time. Each team creates their own abstractions, their own flow control mechanisms, and their own ways to connect LLMs with tools.
+What if there was a better way?
+While building AI agents, I came to specific design decisions. I decided to gather them in a library and share with the community.
+
+## The Motivation: Beyond Code-First Agent Development
+
+The solution? **Declarative configuration over imperative code.**
+
+I was thinking: is it possible to define AI agents with simple YAML specifications? Can these be executed by any programming language while handling general tasks and providing a standardized design for sharing efficient solutions?
+
+Think of how [OpenAPI](https://www.openapis.org/) revolutionized API development. Instead of documenting APIs in code comments, **OpenAPI** provides a language-agnostic specification that generates client libraries, documentation, and tooling across multiple languages. Liman does the same for AI agents.
+
+The core idea behind Liman is to define agent structures using manifests that incorporate basic, reusable components. These components are easily pluggable.
+
+I emphasize a declarative approach through YAML manifests, similar to Kubernetes.
+This is similar to [Promptflow](https://microsoft.github.io/promptflow/how-to-guides/quick-start.html#model-a-llm-call-with-a-prompty) or [CrewAI](https://docs.crewai.com/en/quickstart) solutions but with a focus on standardization and reusability across different programming languages.
+It includes an overlay feature ([like kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays)) for flexible configuration and extension.
+
+Liman represents AI Agents as a Graph of Nodes, similar to frameworks like [LangGraph](https://langchain-ai.github.io/langgraph/concepts/low_level/). In this graph:
+
+- Each Node acts as a computational unit with its own configuration and behavior. It is described at the top level with YAML, while custom documentation can be provided based on the language you use.
+- Edges define the flow of data between these nodes using a custom CE (conditional expression) DSL.
+
+## The YAML-First Approach
+
+We can define a node that has its own scope and actor that executes it with specified permissions and settings.
+
+```yaml title="llm_node.yaml"
+kind: LLMNode
+name: Assistant
+prompts:
+  system:
+    en: You are a helpful customer service assistant.
+    es: Eres un asistente útil de atención al cliente.
+tools:
+  - GetUserAccount
+  - CreateTicket
+nodes:
+  - target: ShowError
+    when: $is_error("UnauthorizedError") or $is_error("TimeoutError")
+  - target: CreateTicket
+    when: create_ticket == true
+```
+
+```yaml title="tool_node.yaml"
+kind: ToolNode
+name: GetUserAccount
+description:
+  en: Retrieves user account information by ID
+func: customer_service.get_user_account
+arguments:
+  - name: user_id
+    type: str
+    description:
+      en: Unique identifier for the user account
+triggers:
+  en:
+    - "Get user {user_id}"
+    - "Show me account {user_id}"
+    - "What's the status of user {user_id}?"
+```
+
+This manifest defines components that should be extended by plugins and realized with supported SDKs. At this moment I'm mostly developing it with Python, but in parallel I'm working on Go and TypeScript SDKs.
+
+### Three Node Types for Every Use Case
+
+Liman provides three fundamental building blocks:
+
+**LLMNode**: Wraps interactions with Large Language Models, handling prompts, tool integration, and response processing.
+
+**ToolNode**: Defines function calls for LLM tool integration.
+
+**Node**: Custom business logic that doesn't fit the other categories—data processing, external API calls, complex decision trees.
+
+## LanguageBundle: Internationalization Built-In
+
+One of Liman's features is **LanguageBundle**—built-in i18n support for all text content:
+
+```yaml
+prompts:
+  system:
+    en: You are a helpful assistant.
+    ru: Ты полезный помощник.
+    de: Du bist ein hilfreicher Assistent.
+  validation_rules:
+    en: |
+      Validate the following data:
+      - Email must be valid
+      - Age between 18-120
+    es: |
+      Valida los siguientes datos:
+      - El email debe ser válido
+      - Edad entre 18-120
+```
+
+The system automatically:
+
+- Falls back to default language when translations are missing
+- Supports template variables: `{user_name}` works across all languages
+- Generates localized tool descriptions for [better LLM accuracy](https://composio.dev/blog/gpt-4-function-calling-example)
+- Handles nested localization structures
+
+This isn't just about user-facing text. **Localized system prompts and tool descriptions significantly improve LLM accuracy** when working with multilingual data or serving global users.
+
+## Overlay Mechanism: Configuration Without Duplication
+
+Liman includes an overlay system inspired by [Kubernetes kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#bases-and-overlays). Instead of duplicating manifests for different environments and making them huge and hard to support, you define base configurations and apply targeted overlays:
+
+```yaml title="base_agent.yaml"
+kind: LLMNode
+name: Assistant
+prompts:
+  system:
+    en: You are a helpful assistant.
+tools:
+  - Calculator
+```
+
+```yaml title="overlays/prod.yaml"
+kind: Overlay
+to: LLMNode:assistant
+strategy: merge
+prompts:
+  system:
+    en: |
+      You are a helpful production assistant.
+      Follow strict security protocols.
+tools:
+  - Calculator
+  - SecurityValidator
+  - AuditLogger
+```
+
+You can extend your Node with additional properties or plugins. I've found this useful for managing localization.
+
+```
+specs/
+└── start_node/
+    ├── llm_node.yaml
+    └── langs/
+            ├── en.yaml
+            ├── es.yaml
+            └── de.yaml
+```
+
+## DSL CE: Intelligent Flow Control
+
+The most powerful feature of Liman is **DSL CE (Condition Expression)** - a custom domain-specific language for defining how nodes connect and when transitions occur.
+Rather than writing repeating conditional logic in code (which is hard to maintain), you can express it declaratively in YAML based on built-in functions and state.
+
+```yaml
+nodes:
+  # Simple condition
+  - target: SuccessHandler
+    when: status == 'complete'
+
+  # Complex logical expressions
+  - target: RetryHandler
+    when: failed and (retry_count < 3 or priority == 'high')
+
+  # Function references for custom logic
+  - target: CustomValidator
+    when: business_rules.validate_transaction
+
+  # Built-in functions
+  - target: ErrorHandler
+    when: $is_error('UnauthorizedError') or $is_error('TimeoutError')
+
+  # Context-aware routing
+  - target: HighPriorityPath
+    when: user.tier == 'enterprise' and (urgent == true or customer_complaint == true)
+```
+
+DSL CE supports:
+
+- **Rich comparison operators**: `==`, `!=`, `>`, `<`, `>=`, `<=`
+- **Logical operators**: `and`/`&&`, `or`/`||`, `not`/`!`
+- **Function references**: Call external functions for complex logic
+- **Built-in functions**: `$is_error()`, `$now()` for common operations
+- **Context variables**: Access node results, user data, system state
+- **Parentheses for grouping**: Complex expressions with proper precedence
+
+## OpenAPI Integration: Tools Without Custom Code
+
+One feature I wanted to have is the ability to automatically generate ToolNodes from OpenAPI specifications. This means your existing REST APIs can become AI agent tools without writing custom integration code. While developing a chat system for my company, I found that we have many REST APIs that could be used as tools. OpenAPI spec contains all the needed information to generate a ToolNode and make it available to the agent.
+
+Here's how a simple OpenAPI endpoint gets converted:
+
+```yaml title="openapi.yaml"
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUserById
+      summary: Get user by ID
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The user's unique identifier
+      responses:
+        "200":
+          description: User information
+```
+
+Automatically becomes this ToolNode:
+
+```yaml
+kind: ToolNode
+name: OpenAPI__GetUserById
+description:
+  en: Get user by ID
+func: liman_openapi.gen.id_4341576960.getUserById # Auto-generated function by sdk
+arguments:
+  - name: userId
+    type: str
+    required: true
+    description:
+      en: The user's unique identifier
+```
+
+Which you can later extend with `Overlay`:
+
+```yaml title="overlay.yaml"
+kind: Overlay
+to: ToolNode:OpenAPI__GetUserById
+strategy: merge
+nodes:
+  - target: OpenAPIErrorHandler
+    when: status_code != 200
+```
+
+## Beyond Traditional Frameworks
+
+Liman goes further than existing solutions with features that matter for production deployments:
+
+- **Built-in Authorization**: Service account support with role assumption at the node level. Fine-grained access control for distributed agent components.
+
+- **Observability by Default**: OpenTelemetry integration and FinOps tracking built-in. Monitor token usage, costs, and performance across your entire agent fleet.
+
+- **Distributed Execution**: Nodes can run in different processes, threads, containers, or cloud functions. Connect them via MCP, HTTP, WebSocket, queues or any others.
+
+- **Customizable State**: Nodes and workflows can maintain their own state, allowing for complex multi-step interactions without losing context.
+
+- **Plugin system**: A plugin system like [Kubernetes CRD](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/). This will allow you to extend the framework with your own specs.
+
+## Postscriptum
+
+That's the idea I'm working on. I'm mostly focused on tuning solutions in Python, but also developing Go and TypeScript SDKs. The goal is to provide a framework that allows developers to build AI agents without reinventing the wheel every time, while being flexible enough for their own use cases. It also allows sharing pre-built agent packages with the community.
+
+This framework is in a very early stage, but I'd like to share the idea and get feedback from the community. If you have any suggestions, ideas, or want to contribute, feel free to reach out.
+
+---
+
+import { ThumbsUp } from "lucide-react";
+
+<Callout type="info" title="Like what you've read?" icon={<ThumbsUp className="h-4 w-4 mt-0.5"/>}>
+If you find Liman's approach to declarative AI agents interesting, feel free to give it a ⭐ on [GitHub](https://github.com/gurobokum/liman). It helps others discover the project.
+
+Your feedback and contributions are always welcome!
+
+</Callout>
