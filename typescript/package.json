@@ -8,6 +8,8 @@
   },
   "packageManager": "pnpm@10.11.1",
   "scripts": {
+    "lint": "pnpm liman_core:lint",
+    "format:check": "pnpm liman_core:format:check",
     "liman_core:lint": "pnpm -F @liman/core lint",
     "liman_core:format:check": "pnpm -F @liman/core format:check"
   },

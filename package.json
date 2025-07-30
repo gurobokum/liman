@@ -17,7 +17,9 @@
     "python:typing": "cd python && uv run poe typing",
     "commitlint:type": "commitlint --print-config json | jq '.rules.\"type-enum\"[2]'",
     "commitlint:scope": "commitlint --print-config json | jq '.rules.\"scope-enum\"[2]'",
-    "scripts:list": "cat package.json | jq -r '\"package_name: \\(.name)\\n\\n\\(.scripts | to_entries[] | \"- \\(.key)\")\"'"
+    "scripts:list": "cat package.json | jq -r '\"package_name: \\(.name)\\n\\n\\(.scripts | to_entries[] | \"- \\(.key)\")\"'",
+    "typescript:lint": "cd typescript && pnpm lint",
+    "typescript:format:check": "cd typescript && pnpm format:check"
   },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",
