@@ -1,5 +1,7 @@
 # Liman
 
+### [Proof of Concept](https://www.liman-ai.dev/docs/poc)
+
 [![Docs](https://img.shields.io/badge/docs-read-brightgreen?logo=nextdotjs)](https://liman-ai.vercel.app/docs/poc)
 [![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/rmucxEzSyY?compact=true&style=flat)](https://discord.gg/rmucxEzSyY) [![X Follow](https://img.shields.io/twitter/follow/liman_ai?style=social)](https://x.com/liman_ai)
 
@@ -26,7 +28,7 @@ Liman represents AI agents as graphs of interconnected nodes, similar to Kuberne
 - **Node**: Custom logic nodes for complex workflows
 - **Edges**: Connect nodes with conditional execution using custom DSL
 
-## Quick Start
+## Example
 
 ```yaml
 kind: LLMNode
@@ -39,7 +41,7 @@ tools:
   - calculator
 nodes:
   - target: analyzer
-    when: "result == 'success'"
+    when: result == "success"
 ---
 kind: ToolNode
 name: calculator
@@ -51,29 +53,19 @@ arguments:
     type: str
     description:
       en: Mathematical expression to evaluate
+---
+kind: Node
+name: analyzer
+func: my_module.analyze
 ```
 
-## Development
+## Python
 
-### Python
+### Packages
 
-```bash
-# Install dependencies
-pip install -e python/packages/liman_core
-
-# Development commands
-cd python
-poe -C packages/liman_core format
-poe -C packages/liman_core lint
-poe -C packages/liman_core test
-poe -C packages/liman_core mypy
-```
-
-## Packages
-
-- **liman_core**: Core library with node types and YAML processing
-- **liman_finops**: OpenTelemetry instrumentation and cost tracking
-- **liman_openapi**: OpenAPI to ToolNode generation
+- [**liman_core**](python/packages/liman_core): Core library with node types and YAML processing
+- [**liman_finops**](python/packages/liman_finops): OpenTelemetry instrumentation and cost tracking
+- [**liman_openapi**](python/packages/liman_openapi): OpenAPI to ToolNode generation
 
 ## Resources
 
