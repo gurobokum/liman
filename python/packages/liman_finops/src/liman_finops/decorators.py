@@ -116,7 +116,6 @@ def langchain_ainvoke(
                 raise
             finally:
                 attrs = extend_langchain_attrs(attrs, result)
-                span.set_attributes(attrs)
 
                 if (
                     result
@@ -125,14 +124,28 @@ def langchain_ainvoke(
                     )
                     and (usage := response_metadata.get("token_usage", None))
                 ):
-                    metrics.input_llm_tokens.add(
-                        usage["prompt_tokens"], attributes=attrs
+                    prompt_tokens = usage["prompt_tokens"]
+                    completion_tokens = usage["completion_tokens"]
+                    total_tokens = prompt_tokens + completion_tokens
+
+                    # Add token usage to span attributes
+                    attrs.update(
+                        {
+                            "llm.usage.prompt_tokens": str(prompt_tokens),
+                            "llm.usage.completion_tokens": str(completion_tokens),
+                            "llm.usage.total_tokens": str(total_tokens),
+                        }
                     )
-                    metrics.output_llm_tokens.add(
-                        usage["completion_tokens"], attributes=attrs
-                    )
+
+                    # Calculate and add cost to span attributes
                     if llm_tokens_cost := get_llm_cost(usage, attrs["model_name"]):
+                        attrs["llm.usage.cost_usd"] = f"{llm_tokens_cost:.6f}"
                         metrics.llm_tokens_cost.add(llm_tokens_cost, attributes=attrs)
+
+                    metrics.input_llm_tokens.add(prompt_tokens, attributes=attrs)
+                    metrics.output_llm_tokens.add(completion_tokens, attributes=attrs)
+
+                span.set_attributes(attrs)
 
     return traced_method
 
@@ -153,6 +166,53 @@ def extend_langchain_attrs(_attrs: dict[str, str], result: Any) -> dict[str, str
         attrs["id"] = id_
 
     return attrs
+
+
+def actor_execute(
+    tracer: Tracer, metrics: Metrics
+) -> Callable[[Callable[..., Awaitable[R]], TraceableObject, Any, Any], Awaitable[R]]:
+    """
+    Wrapper for NodeActor execute method to trace and log events.
+    """
+
+    async def traced_method(
+        wrapped: Callable[..., Awaitable[R]],
+        instance: TraceableObject,
+        args: Any,
+        kwargs: Any,
+    ) -> R:
+        node = getattr(instance, "node", None)
+        node_name = node.name if node and hasattr(node, "name") else "unknown"
+        node_type = node.spec.kind if node and hasattr(node, "spec") else "unknown"
+
+        attrs = {
+            "actor_id": str(getattr(instance, "id", "unknown")),
+            "node_name": node_name,
+            "node_type": node_type,
+        }
+
+        import time
+
+        start_time = time.time()
+
+        with tracer.start_as_current_span(
+            f"{instance.__class__.__name__}.{wrapped.__name__}",
+            attributes=attrs,
+            end_on_exit=True,
+        ):
+            try:
+                result = await wrapped(*args, **kwargs)
+                execution_time = time.time() - start_time
+                metrics.actor_executions.add(1, attributes=attrs)
+                metrics.actor_execution_time.record(execution_time, attributes=attrs)
+                return result
+            except Exception:
+                execution_time = time.time() - start_time
+                metrics.actor_errors.add(1, attributes=attrs)
+                metrics.actor_execution_time.record(execution_time, attributes=attrs)
+                raise
+
+    return traced_method
 
 
 def get_llm_cost(usage: Any, model_name: str) -> float | None:
