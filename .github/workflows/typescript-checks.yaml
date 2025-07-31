@@ -1,4 +1,4 @@
-name: Typescript Checks
+name: TypeScript Checks
 
 on:
   push:
@@ -18,10 +18,15 @@ defaults:
 
 jobs:
   lint:
+    name: Lint ${{ matrix.package }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - liman_core
     steps:
       - uses: actions/checkout@v4
-      - name: Setup node env
+      - name: Set up Node.js ${{ matrix.package }}
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -44,5 +49,46 @@ jobs:
         run: pnpm install
       - name: Run lint
         run: |
-          pnpm lint
-          pnpm format:check
+          pnpm -C packages/${{ matrix.package }} lint
+      - name: Run format check
+        run: |
+          pnpm -C packages/${{ matrix.package }} format:check
+
+  test:
+    name: Test ${{ matrix.package }}-${{ matrix.node-version }}-${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        node-version:
+          - "20"
+          - "22"
+        package:
+          - liman_core
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js ${{ matrix.package }}-${{ matrix.node-version }}-${{ matrix.os }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-node${{ matrix.node-version }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-node${{ matrix.node-version }}-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Run tests
+        run: |
+          pnpm -C packages/${{ matrix.package }} test
