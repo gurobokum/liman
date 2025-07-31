@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.11.1",
   "scripts": {
     "build": "tsc --build",
-    "lint": "eslint --max-warnings=0 .",
+    "lint": "eslint --max-warnings=0 . && pnpm tsc --noEmit",
     "format": "prettier --write '**/*.{ts,js,json,md}'",
     "format:check": "pnpm format --check"
   },
@@ -23,5 +23,8 @@
     "jiti": "^2.5.1",
     "prettier": "^3.6.2",
     "typescript-eslint": "^8.38.0"
+  },
+  "dependencies": {
+    "zod": "^4.0.14"
   }
 }
