@@ -10,8 +10,10 @@
   "scripts": {
     "lint": "pnpm liman_core:lint",
     "format:check": "pnpm liman_core:format:check",
+    "test": "pnpm liman_core:test",
     "liman_core:lint": "pnpm -F @liman/core lint",
-    "liman_core:format:check": "pnpm -F @liman/core format:check"
+    "liman_core:format:check": "pnpm -F @liman/core format:check",
+    "liman_core:test": "pnpm -F @liman/core test"
   },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",
@@ -24,6 +26,7 @@
     "globals": "^16.3.0",
     "jiti": "^2.5.1",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
   }
 }

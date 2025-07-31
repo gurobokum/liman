@@ -7,7 +7,9 @@
     "build": "tsc --build",
     "lint": "eslint --max-warnings=0 . && pnpm tsc --noEmit",
     "format": "prettier --write '**/*.{ts,js,json,md}'",
-    "format:check": "pnpm format --check"
+    "format:check": "pnpm format --check",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "Guro Bokum <jiojiajiu@gmail.com>",
@@ -22,7 +24,8 @@
     "globals": "^16.3.0",
     "jiti": "^2.5.1",
     "prettier": "^3.6.2",
-    "typescript-eslint": "^8.38.0"
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "zod": "^4.0.14"
