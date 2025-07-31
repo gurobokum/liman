@@ -23,8 +23,14 @@ def create_tool_nodes(
         List[ToolNode]: A list of ToolNode instances.
     """
     nodes = []
-    endpoints = parse_endpoints(openapi_spec.spec.content())
-    refs = parse_refs(openapi_spec.spec.content())
+    spec_content = openapi_spec.spec.content()
+    endpoints = parse_endpoints(spec_content)
+    refs = parse_refs(spec_content)
+
+    base_url = None
+    servers = spec_content.get("servers", [])
+    if servers:
+        base_url = servers[0].get("url")
 
     for endpoint in endpoints:
         name = f"{prefix}__{endpoint.operation_id}"
@@ -36,7 +42,7 @@ def create_tool_nodes(
         }
 
         node = ToolNode(name=name, declaration=node_declaration)
-        impl_func = OpenAPIOperation(endpoint, refs, is_async=is_async)
+        impl_func = OpenAPIOperation(endpoint, refs, base_url=base_url)
         node.set_func(impl_func)
         nodes.append(node)
 

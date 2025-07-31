@@ -2,7 +2,7 @@ from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field, model_validator
 
-ParameterType: TypeAlias = Literal["string", "integer", "array"]
+ParameterType: TypeAlias = Literal["string", "integer", "array", "object"]
 
 
 class ParameterSchema(BaseModel):
@@ -13,7 +13,7 @@ class ParameterSchema(BaseModel):
 
 class Parameter(BaseModel):
     name: str
-    description: str
+    description: str | None = None
     in_: Annotated[str, Field(alias="in")]  # 'query', 'header', 'path', 'cookie'
     required: bool = False
     schema_: Annotated[ParameterSchema, Field(alias="schema")]
@@ -28,6 +28,31 @@ class Parameter(BaseModel):
             "description": self.description,
             "optional": not self.required,
         }
+
+
+class RequestBodySchema(BaseModel):
+    content_type: str
+    type_: Annotated[ParameterType | None, Field(alias="type", default=None)]
+    ref: Annotated[str | None, Field(alias="$ref", default=None)]
+    items: dict[Literal["$ref"], str] | None = None
+
+
+class RequestBody(BaseModel):
+    required: bool = False
+    content: dict[str, dict[Literal["schema"], RequestBodySchema]]
+
+    @model_validator(mode="before")
+    @classmethod
+    def inject_content_types(cls, values: dict[str, Any]) -> dict[str, Any]:
+        content = {}
+        for key, value in values.get("content", {}).items():
+            schema = value.get("schema")
+            if schema:
+                content[key] = {**value, "schema": {**schema, "content_type": key}}
+            else:
+                content[key] = {**value}
+        values["content"] = content
+        return values
 
 
 class ResponseSchema(BaseModel):
@@ -65,6 +90,9 @@ class Endpoint(BaseModel):
     summary: str
     method: str
     parameters: list[Parameter] = []
+    request_body: Annotated[
+        RequestBody | None, Field(alias="requestBody", default=None)
+    ]
     responses: dict[str, Response]
 
     @model_validator(mode="before")
