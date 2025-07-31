@@ -22,7 +22,6 @@ dependencies = [
     "langchain-core>=0.3.67",
     "lark>=1.2.2",
     "liman-finops[finops]",
-    "protobuf>=6.31.1",
     "pydantic>=2.11.7",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.14",
@@ -49,6 +48,5 @@ liman-finops = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "types-protobuf>=6.30.2.20250516",
     "typing-extensions>=4.14.0",
 ]

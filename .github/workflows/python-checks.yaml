@@ -37,16 +37,9 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
       - name: Install dependencies
         run: |
           uv sync --locked --all-extras
-      - name: Compile Protobuf files
-        run: |
-          uv run poe protoc
       - name: Run ruff
         run: |
           uv run poe -C packages/${{ matrix.package }} lint
@@ -80,16 +73,9 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
       - name: Install dependencies
         run: |
           uv sync --locked --all-extras
-      - name: Compile Protobuf files
-        run: |
-          uv run poe protoc
       - name: Run tests
         run: |
           uv run poe -C packages/${{ matrix.package }} test

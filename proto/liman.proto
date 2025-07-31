@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package liman;
-
-message Prompt {
-  string api_version = 1;
-  string kind = 2;
-}

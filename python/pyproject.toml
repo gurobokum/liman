@@ -3,7 +3,6 @@ liman = { workspace = true }
 liman_core = { workspace = true }
 liman_finops = { workspace = true }
 liman_openapi = { workspace = true }
-proto = { path = "./proto" }
 
 [tool.uv.workspace]
 members = ["packages/*"]
@@ -32,7 +31,10 @@ lint.sequence = [
   { cmd = "poe lint", cwd = "packages/liman_finops" },
   { cmd = "poe lint", cwd = "packages/liman_openapi" }
 ]
-protoc = "protoc --python_out=proto/  --proto_path=../proto --pyi_out=proto/ liman.proto"
+test.sequence = [
+  { cmd = "poe test", cwd = "packages/liman_core" },
+  { cmd = "poe test", cwd = "packages/liman_openapi" }
+]
 
 
 [tool.ruff]
