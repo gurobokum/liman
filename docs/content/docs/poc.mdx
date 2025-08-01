@@ -17,12 +17,12 @@ import Link from "fumadocs-core/link";
     </span>
     <span className="block">
       <span className="mr-1">Last updated:</span>
-      <time dateTime="2025-07-17">30/07/2025</time>
+      <time dateTime="2025-07-17">01/08/2025</time>
     </span>
   </p>
 </Callout>
 
-# Overview
+## Overview
 
 **Liman** is a powerful framework engineered to build **scalable, reliable, and maintainable AI Agents**. It achieves this through a **declarative manifest approach** and an **extensible modular architecture**.
 
@@ -37,7 +37,7 @@ The core idea behind Liman is to define agent structures using manifests that in
 
 Should this specification be widely adopted, it could foster a **common ecosystem of reusable components** for AI Agents, paving the way for an "Agents Store" where shared functionalities can be discovered and integrated across diverse projects.
 
-# YAML Manifests
+## YAML Manifests
 
 Liman represents AI Agents as a **Graph of Nodes**, similar to frameworks like LangGraph. In this graph:
 
@@ -76,7 +76,7 @@ For example, in the `LLMNode` snippet above, if `notes` were not defined for `ru
 Here's how `LanguageBundle` handles **fallback** language:
 
 ```yaml
-promtps:
+prompts:
   system:
     en: You are a helpful assistant.
   notes:
@@ -300,37 +300,6 @@ nodes:
 
 This approach eliminates the need to manually create MCP servers or write custom tool definitions, significantly accelerating the development of AI agents that integrate with existing APIs.
 
-## NodeActor Architecture
-
-In Liman, **every node is executed by its own dedicated NodeActor** with limited scope and authorization. This isolation ensures security, resource control, and fault tolerance across distributed agent systems.
-Each node runs within its own execution context, similar to how containers isolate processes in containerized environments. The **NodeActor** is an internal component that wraps each node's execution.
-
-### Authorization Scoping
-
-Each **NodeActor** operates with **minimal required permissions** defined at the node level. The authorization system is built around **role assumption** and **credential provisioning** to ensure secure access to external resources.
-
-#### ActorNode Role Assumption
-
-When a **NodeActor** needs to execute a node, it can **assume specific roles** required for that operation. This follows the principle of least privilege - each node only gets the permissions it absolutely needs.
-
-For example, a user lookup tool would only assume a "user-data-reader" role with read permissions for user data, while a ticket creation tool would assume a "ticket-creator" role with write permissions only for the ticketing system.
-
-#### CredentialsProvider Integration
-
-The **CredentialsProvider** is responsible for supplying the necessary credentials when a **NodeActor** assumes a role. This abstraction allows for flexible credential management across different environments and services.
-
-For OpenAPI calls, the **CredentialsProvider** automatically provides the appropriate authentication headers based on the assumed role and target service.  
-For example, when a **ToolNode** makes an OpenAPI call to retrieve user data, the **NodeActor** assumes the "user-data-reader" role, and the **CredentialsProvider** automatically injects the required Bearer token into the HTTP request headers.
-
-#### Dynamic Credential Resolution
-
-The **CredentialsProvider** resolves credentials dynamically based on the assumed role and target service:
-
-- **API calls**: Provides Bearer tokens, API keys, or OAuth credentials
-- **Cloud services**: Delivers service account tokens or IAM role credentials
-
-This approach ensures that sensitive credentials are never hardcoded in manifests and are only provided to **NodeActors** that have explicitly assumed the necessary roles.
-
 ## CE DSL: Condition Expression Language
 
 One of Liman's most powerful features is **CE DSL (Condition Expression Domain Specific Language)** - a custom language for defining intelligent flow control between nodes. Rather than writing repetitive conditional logic in code, you can express complex routing decisions declaratively in YAML.
@@ -415,28 +384,109 @@ CE DSL expressions are evaluated at runtime with full access to the current exec
 
 This approach transforms static agent definitions into dynamic, intelligent systems that can adapt their behavior based on runtime conditions and context.
 
-## Executor
+## Execution model
 
-The **Executor** is the orchestration engine that processes agent graphs. It intelligently manages execution across different models - from single-threaded to fully distributed systems - while traversing edges using CE DSL conditions.
+### Overview
 
-### Execution Modes
+The execution model consists of three main components:
+
+- [**NodeActor**](#nodeactor) manages role assumption, state, and node wrapping
+- [**Launcher**](#launcher) handles execution context creation, resource management, and NodeActor lifecycle
+- [**Executor**](#executor) focuses purely on graph traversal, CE DSL evaluation, and flow control
+
+import { ImageZoom } from "fumadocs-ui/components/image-zoom";
+
+<ImageZoom
+  src="/docs/light/execution-model.png"
+  alt="Execution Model"
+  width={3902}
+  height={1125}
+  className="w-full mx-auto dark:hidden"
+/>
+
+<ImageZoom
+  src="/docs/dark/execution-model.png"
+  alt="Execution Model (Dark)"
+  width={3902}
+  height={1125}
+  className="w-full mx-auto hidden dark:block"
+/>
+
+```
+Executor -> Launcher -> NodeActor -> Node
+```
+
+### NodeActor
+
+In Liman, **every node is executed by its own dedicated NodeActor** with limited scope and authorization. This isolation ensures security, resource control, and fault tolerance across distributed agent systems.
+Each node runs within its own execution context, similar to how containers isolate processes in containerized environments. The **NodeActor** is an internal component that wraps each node's execution.
+
+#### Authorization Scoping
+
+Each **NodeActor** operates with **minimal required permissions** defined at the node level. The authorization system is built around **role assumption** and **credential provisioning** to ensure secure access to external resources.
+
+#### ActorNode Role Assumption
+
+When a **NodeActor** needs to execute a node, it can **assume specific roles** required for that operation. This follows the principle of least privilege - each node only gets the permissions it absolutely needs.
+
+For example, a user lookup tool would only assume a "user-data-reader" role with read permissions for user data, while a ticket creation tool would assume a "ticket-creator" role with write permissions only for the ticketing system.
+
+#### CredentialsProvider Integration
+
+The **CredentialsProvider** is responsible for supplying the necessary credentials when a **NodeActor** assumes a role. This abstraction allows for flexible credential management across different environments and services.
+
+For OpenAPI calls, the **CredentialsProvider** automatically provides the appropriate authentication headers based on the assumed role and target service.  
+For example, when a **ToolNode** makes an OpenAPI call to retrieve user data, the **NodeActor** assumes the "user-data-reader" role, and the **CredentialsProvider** automatically injects the required Bearer token into the HTTP request headers.
+
+#### Dynamic Credential Resolution
+
+The **CredentialsProvider** resolves credentials dynamically based on the assumed role and target service:
+
+- **API calls**: Provides Bearer tokens, API keys, or OAuth credentials
+- **Cloud services**: Delivers service account tokens or IAM role credentials
+
+This approach ensures that sensitive credentials are never hardcoded in manifests and are only provided to **NodeActors** that have explicitly assumed the necessary roles.
+
+### Launcher
+
+The **Launcher** serves as the execution context manager, responsible for creating and managing **NodeActors** in different execution environments. It provides a clean abstraction layer between graph orchestration (handled by the Executor) and actual node execution, enabling flexible deployment across various compute contexts.
+
+#### Architecture Design
+
+The Launcher pattern follows the **Executor + Launcher** architecture:
+
+#### Launcher Types
+
+Liman supports multiple launcher implementations, each optimized for different execution contexts:
+
+**AsyncLauncher**: Designed for high-concurrency I/O-bound operations using async/await patterns. Ideal for API calls, database queries, and LLM inference with low memory overhead and shared memory space for fast data exchange.
+
+**ThreadLauncher**: Optimized for I/O-bound operations requiring thread-level isolation while maintaining shared memory access.
+
+**ProcessLauncher**: Built for CPU-intensive tasks requiring complete process isolation and parallel processing capabilities. Essential for machine learning model inference, data processing, computational algorithms, and security-sensitive operations requiring strict isolation.
+
+**DistributedLauncher**: Future implementation for distributed execution across multiple machines, containers, or cloud functions, enabling unlimited horizontal scalability.
+
+#### Dynamic Selection and Resource Management
+
+Launchers provide intelligent selection based on node characteristics and runtime conditions. The system can route different node types to appropriate execution contexts - LLM nodes to async launchers for I/O efficiency, CPU-intensive nodes to process launchers for parallel execution, and secure operations to isolated process launchers.
+
+#### Implementation Benefits
+
+The Launcher abstraction allows the **Executor** to remain focused on graph orchestration while delegating execution concerns to appropriate launcher implementations. This clean separation enables flexible deployment strategies, from simple single-threaded execution to complex distributed systems, all while maintaining consistent behavior and comprehensive observability.
+
+### Executor
+
+The **Executor** is the orchestration engine that processes agent workflows through **pure graph orchestration**. It focuses exclusively on graph traversal, CE DSL evaluation, and flow control while delegating actual node execution to **Launchers**. This clean separation allows the Executor to remain focused on workflow logic while Launchers handle execution context management.
+
+#### Execution Modes
 
 The Executor supports flexible execution approaches:
 
-- **Single Node Execution**: Execute specific nodes in isolation for testing or partial workflows
 - **Full Graph Traversal**: Process entire agent graphs following CE DSL edge conditions
 - **Subgraph Execution**: Start execution from any node for workflow resumption
 
-### Intelligent Concurrency
-
-The Executor adapts to different performance requirements and can run nodes in various modes:
-
-- **Threaded**: Nodes run in separate threads for I/O-bound operations with shared memory
-- **Asynchronous**: High-concurrency execution using async/await patterns for efficient resource utilization
-- **Process-based**: Complete isolation with nodes in separate processes for CPU-intensive tasks
-- **Distributed**: Nodes execute across machines, containers, or cloud functions for unlimited scalability
-
-### Parallel Execution & Synchronization
+#### Parallel Execution & Synchronization
 
 The Executor supports sophisticated parallel execution patterns:
 
@@ -447,18 +497,18 @@ The Executor supports sophisticated parallel execution patterns:
 
 This enables complex execution patterns where independent operations run concurrently while dependent operations wait for their prerequisites to complete.
 
-### Smart Edge Traversal
+#### Smart Edge Traversal
 
 The Executor uses CE DSL to intelligently determine execution paths, evaluating conditions at runtime based on node results, context, and system state.
 
-### Built-in Resilience
+#### Built-in Resilience
 
 - **Fault Isolation**: Node failures don't crash the entire graph
 - **Retry Policies**: Configurable retry logic for transient failures
 - **Circuit Breakers**: Prevent cascading failures in distributed scenarios
 - **Graceful Degradation**: Continue execution when non-critical nodes fail
 
-This intelligent execution model allows Liman agents to scale seamlessly from simple applications to complex distributed systems while maintaining consistent behavior and comprehensive observability.
+This separation of concerns between **Executor** (graph orchestration) and **Launcher** (execution context) allows Liman agents to scale seamlessly from simple applications to complex distributed systems while maintaining clean architecture, consistent behavior, and comprehensive observability.
 
 ---
 
