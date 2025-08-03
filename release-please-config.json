@@ -17,37 +17,35 @@
     { "type": "docs", "section": "📚 Documentation" },
     { "type": "test", "section": "♻️ Tests" }
   ],
+  "pull-request-title-pattern": "release(${component}): ${version}",
   "packages": {
     "go": {
       "release-type": "go",
-      "label": "go"
+      "extra-label": "go"
     },
     "python/packages/liman_core": {
       "component": "liman_core_py",
-      "pull-request-title-pattern": "release(${component}): ${version}",
       "release-type": "python",
-      "release-as": "0.1.0-a1",
-      "label": "python"
+      "release-as": "0.1.0-a2",
+      "extra-label": "python"
     },
     "python/packages/liman_finops": {
       "component": "liman_finops_py",
-      "pull-request-title-pattern": "release(${component}): ${version}",
       "release-type": "python",
       "release-as": "0.1.0-a0",
-      "label": "python"
+      "extra-label": "python"
     },
     "python/packages/liman_openapi": {
       "component": "liman_openapi_py",
-      "pull-request-title-pattern": "release(${component}): ${version}",
       "release-type": "python",
       "release-as": "0.1.0-a0",
-      "label": "python"
+      "extra-label": "python"
     },
     "typescript/packages/liman_core": {
       "component": "liman_core_ts",
-      "pull-request-title-pattern": "release_ts(liman_core): ${version}",
       "release-type": "node",
-      "label": "typescript"
+      "extra-label": "typescript",
+      "release-as": "0.1.0-a0"
     }
   }
 }
