@@ -29,7 +29,7 @@ from liman_finops.decorators import (
     node_invoke,
 )
 from liman_finops.metrics import Metrics
-from liman_finops.version import version
+from liman_finops.version import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class LimanInstrumentor(BaseInstrumentor):  # type: ignore
         tracer_provider = kwargs.get("tracer_provider")
         tracer = get_tracer(
             __name__,
-            version,
+            __version__,
             tracer_provider,
             schema_url=Schemas.V1_28_0.value,
         )
@@ -105,7 +105,7 @@ class LimanInstrumentor(BaseInstrumentor):  # type: ignore
         meter_provider = kwargs.get("meter_provider")
         meter = get_meter(
             __name__,
-            version,
+            __version__,
             meter_provider,
             schema_url=Schemas.V1_28_0.value,
         )
