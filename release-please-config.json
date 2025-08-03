@@ -27,7 +27,7 @@
       "component": "liman_core_py",
       "pull-request-title-pattern": "release(${component}): ${version}",
       "release-type": "python",
-      "release-as": "0.1.0-a1",
+      "release-as": "0.1.0-a0",
       "label": "python"
     },
     "python/packages/liman_finops": {
