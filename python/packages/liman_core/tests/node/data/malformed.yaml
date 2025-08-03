@@ -1,0 +1,6 @@
+kind: Node
+name: TestNode
+func: test_function
+description:
+  en: Test node
+  invalid: [unclosed bracket

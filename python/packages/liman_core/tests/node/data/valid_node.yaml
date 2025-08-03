@@ -1,0 +1,7 @@
+kind: Node
+name: TestNode
+func: test_function
+description:
+  en: Test node description
+  ru: Описание тестовой ноды
+
