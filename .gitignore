@@ -1,6 +1,10 @@
 .env
 .DS_Store
 
+# development files
+.autoenv.zsh
+.liman-prompt.sh
+
 CLAUDE.md
 
 .archive/
@@ -8,5 +12,6 @@ CLAUDE.md
 .examples/
 .notes/
 .scripts/
+.specstory/
 
 node_modules/
