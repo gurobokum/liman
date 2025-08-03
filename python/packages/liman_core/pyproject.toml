@@ -31,6 +31,13 @@ dependencies = [
 path = "VERSION"
 pattern = "(?P<version>.+)"
 
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/README.md",
+    "/VERSION",
+]
+
 [tool.poe]
 include = "../../shared_poe.toml"
 
