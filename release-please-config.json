@@ -25,8 +25,7 @@
     "python/packages/liman_core": {
       "component": "liman_core",
       "pull-request-title-pattern": "release_py(${component}): ${version}",
-      "release-type": "simple",
-      "version-file": "VERSION",
+      "release-type": "python",
       "release-as": "0.1.0-a0",
       "label": "python"
     },

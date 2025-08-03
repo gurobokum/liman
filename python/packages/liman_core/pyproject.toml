@@ -21,21 +21,20 @@ dependencies = [
     "dishka>=1.6.0",
     "langchain-core>=0.3.67",
     "lark>=1.2.2",
-    "liman-finops[finops]",
     "pydantic>=2.11.7",
     "rich>=14.0.0",
     "ruamel-yaml>=0.18.14",
 ]
 
 [tool.hatch.version]
-path = "VERSION"
-pattern = "(?P<version>.+)"
+path = "src/liman_core/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "/src",
+    "/tests",
     "/README.md",
-    "/VERSION",
+    "/CHANGELOG.md",
 ]
 
 [tool.poe]
@@ -49,9 +48,6 @@ extend = "../../pyproject.toml"
 
 [tool.mypy]
 extend = "../../pyproject.toml"
-
-[tool.uv.sources]
-liman-finops = { workspace = true }
 
 [dependency-groups]
 dev = [
