@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-a2](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a0...liman_core_py-v0.1.0-a2) (2025-08-03)
+
+
+### 🐛 Bug Fixes
+
+* **liman_core:** fix from_yaml_path ([a7e1a93](https://github.com/gurobokum/liman/commit/a7e1a930f619a551cd231cdd206f77c8a67a52d3))
+
 ## 0.1.0-a0 (2025-08-03)
 
 
