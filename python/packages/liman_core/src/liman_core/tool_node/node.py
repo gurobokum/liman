@@ -1,4 +1,5 @@
 import asyncio
+import inspect
 import sys
 from collections.abc import Callable
 from functools import reduce
@@ -6,12 +7,14 @@ from importlib import import_module
 from typing import Any
 
 from dishka import FromDishka
+from langchain_core.messages import ToolMessage
 
-from liman_core.base import BaseNode
+from liman_core.base import BaseNode, Output
 from liman_core.dishka import inject
-from liman_core.errors import InvalidSpecError
+from liman_core.errors import InvalidSpecError, LimanError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.registry import Registry
+from liman_core.tool_node.errors import ToolExecutionError
 from liman_core.tool_node.schemas import ToolNodeSpec
 from liman_core.tool_node.utils import (
     ToolArgumentJSONSchema,
@@ -161,27 +164,116 @@ class ToolNode(BaseNode[ToolNodeSpec]):
         self.func = func
         self.spec.func = str(func)
 
-    def invoke(self, *args: Any, **kwargs: Any) -> Any:
+    def invoke(self, tool_call: dict[str, Any]) -> Output[Any]:
         """
         Invoke the tool function with the provided arguments.
+
+        Args:
+            tool_call: Tool call dict with structure like {'name': 'tool_name', 'args': {...}, 'id': '...', 'type': 'tool_call'}
+
+        Returns:
+            Output with ToolMessage containing function result and proper tool call metadata
         """
         func = self.func
-        if asyncio.iscoroutinefunction(func):
-            asyncio.run_coroutine_threadsafe(
-                func(*args, **kwargs), asyncio.get_event_loop()
+        tool_call_id = tool_call["id"]
+        tool_call_name = tool_call["name"]
+
+        if "args" not in tool_call:
+            raise LimanError(
+                "Tool call must contain 'args' field with function arguments."
             )
 
-        return func(*args, **kwargs)
+        call_args = self._extract_function_args(tool_call["args"])
+        try:
+            if asyncio.iscoroutinefunction(func):
+                try:
+                    loop = asyncio.get_event_loop()
+                except RuntimeError:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                result = asyncio.run_coroutine_threadsafe(
+                    func(**call_args), loop
+                ).result()
+            else:
+                result = func(**call_args)
+        except Exception as e:
+            response = ToolMessage(
+                content=str(e),
+                tool_call_id=tool_call_id,
+                name=tool_call_name,
+            )
+        else:
+            response = ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+                name=tool_call_name,
+            )
+        return Output(response=response)
 
-    async def ainvoke(self, *args: Any, **kwargs: Any) -> Any:
+    async def ainvoke(self, tool_call: dict[str, Any]) -> Output[Any]:
         """
         Asynchronously invoke the tool function with the provided arguments.
+
+        Args:
+            tool_call: Tool call dict with structure like {'name': 'tool_name', 'args': {...}, 'id': '...', 'type': 'tool_call'}
+
+        Returns:
+            ToolMessage with function result and proper tool call metadata
         """
         func = self.func
-        if asyncio.iscoroutinefunction(func):
-            return await func(*args, **kwargs)
+        tool_call_id = tool_call["id"]
+        tool_call_name = tool_call["name"]
+
+        if "args" not in tool_call:
+            raise ToolExecutionError(
+                "Tool call must contain 'args' field with function arguments."
+            )
+
+        call_args = self._extract_function_args(tool_call["args"])
+        try:
+            if asyncio.iscoroutinefunction(func):
+                result = await func(**call_args)
+            else:
+                result = func(**call_args)
+        except Exception as e:
+            response = ToolMessage(
+                content=str(e),
+                tool_call_id=tool_call_id,
+                name=tool_call_name,
+            )
         else:
-            return func(*args, **kwargs)
+            response = ToolMessage(
+                content=str(result),
+                tool_call_id=tool_call_id,
+                name=tool_call_name,
+            )
+        return Output(response=response)
+
+    def _extract_function_args(self, args_dict: dict[str, Any]) -> dict[str, Any]:
+        """
+        Extract function arguments based on function signature from provided args dict.
+
+        Args:
+            args_dict: Dictionary containing all available arguments
+
+        Returns:
+            Dictionary with only the arguments that match function signature
+        """
+        if not hasattr(self, "func") or self.func is None:
+            return args_dict
+
+        sig = inspect.signature(self.func)
+        filtered_args = {}
+
+        for param_name, param in sig.parameters.items():
+            if param_name in args_dict:
+                filtered_args[param_name] = args_dict[param_name]
+            elif param.default is not inspect.Parameter.empty:
+                continue
+            else:
+                raise ValueError(f"Required parameter is missing: '{param_name}'")
+
+        return filtered_args
 
     def get_tool_description(self, lang: LanguageCode) -> str:
         template = self._get_tool_prompt_template(lang)
