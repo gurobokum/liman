@@ -27,7 +27,7 @@
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0",
+      "release-as": "0.1.0-a0",
       "label": "python"
     },
     "python/packages/liman_finops": {
@@ -35,7 +35,7 @@
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0",
+      "release-as": "0.1.0-a0",
       "label": "python"
     },
     "python/packages/liman_openapi": {
@@ -43,7 +43,7 @@
       "pull-request-title-pattern": "release_py(${component}): ${version}",
       "release-type": "simple",
       "version-file": "VERSION",
-      "release-as": "0.1.0",
+      "release-as": "0.1.0-a0",
       "label": "python"
     },
     "typescript/packages/liman_core": {
