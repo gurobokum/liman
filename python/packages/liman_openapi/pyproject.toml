@@ -7,10 +7,11 @@ name = "liman-openapi"
 dynamic = ["version"]
 description = "Liman AgentOps OpenAPI Library"
 readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
 authors = [
     { name = "Guro Bokum", email = "jiojiajiu@gmail.com" }
 ]
-requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -24,8 +25,15 @@ dependencies = [
 ]
 
 [tool.hatch.version]
-path = "VERSION"
-pattern = "(?P<version>.+)"
+path = "src/liman_openapi/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/CHANGELOG.md",
+]
 
 [tool.poe]
 include = "../../shared_poe.toml"

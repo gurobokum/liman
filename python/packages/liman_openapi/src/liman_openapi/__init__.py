@@ -6,6 +6,9 @@ from openapi_core import OpenAPI
 from openapi_spec_validator.readers import read_from_filename
 from openapi_spec_validator.shortcuts import validate
 
+# Don't update the version manually, it is set by the build system.
+__version__ = "0.1.0-a0"
+
 
 @singledispatch
 def load_openapi(_: Any) -> OpenAPI:
