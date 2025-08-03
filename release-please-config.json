@@ -17,7 +17,6 @@
     { "type": "docs", "section": "📚 Documentation" },
     { "type": "test", "section": "♻️ Tests" }
   ],
-  "skip-github-release": true,
   "packages": {
     "go": {
       "release-type": "go",

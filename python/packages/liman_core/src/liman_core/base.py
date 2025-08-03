@@ -129,7 +129,10 @@ class BaseNode(Generic[S], ABC):
         Returns:
             BaseNode: An instance of BaseNode initialized with the YAML data.
         """
-        yaml_data = YAML().load(yaml_path).dict()
+        yaml = YAML()
+        with open(yaml_path, encoding="utf-8") as fd:
+            yaml_data = yaml.load(fd)
+
         return cls.from_dict(
             yaml_data,
             yaml_path=yaml_path,
