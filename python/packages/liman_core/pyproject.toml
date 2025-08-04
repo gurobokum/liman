@@ -49,6 +49,9 @@ extend = "../../pyproject.toml"
 [tool.mypy]
 extend = "../../pyproject.toml"
 
+[tool.coverage.run]
+source = ["src"]
+
 [dependency-groups]
 dev = [
     "typing-extensions>=4.14.0",

@@ -42,3 +42,6 @@ mypy = "mypy --config-file ../../pyproject.toml ."
 
 [tool.ruff]
 extend = "../../pyproject.toml"
+
+[tool.coverage.run]
+source = ["src"]

@@ -35,6 +35,9 @@ include = [
     "/CHANGELOG.md",
 ]
 
+[tool.uv.sources]
+liman-core = { workspace = true }
+
 [tool.poe]
 include = "../../shared_poe.toml"
 
@@ -47,5 +50,5 @@ extend = "../../pyproject.toml"
 [tool.mypy]
 extend = "../../pyproject.toml"
 
-[tool.uv.sources]
-liman-core = { workspace = true }
+[tool.coverage.run]
+source = ["src"]
