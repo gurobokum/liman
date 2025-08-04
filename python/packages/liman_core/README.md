@@ -1,5 +1,7 @@
 # Liman Core
 
+[![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_core)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_core)
+
 Core library of the Liman framework providing low-level building blocks for declarative YAML-based agent workflows with custom DSL.
 
 ## Features

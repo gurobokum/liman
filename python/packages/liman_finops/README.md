@@ -1,5 +1,7 @@
 # liman-finops
 
+[![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_finops)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_finops)
+
 OpenTelemetry instrumentation and cost tracking for Liman agent framework.
 
 ## Jaeger Integration Example
