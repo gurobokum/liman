@@ -155,7 +155,6 @@ class LLMNode(BaseNode[LLMNodeSpec]):
                 *inputs,
             ],
             tools=tools_jsonschema,
-            **kwargs,
         )
 
         next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []

@@ -8,8 +8,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from liman_core.base import Output
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import NodeActorError, NodeActorState
-from liman_core.node_actor.actor import NodeActor
+from liman_core.node_actor import NodeActor, NodeActorError, NodeActorState
 from liman_core.tool_node import ToolNode
 
 

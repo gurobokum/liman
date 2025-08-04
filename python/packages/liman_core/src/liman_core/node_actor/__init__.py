@@ -1,4 +1,5 @@
-from .actor import AsyncNodeActor, NodeActor
+from .actor import NodeActor
+from .async_actor import AsyncNodeActor
 from .errors import NodeActorError
 from .schemas import NodeActorState
 

@@ -1,5 +1,5 @@
+import asyncio
 import sys
-import threading
 from collections.abc import Sequence
 from typing import Any
 from uuid import UUID, uuid4
@@ -20,9 +20,9 @@ else:
     from typing_extensions import Self
 
 
-class NodeActor(BaseNodeActor):
+class AsyncNodeActor(BaseNodeActor):
     """
-    Sync implementation of NodeActor
+    Async implementation of NodeActor
     """
 
     def __init__(
@@ -32,8 +32,8 @@ class NodeActor(BaseNodeActor):
         llm: BaseChatModel | None = None,
     ):
         super().__init__(node, actor_id, llm)
-        self._execution_lock = threading.Lock()
-        self._shutdown_event = threading.Event()
+        self._execution_lock = asyncio.Lock()
+        self._shutdown_event = asyncio.Event()
 
     @classmethod
     def create(
@@ -60,7 +60,7 @@ class NodeActor(BaseNodeActor):
         """Check if actor is shutdown"""
         return self._shutdown_event.is_set()
 
-    def initialize(self) -> None:
+    async def initialize(self) -> None:
         """
         Initialize the actor and prepare for execution
         """
@@ -70,18 +70,19 @@ class NodeActor(BaseNodeActor):
         self.state = NodeActorState.INITIALIZING
 
         try:
+            # Compile the node if not already compiled
             # TODO: make public method in BaseNode
             if not self.node._compiled:
                 self.node.compile()
 
-            self._validate_requirements()
+            await self._validate_requirements()
             self.state = NodeActorState.READY
 
         except Exception as e:
             self.error = create_error(f"Failed to initialize actor: {e}", self)
             raise self.error from e
 
-    def execute(
+    async def execute(
         self,
         input_: Any,
         context: dict[str, Any] | None = None,
@@ -110,20 +111,32 @@ class NodeActor(BaseNodeActor):
         execution_id = execution_id or uuid4()
         context = context or {}
 
-        with self._execution_lock:
-            return self._execute_internal(input_, context, execution_id)
+        # Ensure single execution at a time
+        async with self._execution_lock:
+            return await self._execute_internal(input_, context, execution_id)
 
-    def shutdown(self) -> None:
+    async def shutdown(self) -> None:
         """Gracefully shutdown the actor"""
         self._shutdown_event.set()
         self.state = NodeActorState.SHUTDOWN
 
+        # Wait for any ongoing execution to complete
         if self._execution_lock.locked():
-            with self._execution_lock:
+            async with self._execution_lock:
                 ...
 
-    def _execute_internal(
-        self, inputs: Sequence[BaseMessage], context: dict[str, Any], execution_id: UUID
+    def get_status(self) -> dict[str, Any]:
+        """Get current actor status"""
+        return {
+            "actor_id": str(self.id),
+            "node_name": self.node.name,
+            "node_type": self.node.spec.kind,
+            "state": self.state,
+            "is_shutdown": self._shutdown_event.is_set(),
+        }
+
+    async def _execute_internal(
+        self, input_: Any, context: dict[str, Any], execution_id: UUID
     ) -> Output[Any]:
         self.state = NodeActorState.EXECUTING
 
@@ -131,11 +144,11 @@ class NodeActor(BaseNodeActor):
             execution_context = self._prepare_execution_context(context, execution_id)
 
             if self.node.is_llm_node:
-                result = self._execute_llm_node(inputs, execution_context)
+                result = await self._execute_llm_node(input_, execution_context)
             elif self.node.is_tool_node:
-                result = self._execute_tool_node(execution_context)
+                result = await self._execute_tool_node(input_)
             else:
-                result = self._execute_generic_node(inputs, execution_context)
+                result = await self._execute_generic_node(input_, execution_context)
 
             self.state = NodeActorState.COMPLETED
             return result
@@ -146,7 +159,7 @@ class NodeActor(BaseNodeActor):
             )
             raise self.error from e
 
-    def _execute_llm_node(
+    async def _execute_llm_node(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any]
     ) -> Output[Any]:
         if not self.llm:
@@ -156,29 +169,51 @@ class NodeActor(BaseNodeActor):
         if not isinstance(self.node, LLMNode):
             raise create_error(f"Expected LLMNode, got {type(self.node)}", self)
 
-        return self.node.invoke(self.llm, inputs, **context)
+        return await self.node.ainvoke(self.llm, inputs, **context)
 
-    def _execute_tool_node(self, tool_call: dict[str, Any]) -> Output[Any]:
+    async def _execute_tool_node(self, tool_call: dict[str, Any]) -> Output[Any]:
         if not isinstance(self.node, ToolNode):
             raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
 
-        return self.node.invoke(tool_call)
+        return await self.node.ainvoke(tool_call)
 
-    def _execute_generic_node(
+    async def _execute_generic_node(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any]
     ) -> Output[Any]:
         if not isinstance(self.node, Node):
             raise create_error(f"Expected Node, got {type(self.node)}", self)
 
-        return self.node.invoke(inputs, **context)
+        return await self.node.ainvoke(inputs, **context)
 
-    def _validate_requirements(self) -> None:
+    def _prepare_execution_context(
+        self, context: dict[str, Any], execution_id: UUID
+    ) -> dict[str, Any]:
+        """Prepare execution context with actor metadata"""
+        execution_context = {
+            **context,
+            "actor_id": self.id,
+            "execution_id": execution_id,
+            "node_name": self.node.name,
+            "node_type": self.node.spec.kind,
+        }
+
+        return execution_context
+
+    async def _validate_requirements(self) -> None:
         """
         Validate that actor has everything needed for execution
         """
+
+        # Check if LLMNode has LLM
         if self.node.is_llm_node and not self.llm:
             raise create_error("LLMNode requires LLM but none provided", self)
 
+        # Check if node is compiled
         # TODO: make public method in BaseNode
         if not self.node._compiled:
             raise create_error("Node is not compiled", self)
+
+        # Additional validation can be added here
+        # - Authorization checks
+        # - Resource availability
+        # - Dependencies

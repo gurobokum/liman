@@ -6,8 +6,7 @@ from dishka import AsyncContainer, Container
 
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import NodeActorState
-from liman_core.node_actor.actor import NodeActor
+from liman_core.node_actor import NodeActor, NodeActorState
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.tool_node import ToolNode
 

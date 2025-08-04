@@ -6,7 +6,7 @@ import pytest
 
 from liman_core.node import Node
 from liman_core.node_actor import NodeActorState
-from liman_core.node_actor.actor import BaseNodeActor, create_error
+from liman_core.node_actor.base import BaseNodeActor, create_error
 from liman_core.node_actor.errors import NodeActorError
 
 
@@ -124,17 +124,6 @@ def test_prepare_execution_context(test_actor: MockNodeActor) -> None:
     assert result["execution_id"] == execution_id
     assert result["node_name"] == "test_node"
     assert result["node_type"] == "Node"
-
-
-def test_prepare_execution_context_with_llm(mock_node: Mock) -> None:
-    mock_llm = Mock()
-    actor = MockNodeActor(node=mock_node, llm=mock_llm)
-    execution_id: UUID = uuid4()
-    context: dict[str, Any] = {}
-
-    result = actor._prepare_execution_context(context, execution_id)
-
-    assert result["llm"] is mock_llm
 
 
 def test_prepare_execution_context_doesnt_override_llm(mock_node: Mock) -> None:
