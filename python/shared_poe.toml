@@ -5,3 +5,4 @@ lint.sequence = [
 ]
 format = "ruff format"
 test = "pytest"
+coverage = "pytest --cov --cov-report=xml --cov-report=term"

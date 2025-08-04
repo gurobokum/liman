@@ -1,0 +1,26 @@
+flags:
+  python:
+    paths:
+      - python/
+
+component_management:
+  individual_components:
+    - component_id: liman_py
+      name: python/liman
+      paths:
+        - python/packages/liman/**
+    - component_id: liman_core_py
+      name: python/liman_core
+      paths:
+        - python/packages/liman_core/**
+    - component_id: liman_finops_py
+      name: python/liman_finops
+      paths:
+        - python/packages/liman_finops/**
+    - component_id: liman_openapi_py
+      name: python/liman_openapi
+      paths:
+        - python/packages/liman_openapi/**
+
+github_checks:
+  annotations: false
