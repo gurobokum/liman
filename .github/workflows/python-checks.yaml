@@ -10,6 +10,9 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - python/**
+      - .github/workflows/python-*.yaml
   workflow_dispatch:
 
 defaults:
@@ -17,16 +20,33 @@ defaults:
     working-directory: ./python
 
 jobs:
+  changes:
+    name: Detect changed packages
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.changes.outputs.packages }}
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Get changed packages
+        id: changes
+        run: |
+          packages=$(python3 scripts/ci/detect_changed_packages.py python)
+          echo "packages=$packages" >> $GITHUB_OUTPUT
+          echo "Changed packages: $packages"
+
   lint:
     name: Lint ${{ matrix.package }}
     runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.packages != '[]'
     strategy:
       matrix:
-        package:
-          - liman
-          - liman_core
-          - liman_finops
-          - liman_openapi
+        package: ${{ fromJson(needs.changes.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.package }}
@@ -50,6 +70,8 @@ jobs:
   test:
     name: Test ${{ matrix.package }}-${{ matrix.python-version }}-${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    needs: changes
+    if: needs.changes.outputs.packages != '[]'
     strategy:
       matrix:
         os:
@@ -59,10 +81,7 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
-        package:
-          - liman
-          - liman_core
-          - liman_openapi
+        package: ${{ fromJson(needs.changes.outputs.packages) }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.package }}-${{ matrix.python-version }}-${{ matrix.os }}
