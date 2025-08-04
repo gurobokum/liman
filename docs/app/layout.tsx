@@ -1,9 +1,9 @@
-import { Analytics } from "@vercel/analytics/next";
 import { RootProvider } from "fumadocs-ui/provider";
 import { Inter } from "next/font/google";
 import React from "react";
 
 import "@/app/global.css";
+import Analytics from "@/src/components/Analytics";
 
 const inter = Inter({
   subsets: ["latin"],
