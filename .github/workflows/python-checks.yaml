@@ -106,7 +106,10 @@ jobs:
     if: needs.changes.outputs.packages != '[]'
     strategy:
       matrix:
-        package: ${{ fromJson(needs.changes.outputs.packages) }}
+        package:
+          - liman_core
+          - liman_finops
+          - liman_openapi
     permissions:
       contents: write
       pull-requests: write
