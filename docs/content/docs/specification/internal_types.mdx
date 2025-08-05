@@ -5,11 +5,11 @@ description: Internal types used in the system.
 
 ## BaseNode
 
-BaseNode is a base type for all nodes in the system - LLMNode, ToolNode or Node. If you see such node in the specification, it means that the node can be any of these types.
+BaseNode is a base type for all nodes in the system: LLMNode, ToolNode, or Node. If you see this type in a specification, it means the node can be any of these types.
 
 ## Edge
 
-An Edge allows you to define a connection between nodes using a DSL condition
+An Edge allows you to define a connection between nodes using a DSL condition.
 
 ```yaml
 when: LimanCE | FunctionRef
@@ -49,7 +49,7 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
 
 ### EdgeID
 
-Any string or number that is used to identify an edge in the node. It must be unique within the same parent node.
+Any string or number used to identify an edge within a node. It must be unique within the same parent node.
 
 ```
 <edge-id> ::= <string> | <number>
@@ -73,7 +73,7 @@ These functions provide access to common operations and context information with
 #### Example
 
 ```js
-value == true && another_value != 1 || $is_error(UnauthorizedError)"
+(value == true && another_value != 1) || $is_error(UnauthorizedError);
 ```
 
 #### BNF
@@ -104,12 +104,41 @@ value == true && another_value != 1 || $is_error(UnauthorizedError)"
 
 FunctionRef is a reference to a function that can be called when the edge is followed. It is typically a string that represents the path to the function, such as `module.path.to.method`. The function should return a boolean value indicating whether the edge should be followed.
 
+## InlinedType
+
+Some types can be declared inline, meaning they can be defined directly within a parent node instead of as separate, standalone declarations. This is useful for simple configurations or when you want to keep related declarations together.
+
+When a type is inlined, the system automatically generates a unique name using the pattern `{parent_name}__inlined__{id}_{type_name}`. The inlined object is only accessible within its parent declaration and cannot be referenced globally through the Registry.
+
+### Example
+
+Instead of creating a separate ServiceAccount declaration, you can inline it directly within a node:
+
+```yaml
+kind: LLMNode
+node: StartNode
+---
+auth:
+  service_account:
+    credentials_provider: CredentialsProvider
+```
+
+This would create a ServiceAccount similar to:
+
+```yaml
+kind: ServiceAccount
+name: LLMNode:StartNode__inlined_{id}_ServiceAccount
+credentials_provider: CredentialsProvider
+```
+
+The generated ServiceAccount exists only within the scope of the `LLMNode` and cannot be referenced by other nodes or accessed through the global Registry.
+
 ## LanguageBundle
 
-LanguageBundle is string or dict with text supported localization
-It uses language codes as keys on any depth
-any text without the language code is considered as a default language text
-It's possible to use `{template_variable}` syntax there
+LanguageBundle is a string or dictionary with localization support for text.
+It uses language codes as keys at any depth.
+Any text without a language code is considered default language text.
+You can use `{template_variable}` syntax within the text.
 
 ```yaml
 prompts:
@@ -123,7 +152,7 @@ prompts:
       Notizen: {notes}
 ```
 
-would be converted to if `en` is the fallback and default language:
+This would be converted to the following if `en` is the fallback and default language:
 
 ```yaml
 prompts:
