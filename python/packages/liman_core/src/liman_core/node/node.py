@@ -58,6 +58,7 @@ class Node(BaseNode[NodeSpec]):
         strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
+        **kwargs: Any,
     ) -> Self:
         spec = NodeSpec.model_validate(data, strict=strict)
         return cls(

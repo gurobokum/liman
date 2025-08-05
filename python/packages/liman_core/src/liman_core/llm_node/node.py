@@ -182,6 +182,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
+        **kwargs: Any,
     ) -> Self:
         spec = LLMNodeSpec.model_validate(data, strict=strict)
         return cls(

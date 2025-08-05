@@ -143,6 +143,7 @@ class ToolNode(BaseNode[ToolNodeSpec]):
         strict: bool = False,
         default_lang: str = "en",
         fallback_lang: str = "en",
+        **kwargs: Any,
     ) -> Self:
         spec = ToolNodeSpec.model_validate(
             data, strict=strict, context={"default_lang": default_lang}
