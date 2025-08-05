@@ -31,6 +31,12 @@ lint.sequence = [
   { cmd = "poe lint", cwd = "packages/liman_finops" },
   { cmd = "poe lint", cwd = "packages/liman_openapi" }
 ]
+format.sequence = [
+  { cmd = "poe format", cwd = "packages/liman" },
+  { cmd = "poe format", cwd = "packages/liman_core" },
+  { cmd = "poe format", cwd = "packages/liman_finops" },
+  { cmd = "poe format", cwd = "packages/liman_openapi" }
+]
 test.sequence = [
   { cmd = "poe test", cwd = "packages/liman_core" },
   { cmd = "poe test", cwd = "packages/liman_openapi" }
