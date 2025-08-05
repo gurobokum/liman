@@ -5,6 +5,7 @@ from dishka import AsyncContainer, Container
 from pydantic import ValidationError
 from ruamel.yaml.error import YAMLError
 
+from liman_core.errors import InvalidSpecError
 from liman_core.node import Node
 
 TEST_DATA_PATH = Path(__file__).parent / "data"
@@ -54,7 +55,7 @@ def test_from_yaml_path_nonexistent_file() -> None:
 
 def test_from_yaml_path_empty_file() -> None:
     yaml_path = TEST_DATA_PATH / "empty.yaml"
-    with pytest.raises(ValidationError):
+    with pytest.raises(InvalidSpecError):
         Node.from_yaml_path(str(yaml_path))
 
 

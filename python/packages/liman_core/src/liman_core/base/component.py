@@ -10,6 +10,7 @@ from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import PreservedScalarString
 
 from liman_core.base.schemas import S
+from liman_core.errors import InvalidSpecError
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -94,6 +95,11 @@ class Component(Generic[S], ABC):
         yaml = YAML()
         with open(yaml_path, encoding="utf-8") as fd:
             yaml_data = yaml.load(fd)
+
+        if not isinstance(yaml_data, dict):
+            raise InvalidSpecError(
+                "YAML content must be a dictionary at the top level."
+            )
 
         return cls.from_dict(
             yaml_data,
