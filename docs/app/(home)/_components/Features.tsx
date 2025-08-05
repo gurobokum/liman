@@ -1,5 +1,6 @@
 import { Card } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
+import Link from "fumadocs-core/link";
 import {
   FileText,
   Cog,
@@ -7,8 +8,8 @@ import {
   BarChart3,
   Shield,
   Network,
-  Database,
   Puzzle,
+  GitBranch,
 } from "lucide-react";
 
 const features = [
@@ -18,13 +19,15 @@ const features = [
     description:
       "Automatically generate LLM tools from OpenAPI specifications. Transform any API into agent tools without writing MCP servers.",
     badge: "Core",
+    link: "/docs/poc#openapi--toolnode-generation",
   },
   {
     icon: Shield,
     title: "Service Account Authorization",
     description:
-      "Built-in authorization with service accounts and role assumption. Secure access control for distributed agent execution.",
+      "Built-in authorization with service accounts. State isolation, credential provisioning, and minimal permissions with least privilege principles.",
     badge: "Security",
+    link: "/docs/poc#authientication--authorization",
   },
   {
     icon: Globe,
@@ -32,6 +35,7 @@ const features = [
     description:
       "Multi-language support with automatic system prompt generation. Increase function calling accuracy across languages.",
     badge: "i18n",
+    link: "/docs/poc#yaml-manifests",
   },
   {
     icon: BarChart3,
@@ -41,12 +45,21 @@ const features = [
     badge: "Observability",
   },
   {
+    icon: GitBranch,
+    title: "Condition Expression Language",
+    description:
+      "Custom DSL for intelligent flow control between nodes. Express complex routing decisions declaratively without repetitive conditional logic.",
+    badge: "Flow Control",
+    link: "/docs/poc#condition-expression-language-dsl-ce",
+  },
+  {
     icon: Network,
     title: "Distributed Edges",
     description:
       "Connect nodes via MCP, A2A, HTTP, WebSocket, or shared memory. Build distributed agents across AWS Lambda and processes.",
     badge: "Connectivity",
   },
+  /*
   {
     icon: Database,
     title: "Atomic State Management",
@@ -54,12 +67,14 @@ const features = [
       "External state with pre_hook, invoke, post_hook phases. Build complex distributed agents with flexible state handling.",
     badge: "State",
   },
+  */
   {
     icon: Puzzle,
     title: "Plugin Ecosystem",
     description:
       "Extensible plugin system with built-in and custom plugins. Auto-context stitching, evaluation agents, and anomaly detection.",
     badge: "Plugins",
+    link: "/docs/poc#plugins-system",
   },
   {
     icon: FileText,
@@ -67,6 +82,7 @@ const features = [
     description:
       "Layer configurations using Kustomize-like overlays. Perfect for multi-environment deployments and language variants.",
     badge: "Config",
+    link: "/docs/poc#overlays",
   },
 ];
 
@@ -106,9 +122,21 @@ export default function Features() {
                     {feature.badge}
                   </Badge>
                 </div>
-                <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
-                  {feature.title}
-                </h3>
+                {feature.link ? (
+                  <h3 className="font-semibold mb-2 transition-colors">
+                    <Link
+                      href={feature.link}
+                      target="_blank"
+                      className="hover:text-primary hover:underline transition-colors cursor-pointer"
+                    >
+                      {feature.title}
+                    </Link>
+                  </h3>
+                ) : (
+                  <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors">
+                    {feature.title}
+                  </h3>
+                )}
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {feature.description}
                 </p>
