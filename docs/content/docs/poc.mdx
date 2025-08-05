@@ -9,7 +9,7 @@ import Link from "fumadocs-core/link";
   <p className="text-xs flex items-end flex-col gap-1">
     <span className="block">
       <span className="mr-1">Version:</span>
-      <time dateTime="2025-07-17">alpha-01</time>
+      <time dateTime="2025-07-17">alpha-02</time>
     </span>
     <span className="block">
       <span className="mr-1">Author:</span>
@@ -17,7 +17,7 @@ import Link from "fumadocs-core/link";
     </span>
     <span className="block">
       <span className="mr-1">Last updated:</span>
-      <time dateTime="2025-07-17">01/08/2025</time>
+      <time dateTime="2025-07-17">05/08/2025</time>
     </span>
   </p>
 </Callout>
@@ -512,11 +512,273 @@ The Executor uses CE DSL to intelligently determine execution paths, evaluating 
 
 This separation of concerns between **Executor** (graph orchestration) and **Launcher** (execution context) allows Liman agents to scale seamlessly from simple applications to complex distributed systems while maintaining clean architecture, consistent behavior, and comprehensive observability.
 
+## Authientication & Authorization
+
+Liman provides a robust authentication and authorization system built around the **ServiceAccount** specification. This system ensures secure access control and follows the principle of least privilege, where each node only gets the permissions it absolutely needs.
+
+### ServiceAccount
+
+A **[ServiceAccount](/docs/specification/auth/service_account)** defines the authentication and authorization context for node execution. It provides credentials and context variables that nodes need to access external services and resources.
+
+```yaml
+kind: ServiceAccount
+name: MyServiceAccount
+context:
+  strict: true
+  inject:
+    - user_id: user.id
+    - organization.id
+credentials_provider: GCPCredentials
+```
+
+#### Key Components
+
+**Context Variables**
+
+The `context` field allows you to inject specific variables from the external state into the service account. This enables fine-grained control over what data is available to each node.
+
+**Context Configuration**
+
+- `strict`: If `true`, throws an error if a required variable is not found in the state (default: `true`)
+- `inject`: List of variables to inject into the service account context
+
+**Variable Injection Formats**
+
+- **Direct notation**: `organization.id` - accessed as `context.organization.id`
+- **Custom assignment**: `user_id: user.id` - accessed as `context.user_id`
+
+Example context configuration:
+
+```yaml
+context:
+  strict: true
+  inject:
+    - user_id: user.id # Custom name assignment
+    - organization.id # Direct path
+    - project.settings.region
+```
+
+**Credentials Provider**
+
+The `credentials_provider` (or `credentials_providers` for multiple providers) specifies how authentication credentials are obtained. These are phantom specifications - not declared in YAML but provided to the registry during runtime.
+
+**Single Provider**
+
+```yaml
+credentials_provider: GCPCredentials
+```
+
+**Multiple Providers**
+
+```yaml
+credentials_providers:
+  - GCPCredentials
+  - AWSS3Credentials
+```
+
+### Node Authz
+
+Service accounts can be attached to nodes through the `auth` field, enabled by the built-in [AuthPlugin](#plugins-system).
+[NodeActor](#nodeactor) execution is scoped to the service account, ensuring that nodes only have access to the permissions defined in their associated service account.
+
+```yaml
+kind: LLMNode
+name: SecureLLMNode
+prompts:
+  system: You are a helpful assistant.
+auth:
+  service_account: MyServiceAccount
+```
+
+#### Inlined ServiceAccounts
+
+ServiceAccounts can be declared inline within node specifications, eliminating the need for separate ServiceAccount manifests:
+
+```yaml
+kind: ToolNode
+name: UserLookupTool
+description:
+  en: Look up user information
+auth:
+  # Inlined ServiceAccount
+  service_account:
+    context:
+      inject: [user_id]
+    credentials_provider: UserDataCredentials
+```
+
+#### Runtime Integration
+
+NodeActor acts as a selected ServiceAccount (based on DSL CE) and executes a node, what ensures that:
+
+1. **State Isolation** - context variables are extracted from external state in a controlled manner, ensuring only necessary data is exposed to nodes.
+2. **Credential Provisioning** - the CredentialsProvider supplies necessary credentials
+   - API calls: Bearer tokens, API keys, OAuth credentials
+   - Cloud services: Service account tokens, IAM role credentials
+3. **Minimal Permissions** - each ServiceAccount provides only the minimum required permissions for its associated node, following the principle of least privilege.
+
+## Plugins System
+
+Liman's **Plugin System** enables dynamic extension of node specifications without hardcoding functionality. This allows users to add custom logic (such as authentication, monitoring, or custom behaviors) to any node type through a clean, declarative API. It helps maintain simple declarations while allowing extension to complex use cases.
+
+### Core Architecture
+
+The plugin system is built around three key components:
+
+1. **Plugin Registry**: Central registration point for all plugins
+2. **Plugin Protocol**: Standard interface all plugins must implement
+3. **Dynamic Schema Enhancement**: Runtime modification of node specifications
+
+### Built-in Plugins
+
+- [AuthPlugin](#authientication--authorization) - Liman includes a built-in authentication plugin that adds `auth` fields to all node types  
+  This enables authentication configuration in YAML manifests:
+  ```yaml
+  kind: Node
+  name: SecureNode
+  prompts:
+    system:
+      en: You are a helpful assistant.
+  auth:
+    service_account:
+      context:
+        inject: [user_id, org_id]
+      credentials_provider: GCPCredentials
+  ```
+
+### Python
+
+#### Plugin Interface
+
+Every plugin must implement the following interface:
+
+```python
+from typing import Any, Protocol
+from abc import abstractmethod
+
+class Plugin(Protocol):
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """Unique plugin identifier"""
+        ...
+
+    @property
+    @abstractmethod
+    def applies_to(self) -> list[str]:
+        """List of spec types this plugin extends (e.g., ['Node', 'LLMNode'])"""
+        ...
+
+    @property
+    @abstractmethod
+    def field_name(self) -> str:
+        """Field name added to specifications"""
+        ...
+
+    @property
+    @abstractmethod
+    def field_type(self) -> type:
+        """Field structure type (e.g., Pydantic model in python)"""
+        ...
+
+    @abstractmethod
+    def validate(self, spec_data: Any) -> Any:
+        """Validate and transform plugin-specific data"""
+        ...
+```
+
+#### Plugin Registration
+
+Plugins are registered before node specifications are imported, enabling runtime schema enhancement
+
+```python
+register_plugins([
+    AuthPlugin(),
+    MCPPlugin(),
+    A2APlugin(),
+])
+```
+
+#### Example
+
+In this example, we create a custom plugin for adding metrics to nodes. This plugin can be applied to specific node types like `LLMNode` or `ToolNode`, allowing users to define metrics configurations directly in their YAML manifests.
+
+```python title="myproject/plugins.py"
+from typing import Any
+from pydantic import BaseModel
+from liman_core.plugins.registry import Plugin
+
+class MetricsSpec(BaseModel):
+    enabled: bool = True
+    custom_tags: dict[str, str] = {}
+    alert_thresholds: dict[str, float] = {}
+
+class CustomMetricsPlugin:
+    name = "custom_metrics"
+    applies_to = ["LLMNode", "ToolNode"]  # Only specific node types
+    field_name = "metrics"
+    field_type = MetricsSpec
+
+    def validate(self, spec_data: Any) -> MetricsSpec:
+        return MetricsSpec(**spec_data) if spec_data else MetricsSpec()
+```
+
+Usage in YAML:
+
+```yaml
+kind: LLMNode
+name: StartNode
+prompts:
+  system: You are a helpful assistant.
+metrics:
+  enabled: true
+  custom_tags:
+    team: ai-platform
+    environment: production
+  alert_thresholds:
+    response_time: 2.0
+    error_rate: 0.05
+```
+
+### Plugin Composition
+
+Multiple plugins can extend the same node type, creating rich, composable specifications:
+
+```yaml
+kind: ToolNode
+name: EnhancedTool
+description:
+  en: Enhanced tool with multiple plugin extensions
+
+# builtin AuthPlugin
+auth:
+  service_account: ToolServiceAccount
+
+# CustomMetricsPlugin
+metrics:
+  enabled: true
+  custom_tags:
+    priority: high
+
+# RateLimiterPlugin
+rate_limiter:
+  requests_per_minute: 60
+  burst_limit: 10
+```
+
+### Benefits
+
+1. **Extensibility**: Add any custom functionality without modifying core specifications
+2. **Composability**: Multiple plugins can enhance the same node type
+3. **Clean Separation**: Core specs remain focused, plugins handle specialized concerns
+
+This plugin architecture enables the Liman ecosystem to grow organically, with community-contributed plugins for authentication, monitoring, security, compliance, and specialized domain logic.
+
 ---
 
 <Callout type="info" title="To Be Continued...">
 This specification is actively being developed. More sections covering advanced features, implementation details, and practical examples will be added soon.
 
-Stay tuned for updates on distributed state management, plugin architecture, observability patterns, and real-world deployment scenarios.
+Stay tuned for updates on distributed state management, observability patterns, and real-world deployment scenarios.
 
 </Callout>
