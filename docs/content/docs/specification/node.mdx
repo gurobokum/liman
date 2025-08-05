@@ -9,11 +9,11 @@ description: Node that can be used to create custom functionality in the system.
 kind: Node
 name: string
 func: string
-description: Optional[LanguageBundle]
-prompts: Optional[LanguageBundle]
-nodes: (Node | Edge<Node>)[]
-llm_nodes: (LLMNode | Edge<LLMNode>)[]
-tools: ToolNode[]
+description?: LanguageBundle
+prompts?: LanguageBundle
+nodes?: (Node | Edge<Node>)[]
+llm_nodes?: (LLMNode | Edge<LLMNode>)[]
+tools?: ToolNode[]
 ```
 
 import { TypeTable } from "fumadocs-ui/components/type-table";
