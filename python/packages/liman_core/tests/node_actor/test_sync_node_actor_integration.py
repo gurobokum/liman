@@ -6,7 +6,7 @@ from dishka import AsyncContainer, Container
 
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import NodeActor, NodeActorState
+from liman_core.node_actor import NodeActor, NodeActorStatus
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.tool_node import ToolNode
 
@@ -92,23 +92,23 @@ def test_sync_actor_status_format(real_node: Node) -> None:
 
     sync_status = sync_actor.get_status()
 
-    expected_keys = {"actor_id", "node_name", "node_type", "state", "is_shutdown"}
+    expected_keys = {"actor_id", "node_name", "node_type", "status", "is_shutdown"}
     assert set(sync_status.keys()) == expected_keys
     assert sync_status["node_name"] == "SyncIntegrationTestNode"
     assert sync_status["node_type"] == "Node"
-    assert sync_status["state"] == NodeActorState.IDLE
+    assert sync_status["status"] == NodeActorStatus.IDLE
 
 
 def test_sync_actor_lifecycle(real_node: Node) -> None:
     sync_actor = NodeActor(node=real_node)
 
-    assert sync_actor.state == NodeActorState.IDLE
+    assert sync_actor.status == NodeActorStatus.IDLE
 
     sync_actor.initialize()
-    assert sync_actor.state == NodeActorState.READY
+    assert sync_actor.status == NodeActorStatus.READY
 
     sync_actor.shutdown()
-    assert sync_actor.state == NodeActorState.SHUTDOWN
+    assert sync_actor.status == NodeActorStatus.SHUTDOWN
 
 
 def test_sync_actor_execution_context(real_node: Node) -> None:
@@ -159,7 +159,7 @@ def test_sync_actor_repr_consistency(real_node: Node) -> None:
 
     assert str(actor_id) in sync_repr
     assert "SyncIntegrationTestNode" in sync_repr
-    assert NodeActorState.IDLE in sync_repr
+    assert NodeActorStatus.IDLE in sync_repr
     assert "NodeActor" in sync_repr
 
 
@@ -176,7 +176,7 @@ def test_sync_actor_multiple_instances(real_node: Node) -> None:
 
     # All should be ready
     for actor in actors:
-        assert actor.state == NodeActorState.READY
+        assert actor.status == NodeActorStatus.READY
 
     # Shutdown all
     for actor in actors:
@@ -184,4 +184,4 @@ def test_sync_actor_multiple_instances(real_node: Node) -> None:
 
     # All should be shutdown
     for actor in actors:
-        assert actor.state == NodeActorState.SHUTDOWN
+        assert actor.status == NodeActorStatus.SHUTDOWN

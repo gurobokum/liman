@@ -7,7 +7,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 
 from liman_core.base import BaseNode, Output
 from liman_core.node_actor.errors import NodeActorError
-from liman_core.node_actor.schemas import NodeActorState
+from liman_core.node_actor.schemas import NodeActorStatus
 from liman_core.utils import to_snake_case
 
 
@@ -31,11 +31,11 @@ class BaseNodeActor(ABC):
         self.node = node
         self.llm = llm
 
-        self.state = NodeActorState.IDLE
+        self.status = NodeActorStatus.IDLE
         self.error: NodeActorError | None = None
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, state={self.state})"
+        return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, status={self.status})"
 
     @property
     def composite_id(self) -> str:
@@ -55,7 +55,7 @@ class BaseNodeActor(ABC):
             "actor_id": str(self.id),
             "node_name": self.node.name,
             "node_type": self.node.spec.kind,
-            "state": self.state,
+            "status": self.status,
             "is_shutdown": self._is_shutdown(),
         }
 

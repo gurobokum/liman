@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from liman_core.node import Node
-from liman_core.node_actor import NodeActorState
+from liman_core.node_actor import NodeActorStatus
 from liman_core.node_actor.base import BaseNodeActor, create_error
 from liman_core.node_actor.errors import NodeActorError
 
@@ -20,7 +20,7 @@ class MockNodeActor(BaseNodeActor):
         self._shutdown = False
 
     def initialize(self) -> None:
-        self.state = NodeActorState.READY
+        self.status = NodeActorStatus.READY
 
     def execute(
         self,
@@ -64,7 +64,7 @@ def test_actor_initialization(mock_node: Mock) -> None:
 
     assert actor.node is mock_node
     assert actor.llm is None
-    assert actor.state == NodeActorState.IDLE
+    assert actor.status == NodeActorStatus.IDLE
     assert actor.error is None
     assert actor.id is not None
 
@@ -97,12 +97,12 @@ def test_composite_id_format(test_actor: MockNodeActor) -> None:
 def test_get_status_returns_expected_fields(test_actor: MockNodeActor) -> None:
     status = test_actor.get_status()
 
-    expected_keys = {"actor_id", "node_name", "node_type", "state", "is_shutdown"}
+    expected_keys = {"actor_id", "node_name", "node_type", "status", "is_shutdown"}
     assert set(status.keys()) == expected_keys
     assert status["actor_id"] == str(test_actor.id)
     assert status["node_name"] == "test_node"
     assert status["node_type"] == "Node"
-    assert status["state"] == NodeActorState.IDLE
+    assert status["status"] == NodeActorStatus.IDLE
     assert status["is_shutdown"] is False
 
 
@@ -158,4 +158,4 @@ def test_repr_format(test_actor: MockNodeActor) -> None:
     assert "MockNodeActor" in repr_str
     assert str(test_actor.id) in repr_str
     assert "test_node" in repr_str
-    assert NodeActorState.IDLE in repr_str
+    assert NodeActorStatus.IDLE in repr_str

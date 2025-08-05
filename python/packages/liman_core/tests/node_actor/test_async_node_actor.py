@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from liman_core.base import Output
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import AsyncNodeActor, NodeActorError, NodeActorState
+from liman_core.node_actor import AsyncNodeActor, NodeActorError, NodeActorStatus
 from liman_core.tool_node import ToolNode
 
 
@@ -62,24 +62,24 @@ async def test_async_actor_create_method(mock_node: Mock) -> None:
 
     assert isinstance(actor, AsyncNodeActor)
     assert actor.node is mock_node
-    assert actor.state == NodeActorState.IDLE
+    assert actor.status == NodeActorStatus.IDLE
 
 
 async def test_async_actor_initialize_success(async_actor: AsyncNodeActor) -> None:
     await async_actor.initialize()
 
-    assert async_actor.state == NodeActorState.READY
+    assert async_actor.status == NodeActorStatus.READY
 
 
-async def test_async_actor_initialize_wrong_state_raises(
+async def test_async_actor_initialize_wrong_status_raises(
     async_actor: AsyncNodeActor,
 ) -> None:
-    async_actor.state = NodeActorState.READY
+    async_actor.status = NodeActorStatus.READY
 
     with pytest.raises(NodeActorError) as exc_info:
         await async_actor.initialize()
 
-    assert "Cannot initialize actor in state" in str(exc_info.value)
+    assert "Cannot initialize actor in status" in str(exc_info.value)
 
 
 async def test_async_actor_initialize_uncompiled_node_raises(mock_node: Mock) -> None:
@@ -100,10 +100,10 @@ async def test_async_actor_execute_success(async_actor: AsyncNodeActor) -> None:
     result = await async_actor.execute(inputs)
 
     assert result.response.content == "test_result"
-    assert async_actor.state == NodeActorState.COMPLETED
+    assert async_actor.status == NodeActorStatus.COMPLETED
 
 
-async def test_async_actor_execute_wrong_state_raises(
+async def test_async_actor_execute_wrong_status_raises(
     async_actor: AsyncNodeActor,
 ) -> None:
     inputs = [HumanMessage(content="test")]
@@ -111,7 +111,7 @@ async def test_async_actor_execute_wrong_state_raises(
     with pytest.raises(NodeActorError) as exc_info:
         await async_actor.execute(inputs)
 
-    assert "Cannot execute actor in state" in str(exc_info.value)
+    assert "Cannot execute actor in status" in str(exc_info.value)
 
 
 async def test_async_actor_execute_after_shutdown_raises(
@@ -124,7 +124,7 @@ async def test_async_actor_execute_after_shutdown_raises(
     with pytest.raises(NodeActorError) as exc_info:
         await async_actor.execute(inputs)
 
-    assert "Cannot execute actor in state shutdown" in str(exc_info.value)
+    assert "Cannot execute actor in status shutdown" in str(exc_info.value)
 
 
 async def test_async_actor_execute_with_context(async_actor: AsyncNodeActor) -> None:
@@ -195,7 +195,7 @@ async def test_async_actor_execute_node_exception_raises(
 async def test_async_actor_shutdown(async_actor: AsyncNodeActor) -> None:
     await async_actor.shutdown()
 
-    assert async_actor.state == NodeActorState.SHUTDOWN
+    assert async_actor.status == NodeActorStatus.SHUTDOWN
     assert async_actor._is_shutdown()
 
 

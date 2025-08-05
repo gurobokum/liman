@@ -8,7 +8,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from liman_core.base import Output
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import NodeActor, NodeActorError, NodeActorState
+from liman_core.node_actor import NodeActor, NodeActorError, NodeActorStatus
 from liman_core.tool_node import ToolNode
 
 
@@ -63,22 +63,22 @@ def test_sync_actor_create_method(mock_node: Mock) -> None:
 
     assert isinstance(actor, NodeActor)
     assert actor.node is mock_node
-    assert actor.state == NodeActorState.IDLE
+    assert actor.status == NodeActorStatus.IDLE
 
 
 def test_sync_actor_initialize_success(sync_actor: NodeActor) -> None:
     sync_actor.initialize()
 
-    assert sync_actor.state == NodeActorState.READY
+    assert sync_actor.status == NodeActorStatus.READY
 
 
-def test_sync_actor_initialize_wrong_state_raises(sync_actor: NodeActor) -> None:
-    sync_actor.state = NodeActorState.READY
+def test_sync_actor_initialize_wrong_status_raises(sync_actor: NodeActor) -> None:
+    sync_actor.status = NodeActorStatus.READY
 
     with pytest.raises(NodeActorError) as exc_info:
         sync_actor.initialize()
 
-    assert "Cannot initialize actor in state" in str(exc_info.value)
+    assert "Cannot initialize actor in status" in str(exc_info.value)
 
 
 def test_sync_actor_initialize_uncompiled_node_raises(mock_node: Mock) -> None:
@@ -99,16 +99,16 @@ def test_sync_actor_execute_success(sync_actor: NodeActor) -> None:
     result = sync_actor.execute(inputs)
 
     assert result.response.content == "test_result"
-    assert sync_actor.state == NodeActorState.COMPLETED
+    assert sync_actor.status == NodeActorStatus.COMPLETED
 
 
-def test_sync_actor_execute_wrong_state_raises(sync_actor: NodeActor) -> None:
+def test_sync_actor_execute_wrong_status_raises(sync_actor: NodeActor) -> None:
     inputs = [HumanMessage(content="test")]
 
     with pytest.raises(NodeActorError) as exc_info:
         sync_actor.execute(inputs)
 
-    assert "Cannot execute actor in state" in str(exc_info.value)
+    assert "Cannot execute actor in status" in str(exc_info.value)
 
 
 def test_sync_actor_execute_after_shutdown_raises(sync_actor: NodeActor) -> None:
@@ -119,7 +119,7 @@ def test_sync_actor_execute_after_shutdown_raises(sync_actor: NodeActor) -> None
     with pytest.raises(NodeActorError) as exc_info:
         sync_actor.execute(inputs)
 
-    assert "Cannot execute actor in state shutdown" in str(exc_info.value)
+    assert "Cannot execute actor in status shutdown" in str(exc_info.value)
 
 
 def test_sync_actor_execute_with_context(sync_actor: NodeActor) -> None:
@@ -186,22 +186,22 @@ def test_sync_actor_execute_node_exception_raises(sync_actor: NodeActor) -> None
 def test_sync_actor_shutdown(sync_actor: NodeActor) -> None:
     sync_actor.shutdown()
 
-    assert sync_actor.state == NodeActorState.SHUTDOWN
+    assert sync_actor.status == NodeActorStatus.SHUTDOWN
     assert sync_actor._is_shutdown()
 
 
-def test_sync_actor_get_status_reflects_state(sync_actor: NodeActor) -> None:
+def test_sync_actor_get_status_reflects_status(sync_actor: NodeActor) -> None:
     status = sync_actor.get_status()
-    assert status["state"] == NodeActorState.IDLE
+    assert status["status"] == NodeActorStatus.IDLE
     assert status["is_shutdown"] is False
 
     sync_actor.initialize()
     status = sync_actor.get_status()
-    assert status["state"] == NodeActorState.READY
+    assert status["status"] == NodeActorStatus.READY
 
     sync_actor.shutdown()
     status = sync_actor.get_status()
-    assert status["state"] == NodeActorState.SHUTDOWN
+    assert status["status"] == NodeActorStatus.SHUTDOWN
     assert status["is_shutdown"] is True
 
 

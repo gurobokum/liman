@@ -1,6 +1,6 @@
-class NodeActorState:
+class NodeActorStatus:
     """
-    Represents the current state of a NodeActor
+    Represents the current status of a NodeActor
     """
 
     IDLE = "idle"

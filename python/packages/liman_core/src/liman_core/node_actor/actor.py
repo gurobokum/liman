@@ -11,7 +11,7 @@ from liman_core.base import BaseNode, Output
 from liman_core.llm_node.node import LLMNode
 from liman_core.node.node import Node
 from liman_core.node_actor.base import BaseNodeActor, create_error
-from liman_core.node_actor.schemas import NodeActorState
+from liman_core.node_actor.schemas import NodeActorStatus
 from liman_core.tool_node.node import ToolNode
 
 if sys.version_info >= (3, 11):
@@ -64,10 +64,10 @@ class NodeActor(BaseNodeActor):
         """
         Initialize the actor and prepare for execution
         """
-        if self.state != NodeActorState.IDLE:
-            raise create_error(f"Cannot initialize actor in state {self.state}", self)
+        if self.status != NodeActorStatus.IDLE:
+            raise create_error(f"Cannot initialize actor in status {self.status}", self)
 
-        self.state = NodeActorState.INITIALIZING
+        self.status = NodeActorStatus.INITIALIZING
 
         try:
             # TODO: make public method in BaseNode
@@ -75,7 +75,7 @@ class NodeActor(BaseNodeActor):
                 self.node.compile()
 
             self._validate_requirements()
-            self.state = NodeActorState.READY
+            self.status = NodeActorStatus.READY
 
         except Exception as e:
             self.error = create_error(f"Failed to initialize actor: {e}", self)
@@ -101,8 +101,8 @@ class NodeActor(BaseNodeActor):
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
         """
-        if self.state not in (NodeActorState.READY, NodeActorState.COMPLETED):
-            raise create_error(f"Cannot execute actor in state {self.state}", self)
+        if self.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
+            raise create_error(f"Cannot execute actor in status {self.status}", self)
 
         if self._shutdown_event.is_set():
             raise create_error("Actor is shutting down", self)
@@ -116,7 +116,7 @@ class NodeActor(BaseNodeActor):
     def shutdown(self) -> None:
         """Gracefully shutdown the actor"""
         self._shutdown_event.set()
-        self.state = NodeActorState.SHUTDOWN
+        self.status = NodeActorStatus.SHUTDOWN
 
         if self._execution_lock.locked():
             with self._execution_lock:
@@ -125,7 +125,7 @@ class NodeActor(BaseNodeActor):
     def _execute_internal(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any], execution_id: UUID
     ) -> Output[Any]:
-        self.state = NodeActorState.EXECUTING
+        self.status = NodeActorStatus.EXECUTING
 
         try:
             execution_context = self._prepare_execution_context(context, execution_id)
@@ -137,7 +137,7 @@ class NodeActor(BaseNodeActor):
             else:
                 result = self._execute_generic_node(inputs, execution_context)
 
-            self.state = NodeActorState.COMPLETED
+            self.status = NodeActorStatus.COMPLETED
             return result
 
         except Exception as e:

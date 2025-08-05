@@ -7,7 +7,7 @@ from dishka import AsyncContainer, Container
 
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import AsyncNodeActor, NodeActorState
+from liman_core.node_actor import AsyncNodeActor, NodeActorStatus
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.tool_node import ToolNode
 
@@ -86,23 +86,23 @@ async def test_async_actor_status_format(real_node: Node) -> None:
 
     async_status = async_actor.get_status()
 
-    expected_keys = {"actor_id", "node_name", "node_type", "state", "is_shutdown"}
+    expected_keys = {"actor_id", "node_name", "node_type", "status", "is_shutdown"}
     assert set(async_status.keys()) == expected_keys
     assert async_status["node_name"] == "AsyncIntegrationTestNode"
     assert async_status["node_type"] == "Node"
-    assert async_status["state"] == NodeActorState.IDLE
+    assert async_status["status"] == NodeActorStatus.IDLE
 
 
 async def test_async_actor_lifecycle(real_node: Node) -> None:
     async_actor = AsyncNodeActor(node=real_node)
 
-    assert async_actor.state == NodeActorState.IDLE
+    assert async_actor.status == NodeActorStatus.IDLE
 
     await async_actor.initialize()
-    assert async_actor.state == NodeActorState.READY
+    assert async_actor.status == NodeActorStatus.READY
 
     await async_actor.shutdown()
-    assert async_actor.state == NodeActorState.SHUTDOWN
+    assert async_actor.status == NodeActorStatus.SHUTDOWN
 
 
 async def test_async_actor_execution_context(real_node: Node) -> None:
@@ -153,7 +153,7 @@ async def test_async_actor_repr_consistency(real_node: Node) -> None:
 
     assert str(actor_id) in async_repr
     assert "AsyncIntegrationTestNode" in async_repr
-    assert NodeActorState.IDLE in async_repr
+    assert NodeActorStatus.IDLE in async_repr
     assert "AsyncNodeActor" in async_repr
 
 
@@ -170,7 +170,7 @@ async def test_async_actor_multiple_instances(real_node: Node) -> None:
 
     # All should be ready
     for actor in actors:
-        assert actor.state == NodeActorState.READY
+        assert actor.status == NodeActorStatus.READY
 
     # Shutdown all
     for actor in actors:
@@ -178,7 +178,7 @@ async def test_async_actor_multiple_instances(real_node: Node) -> None:
 
     # All should be shutdown
     for actor in actors:
-        assert actor.state == NodeActorState.SHUTDOWN
+        assert actor.status == NodeActorStatus.SHUTDOWN
 
 
 async def test_async_actor_multiple_instances_concurrent(real_node: Node) -> None:
@@ -193,11 +193,11 @@ async def test_async_actor_multiple_instances_concurrent(real_node: Node) -> Non
 
     # All should be ready
     for actor in actors:
-        assert actor.state == NodeActorState.READY
+        assert actor.status == NodeActorStatus.READY
 
     # Shutdown all concurrently
     await asyncio.gather(*[actor.shutdown() for actor in actors])
 
     # All should be shutdown
     for actor in actors:
-        assert actor.state == NodeActorState.SHUTDOWN
+        assert actor.status == NodeActorStatus.SHUTDOWN
