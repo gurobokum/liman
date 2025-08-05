@@ -4,6 +4,7 @@ from io import StringIO
 from typing import Any, Generic, TypeAlias
 from uuid import UUID, uuid4
 
+from pydantic import create_model
 from rich import print as rich_print
 from rich.syntax import Syntax
 from ruamel.yaml import YAML
@@ -11,6 +12,8 @@ from ruamel.yaml.scalarstring import PreservedScalarString
 
 from liman_core.base.schemas import S
 from liman_core.errors import InvalidSpecError
+from liman_core.plugins import PluginFieldConflictError
+from liman_core.plugins.core.base import Plugin
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -110,6 +113,45 @@ class Component(Generic[S], ABC):
 
     def generate_id(self) -> UUID:
         return uuid4()
+
+    @classmethod
+    def create_extended_spec(
+        cls, base_spec_class: type[S], plugins: list[Plugin], data: dict[str, Any]
+    ) -> type[S]:
+        """
+        Create extended spec class with plugin fields and validate data.
+
+        Returns:
+            Tuple of (ExtendedSpecClass, validated_data)
+        """
+        if not plugins:
+            return base_spec_class
+
+        kind = data.get("kind")
+        if not kind:
+            raise InvalidSpecError("Spec data must contain 'kind' field")
+
+        plugin_fields: dict[str, Any] = {}
+        for plugin in plugins:
+            if kind not in plugin.applies_to:
+                continue
+
+            if hasattr(base_spec_class, plugin.field_name):
+                raise PluginFieldConflictError(
+                    f"Field '{plugin.field_name}' already exists in {kind} spec"
+                )
+
+            plugin_fields[plugin.field_name] = (plugin.field_type, ...)
+
+        if plugin_fields:
+            ExtendedSpecClass = create_model(
+                f"{base_spec_class.__name__}WithPlugins",
+                __base__=base_spec_class,
+                **plugin_fields,
+            )
+            return ExtendedSpecClass
+
+        return base_spec_class
 
     def print_spec(self, initial: bool = False) -> None:
         """

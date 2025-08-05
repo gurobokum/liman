@@ -174,9 +174,11 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         return output
 
     @classmethod
+    @inject
     def from_dict(
         cls,
         data: dict[str, Any],
+        registry: FromDishka[Registry],
         *,
         yaml_path: str | None = None,
         strict: bool = False,
@@ -184,7 +186,12 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         fallback_lang: str = "en",
         **kwargs: Any,
     ) -> Self:
-        spec = LLMNodeSpec.model_validate(data, strict=strict)
+        # Create extended spec with plugin fields
+        plugins = registry.get_plugins(cls.__name__)
+        ExtendedSpecClass = cls.create_extended_spec(LLMNodeSpec, plugins, data)
+
+        spec = ExtendedSpecClass.model_validate(data, strict=strict)
+
         return cls(
             spec=spec,
             initial_data=data,
