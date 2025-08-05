@@ -3,24 +3,9 @@ title: Proof of Concept
 description: Liman framework design
 ---
 
-import Link from "fumadocs-core/link";
+import { InlineTOC } from "fumadocs-ui/components/inline-toc";
 
-<Callout title="Status: Draft">
-  <p className="text-xs flex items-end flex-col gap-1">
-    <span className="block">
-      <span className="mr-1">Version:</span>
-      <time dateTime="2025-07-17">alpha-02</time>
-    </span>
-    <span className="block">
-      <span className="mr-1">Author:</span>
-      <Link href="https://github.com/gurobokum">@gurobokum</Link>
-    </span>
-    <span className="block">
-      <span className="mr-1">Last updated:</span>
-      <time dateTime="2025-07-17">05/08/2025</time>
-    </span>
-  </p>
-</Callout>
+<InlineTOC items={toc.filter((item) => item.depth <= 2)} defaultOpen={true} />
 
 ## Overview
 
@@ -300,9 +285,9 @@ nodes:
 
 This approach eliminates the need to manually create MCP servers or write custom tool definitions, significantly accelerating the development of AI agents that integrate with existing APIs.
 
-## CE DSL: Condition Expression Language
+## Condition Expression Language (DSL CE)
 
-One of Liman's most powerful features is **CE DSL (Condition Expression Domain Specific Language)** - a custom language for defining intelligent flow control between nodes. Rather than writing repetitive conditional logic in code, you can express complex routing decisions declaratively in YAML.
+One of Liman's most powerful features is **DSL CE (Domain Specific Language Condition Expression)** - a custom language for defining intelligent flow control between nodes. Rather than writing repetitive conditional logic in code, you can express complex routing decisions declaratively in YAML.
 
 ### Declarative Flow Control
 
