@@ -1,0 +1,4 @@
+kind: ServiceAccount
+name: TestServiceAccount
+  invalid_indentation: true
+credentials_provider: AWSCredentials
