@@ -4,16 +4,21 @@ import pytest
 
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode
+from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
 
 
 def make_tool_node(
     data: dict[str, Any],
+    registry: Registry | None = None,
     default_lang: LanguageCode = "en",
     fallback_lang: LanguageCode = "en",
 ) -> ToolNode:
+    if registry is None:
+        registry = Registry()
     return ToolNode.from_dict(
         data,
+        registry,
         default_lang=default_lang,
         fallback_lang=fallback_lang,
     )

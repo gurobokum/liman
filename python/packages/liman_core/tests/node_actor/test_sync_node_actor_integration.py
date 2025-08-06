@@ -2,17 +2,22 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
-from dishka import AsyncContainer, Container
 
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
 from liman_core.node_actor import NodeActor, NodeActorStatus
 from liman_core.node_actor.errors import NodeActorError
+from liman_core.registry import Registry
 from liman_core.tool_node import ToolNode
 
 
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
+
 @pytest.fixture(scope="function")
-def real_node(test_containers: tuple[Container, AsyncContainer]) -> Node:
+def real_node(registry: Registry) -> Node:
     """
     Create a real Node instance for integration testing
     """
@@ -22,13 +27,13 @@ def real_node(test_containers: tuple[Container, AsyncContainer]) -> Node:
         "func": "test_function",
         "description": {"en": "Test node for sync integration"},
     }
-    node = Node.from_dict(node_dict)
+    node = Node.from_dict(node_dict, registry)
     node.compile()
     return node
 
 
 @pytest.fixture(scope="function")
-def real_llm_node(test_containers: tuple[Container, AsyncContainer]) -> LLMNode:
+def real_llm_node(registry: Registry) -> LLMNode:
     """
     Create a real LLMNode instance for integration testing
     """
@@ -37,15 +42,13 @@ def real_llm_node(test_containers: tuple[Container, AsyncContainer]) -> LLMNode:
         "name": "SyncIntegrationLLMNode",
         "prompts": {"system": {"en": "You are a helpful assistant."}},
     }
-    node = LLMNode.from_dict(node_dict)
+    node = LLMNode.from_dict(node_dict, registry)
     node.compile()
     return node
 
 
 @pytest.fixture(scope="function")
-def real_tool_node(
-    test_containers: tuple[Container, AsyncContainer],
-) -> ToolNode | None:
+def real_tool_node(registry: Registry) -> ToolNode | None:
     """
     Create a real ToolNode instance for integration testing
     """
@@ -55,7 +58,7 @@ def real_tool_node(
         "tools": [{"name": "test_tool", "description": "A test tool"}],
     }
     try:
-        node = ToolNode.from_dict(node_dict)
+        node = ToolNode.from_dict(node_dict, registry)
         node.compile()
         return node
     except Exception:

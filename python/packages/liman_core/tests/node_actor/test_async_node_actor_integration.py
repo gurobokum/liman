@@ -3,51 +3,54 @@ from unittest.mock import Mock
 from uuid import UUID, uuid4
 
 import pytest
-from dishka import AsyncContainer, Container
 
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
 from liman_core.node_actor import AsyncNodeActor, NodeActorStatus
 from liman_core.node_actor.errors import NodeActorError
+from liman_core.registry import Registry
 from liman_core.tool_node import ToolNode
 
 
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
+
 @pytest.fixture(scope="function")
-def real_node(test_containers: tuple[Container, AsyncContainer]) -> Node:
+def real_node(registry: Registry) -> Node:
     node_dict = {
         "kind": "Node",
         "name": "AsyncIntegrationTestNode",
         "func": "test_function",
         "description": {"en": "Test node for async integration"},
     }
-    node = Node.from_dict(node_dict)
+    node = Node.from_dict(node_dict, registry)
     node.compile()
     return node
 
 
 @pytest.fixture(scope="function")
-def real_llm_node(test_containers: tuple[Container, AsyncContainer]) -> LLMNode:
+def real_llm_node(registry: Registry) -> LLMNode:
     node_dict = {
         "kind": "LLMNode",
         "name": "AsyncIntegrationLLMNode",
         "prompts": {"system": {"en": "You are a helpful assistant."}},
     }
-    node = LLMNode.from_dict(node_dict)
+    node = LLMNode.from_dict(node_dict, registry)
     node.compile()
     return node
 
 
 @pytest.fixture(scope="function")
-def real_tool_node(
-    test_containers: tuple[Container, AsyncContainer],
-) -> ToolNode | None:
+def real_tool_node(registry: Registry) -> ToolNode | None:
     node_dict = {
         "kind": "ToolNode",
         "name": "AsyncIntegrationToolNode",
         "tools": [{"name": "test_tool", "description": "A test tool"}],
     }
     try:
-        node = ToolNode.from_dict(node_dict)
+        node = ToolNode.from_dict(node_dict, registry)
         node.compile()
         return node
     except Exception:

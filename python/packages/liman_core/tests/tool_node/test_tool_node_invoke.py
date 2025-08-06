@@ -5,6 +5,7 @@ from langchain_core.messages import ToolMessage
 
 from liman_core.base import Output
 from liman_core.errors import LimanError
+from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
 
 
@@ -60,10 +61,15 @@ def greeting_tool_decl() -> dict[str, Any]:
     }
 
 
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
+
 def test_invoke_with_valid_tool_call(
-    tool_node_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(tool_node_decl)
+    node = ToolNode.from_dict(tool_node_decl, registry)
     node.set_func(sync_test_func)
 
     tool_call = {
@@ -83,9 +89,9 @@ def test_invoke_with_valid_tool_call(
 
 
 def test_invoke_with_missing_optional_param(
-    tool_node_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(tool_node_decl)
+    node = ToolNode.from_dict(tool_node_decl, registry)
     node.set_func(sync_test_func)
 
     tool_call = {
@@ -105,9 +111,9 @@ def test_invoke_with_missing_optional_param(
 
 
 def test_invoke_with_extra_params_filtered(
-    tool_node_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(tool_node_decl)
+    node = ToolNode.from_dict(tool_node_decl, registry)
     node.set_func(sync_test_func)
 
     tool_call = {
@@ -132,9 +138,9 @@ def test_invoke_with_extra_params_filtered(
 
 
 def test_invoke_with_missing_required_param(
-    tool_node_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(tool_node_decl)
+    node = ToolNode.from_dict(tool_node_decl, registry)
     node.set_func(sync_test_func)
 
     tool_call = {
@@ -149,9 +155,9 @@ def test_invoke_with_missing_required_param(
 
 
 def test_invoke_with_function_exception(
-    tool_node_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(tool_node_decl)
+    node = ToolNode.from_dict(tool_node_decl, registry)
     node.set_func(sync_failing_func)
 
     tool_call = {
@@ -171,9 +177,9 @@ def test_invoke_with_function_exception(
 
 
 def test_invoke_missing_args_field(
-    tool_node_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(tool_node_decl)
+    node = ToolNode.from_dict(tool_node_decl, registry)
     node.set_func(sync_test_func)
 
     tool_call = {
@@ -187,9 +193,9 @@ def test_invoke_missing_args_field(
 
 
 def test_invoke_with_optional_param_function(
-    greeting_tool_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    greeting_tool_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(greeting_tool_decl)
+    node = ToolNode.from_dict(greeting_tool_decl, registry)
     node.set_func(sync_func_with_optional)
 
     # Test with optional parameter provided
@@ -205,9 +211,9 @@ def test_invoke_with_optional_param_function(
 
 
 def test_invoke_with_optional_param_function_no_arg(
-    greeting_tool_decl: dict[str, Any], test_containers: tuple[Any, Any]
+    greeting_tool_decl: dict[str, Any], registry: Registry
 ) -> None:
-    node = ToolNode.from_dict(greeting_tool_decl)
+    node = ToolNode.from_dict(greeting_tool_decl, registry)
     node.set_func(sync_func_with_optional)
 
     tool_call = {

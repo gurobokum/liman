@@ -1,7 +1,11 @@
 from typing import Any
 
+from ruamel.yaml import YAML
+
 from liman_core.auth.schemas import ServiceAccountSpec
 from liman_core.base.component import Component
+from liman_core.errors import InvalidSpecError
+from liman_core.registry import Registry
 
 
 class ServiceAccount(Component[ServiceAccountSpec]):
@@ -13,6 +17,7 @@ class ServiceAccount(Component[ServiceAccountSpec]):
     def from_dict(
         cls,
         data: dict[str, Any],
+        registry: Registry,
         *,
         yaml_path: str | None = None,
         strict: bool = False,
@@ -20,10 +25,46 @@ class ServiceAccount(Component[ServiceAccountSpec]):
     ) -> "ServiceAccount":
         spec = ServiceAccountSpec(**data)
         return cls(
-            spec=spec,
+            spec,
+            registry,
             initial_data=data,
             yaml_path=yaml_path,
             strict=strict,
+        )
+
+    @classmethod
+    def from_yaml_path(
+        cls,
+        yaml_path: str,
+        registry: Registry,
+        *,
+        strict: bool = True,
+        **kwargs: Any,
+    ) -> "ServiceAccount":
+        """
+        Create a ServiceAccount from a YAML file.
+
+        Args:
+            yaml_path (str): Path to the YAML file.
+
+        Returns:
+            ServiceAccount: An instance of ServiceAccount initialized with the YAML data.
+        """
+        yaml = YAML()
+        with open(yaml_path, encoding="utf-8") as fd:
+            yaml_data = yaml.load(fd)
+
+        if not isinstance(yaml_data, dict):
+            raise InvalidSpecError(
+                "YAML content must be a dictionary at the top level."
+            )
+
+        return cls.from_dict(
+            yaml_data,
+            registry,
+            yaml_path=yaml_path,
+            strict=strict,
+            **kwargs,
         )
 
     def get_context_variables(self, external_state: dict[str, Any]) -> dict[str, Any]:

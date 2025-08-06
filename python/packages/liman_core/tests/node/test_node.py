@@ -3,6 +3,7 @@ import pytest
 from pydantic import ValidationError
 
 from liman_core.node import Node
+from liman_core.registry import Registry
 
 YAML_STYLE_1 = {
     "kind": "Node",
@@ -29,18 +30,23 @@ INVALID_YAML = {
 }
 
 
-def test_llmnode_parses_style_1() -> None:
-    node = Node.from_dict(YAML_STYLE_1)
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
+
+def test_llmnode_parses_style_1(registry: Registry) -> None:
+    node = Node.from_dict(YAML_STYLE_1, registry)
     node.compile()
     assert node.spec.name == "BasicNode"
 
 
-def test_llmnode_parses_style_2() -> None:
-    node = Node.from_dict(YAML_STYLE_2)
+def test_llmnode_parses_style_2(registry: Registry) -> None:
+    node = Node.from_dict(YAML_STYLE_2, registry)
     node.compile()
     assert node.spec.name == "BasicNode2"
 
 
-def test_llmnode_invalid_yaml_raises() -> None:
+def test_llmnode_invalid_yaml_raises(registry: Registry) -> None:
     with pytest.raises(ValidationError):
-        Node.from_dict(INVALID_YAML)
+        Node.from_dict(INVALID_YAML, registry)

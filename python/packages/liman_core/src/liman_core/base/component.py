@@ -1,7 +1,7 @@
 import sys
-from abc import ABC, abstractmethod
+from abc import ABC
 from io import StringIO
-from typing import Any, Generic, TypeAlias
+from typing import Any, Generic, TypeAlias, TypeVar
 from uuid import UUID, uuid4
 
 from pydantic import create_model
@@ -14,11 +14,14 @@ from liman_core.base.schemas import S
 from liman_core.errors import InvalidSpecError
 from liman_core.plugins import PluginFieldConflictError
 from liman_core.plugins.core.base import Plugin
+from liman_core.registry import Registry
 
 if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+
+ComponentT = TypeVar("ComponentT", bound="Component[Any]")
 
 
 class Component(Generic[S], ABC):
@@ -34,10 +37,12 @@ class Component(Generic[S], ABC):
     )
 
     spec: S
+    spec_type: type[S]
 
     def __init__(
         self,
         spec: S,
+        registry: Registry,
         *,
         initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -55,10 +60,10 @@ class Component(Generic[S], ABC):
         return f"{self.spec.kind}:{self.name}"
 
     @classmethod
-    @abstractmethod
     def from_dict(
         cls,
         data: dict[str, Any],
+        registry: Registry,
         *,
         yaml_path: str | None = None,
         strict: bool = False,
@@ -76,21 +81,36 @@ class Component(Generic[S], ABC):
         Returns:
             Component: An instance of initialized Component
         """
-        ...
+        # Create extended spec with plugin fields
+        plugins = registry.get_plugins(cls.__name__)
+        ExtendedSpecClass = cls.create_extended_spec(cls.spec_type, plugins, data)
+
+        spec = ExtendedSpecClass.model_validate(data, strict=strict)
+
+        return cls(
+            spec=spec,
+            registry=registry,
+            initial_data=data,
+            yaml_path=yaml_path,
+            strict=strict,
+            **kwargs,
+        )
 
     @classmethod
     def from_yaml_path(
-        cls,
+        cls: type[ComponentT],
         yaml_path: str,
+        registry: Registry,
         *,
         strict: bool = True,
         **kwargs: Any,
-    ) -> Self:
+    ) -> ComponentT:
         """
         Create a Component from a YAML file.
 
         Args:
             yaml_path (str): Path to the YAML file.
+            registry (Registry): Registry instance for plugins.
 
         Returns:
             Component: An instance of Component initialized with the YAML data.
@@ -106,6 +126,7 @@ class Component(Generic[S], ABC):
 
         return cls.from_dict(
             yaml_data,
+            registry,
             yaml_path=yaml_path,
             strict=strict,
             **kwargs,

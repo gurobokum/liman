@@ -9,6 +9,7 @@ from liman_core.base.component import Component
 from liman_core.base.schemas import S
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
+from liman_core.registry import Registry
 
 
 class Output(BaseModel, Generic[S]):
@@ -33,6 +34,7 @@ class BaseNode(Component[S]):
     def __init__(
         self,
         spec: S,
+        registry: Registry,
         *,
         initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -42,6 +44,7 @@ class BaseNode(Component[S]):
     ) -> None:
         super().__init__(
             spec,
+            registry,
             initial_data=initial_data,
             yaml_path=yaml_path,
             strict=strict,

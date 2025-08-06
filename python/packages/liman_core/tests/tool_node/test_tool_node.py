@@ -1,17 +1,27 @@
 from typing import Any
 
+import pytest
+
+from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
 
 
-def test_tool_node_minimal(simple_decl: dict[str, Any]) -> None:
-    node = ToolNode.from_dict(simple_decl)
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
+
+def test_tool_node_minimal(simple_decl: dict[str, Any], registry: Registry) -> None:
+    node = ToolNode.from_dict(simple_decl, registry)
     assert node.name == "test_tool"
     assert node.spec.kind == "ToolNode"
     assert node.spec.description["en"] == "Test tool description."
 
 
-def test_tool_node_get_tool_description_en(decl_with_triggers: dict[str, Any]) -> None:
-    node = ToolNode.from_dict(decl_with_triggers)
+def test_tool_node_get_tool_description_en(
+    decl_with_triggers: dict[str, Any], registry: Registry
+) -> None:
+    node = ToolNode.from_dict(decl_with_triggers, registry)
 
     desc = node.get_tool_description("en")
     assert "Weather tool." in desc
@@ -21,9 +31,11 @@ def test_tool_node_get_tool_description_en(decl_with_triggers: dict[str, Any]) -
     assert desc.startswith("weather - Weather tool.")
 
 
-def test_tool_node_get_tool_description_ru(decl_with_triggers: dict[str, Any]) -> None:
+def test_tool_node_get_tool_description_ru(
+    decl_with_triggers: dict[str, Any], registry: Registry
+) -> None:
     decl_with_triggers["name"] = "weather2"
-    node = ToolNode.from_dict(decl_with_triggers)
+    node = ToolNode.from_dict(decl_with_triggers, registry)
 
     desc = node.get_tool_description("ru")
     assert "Погода." in desc
@@ -33,9 +45,11 @@ def test_tool_node_get_tool_description_ru(decl_with_triggers: dict[str, Any]) -
     assert desc.startswith("weather2 - Погода.")
 
 
-def test_tool_node_default_template_if_missing(simple_decl: dict[str, Any]) -> None:
+def test_tool_node_default_template_if_missing(
+    simple_decl: dict[str, Any], registry: Registry
+) -> None:
     simple_decl["name"] = "test_tool2"
-    node = ToolNode.from_dict(simple_decl)
+    node = ToolNode.from_dict(simple_decl, registry)
 
     desc = node.get_tool_description("en")
     assert "Test tool description." in desc

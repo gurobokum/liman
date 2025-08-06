@@ -1,6 +1,7 @@
 import logging
 from typing import TypeVar
 
+from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
 from openapi_core import OpenAPI
 
@@ -11,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 
 def create_tool_nodes(
-    openapi_spec: OpenAPI, prefix: str = "OpenAPI", is_async: bool = False
+    openapi_spec: OpenAPI,
+    registry: Registry,
+    prefix: str = "OpenAPI",
+    is_async: bool = False,
 ) -> list[ToolNode]:
     """
     Generate ToolNode instances based on OpenAPI endpoints.
@@ -34,14 +38,14 @@ def create_tool_nodes(
 
     for endpoint in endpoints:
         name = f"{prefix}__{endpoint.operation_id}"
-        node_declaration = {
+        decl = {
             "kind": "ToolNode",
             "name": name,
             "description": endpoint.summary,
             "arguments": endpoint.get_tool_arguments_spec(),
         }
 
-        node = ToolNode(name=name, declaration=node_declaration)
+        node = ToolNode.from_dict(decl, registry)
         impl_func = OpenAPIOperation(endpoint, refs, base_url=base_url)
         node.set_func(impl_func)
         nodes.append(node)

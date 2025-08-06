@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from liman_core.llm_node import LLMNode
+from liman_core.registry import Registry
 
 # Example YAMLs as dicts (since we don't read files directly in tests)
 YAML_STYLE_1 = {
@@ -24,8 +25,13 @@ INVALID_YAML = {
 }
 
 
-def test_llmnode_parses_style_1() -> None:
-    node = LLMNode.from_dict(YAML_STYLE_1)
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
+
+def test_llmnode_parses_style_1(registry: Registry) -> None:
+    node = LLMNode.from_dict(YAML_STYLE_1, registry)
     node.compile()
     assert node.spec.name == "StartNode"
     assert node.prompts.en
@@ -34,8 +40,8 @@ def test_llmnode_parses_style_1() -> None:
     assert node.prompts.ru.system == "Вы помощник."
 
 
-def test_llmnode_parses_style_2() -> None:
-    node = LLMNode.from_dict(YAML_STYLE_2)
+def test_llmnode_parses_style_2(registry: Registry) -> None:
+    node = LLMNode.from_dict(YAML_STYLE_2, registry)
     node.compile()
     assert node.spec.name == "StartNode2"
     assert node.prompts.en
@@ -44,6 +50,6 @@ def test_llmnode_parses_style_2() -> None:
     assert node.prompts.ru.system == "Вы помощник."
 
 
-def test_llmnode_invalid_yaml_raises() -> None:
+def test_llmnode_invalid_yaml_raises(registry: Registry) -> None:
     with pytest.raises(ValidationError):
-        LLMNode.from_dict(INVALID_YAML)
+        LLMNode.from_dict(INVALID_YAML, registry)

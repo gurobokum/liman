@@ -1,11 +1,15 @@
-from typing import Any, TypeVar
+from __future__ import annotations
 
-from liman_core.base import BaseNode
+from typing import TYPE_CHECKING, Any, TypeVar
+
 from liman_core.errors import LimanError
 from liman_core.plugins import PluginConflictError
 from liman_core.plugins.core.base import Plugin
 
-T = TypeVar("T", bound=BaseNode[Any])
+if TYPE_CHECKING:
+    from liman_core.base import BaseNode
+
+T = TypeVar("T", bound="BaseNode[Any]")
 
 
 class NodeNotFoundError(LimanError):

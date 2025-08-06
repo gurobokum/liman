@@ -1,23 +1,15 @@
-import sys
 from collections.abc import Sequence
 from typing import Any, cast
 
-from dishka import FromDishka
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
 from liman_core.base import BaseNode, Output
-from liman_core.dishka import inject
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
 from liman_core.llm_node.schemas import LLMNodeSpec, LLMPrompts, LLMPromptsBundle
 from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 
 class LLMNode(BaseNode[LLMNodeSpec]):
@@ -69,12 +61,12 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         "registry",
     )
 
-    @inject
+    spec_type = LLMNodeSpec
+
     def __init__(
         self,
         spec: LLMNodeSpec,
-        # injections
-        registry: FromDishka[Registry],
+        registry: Registry,
         *,
         initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -84,6 +76,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
     ) -> None:
         super().__init__(
             spec,
+            registry,
             initial_data=initial_data,
             yaml_path=yaml_path,
             default_lang=default_lang,
@@ -172,34 +165,6 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         output = Output(response=response, next_nodes=next_nodes)
 
         return output
-
-    @classmethod
-    @inject
-    def from_dict(
-        cls,
-        data: dict[str, Any],
-        registry: FromDishka[Registry],
-        *,
-        yaml_path: str | None = None,
-        strict: bool = False,
-        default_lang: str = "en",
-        fallback_lang: str = "en",
-        **kwargs: Any,
-    ) -> Self:
-        # Create extended spec with plugin fields
-        plugins = registry.get_plugins(cls.__name__)
-        ExtendedSpecClass = cls.create_extended_spec(LLMNodeSpec, plugins, data)
-
-        spec = ExtendedSpecClass.model_validate(data, strict=strict)
-
-        return cls(
-            spec=spec,
-            initial_data=data,
-            yaml_path=yaml_path,
-            strict=strict,
-            default_lang=default_lang,
-            fallback_lang=fallback_lang,
-        )
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(

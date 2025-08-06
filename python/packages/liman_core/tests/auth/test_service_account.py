@@ -2,6 +2,13 @@ import pytest
 
 from liman_core.auth import ServiceAccount
 from liman_core.errors import InvalidSpecError
+from liman_core.registry import Registry
+
+
+@pytest.fixture
+def registry() -> Registry:
+    return Registry()
+
 
 VALID_SERVICE_ACCOUNT_WITH_CONTEXT = {
     "kind": "ServiceAccount",
@@ -44,26 +51,30 @@ INVALID_SERVICE_ACCOUNT_EMPTY_INJECT = {
 }
 
 
-def test_service_account_with_context() -> None:
-    service_account = ServiceAccount.from_dict(VALID_SERVICE_ACCOUNT_WITH_CONTEXT)
+def test_service_account_with_context(registry: Registry) -> None:
+    service_account = ServiceAccount.from_dict(
+        VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
+    )
     assert service_account.spec.name == "TestServiceAccount"
     assert service_account.spec.context is not None
     assert service_account.spec.context.strict is True
     assert len(service_account.spec.context.inject) == 2
 
 
-def test_service_account_with_single_credentials_provider() -> None:
+def test_service_account_with_single_credentials_provider(registry: Registry) -> None:
     service_account = ServiceAccount.from_dict(
-        VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDER
+        VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDER, registry
     )
     assert service_account.spec.name == "TestServiceAccount"
     assert service_account.spec.credentials_provider == "AWSCredentials"
     assert service_account.spec.credentials_providers is None
 
 
-def test_service_account_with_multiple_credentials_providers() -> None:
+def test_service_account_with_multiple_credentials_providers(
+    registry: Registry,
+) -> None:
     service_account = ServiceAccount.from_dict(
-        VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDERS
+        VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDERS, registry
     )
     assert service_account.spec.name == "TestServiceAccount"
     assert service_account.spec.credentials_providers == [
@@ -73,54 +84,58 @@ def test_service_account_with_multiple_credentials_providers() -> None:
     assert service_account.spec.credentials_provider is None
 
 
-def test_service_account_with_context_and_credentials() -> None:
+def test_service_account_with_context_and_credentials(registry: Registry) -> None:
     service_account = ServiceAccount.from_dict(
-        VALID_SERVICE_ACCOUNT_WITH_BOTH_CONTEXT_AND_CREDENTIALS
+        VALID_SERVICE_ACCOUNT_WITH_BOTH_CONTEXT_AND_CREDENTIALS, registry
     )
     assert service_account.spec.name == "TestServiceAccount"
     assert service_account.spec.context is not None
     assert service_account.spec.credentials_provider == "GCPCredentials"
 
 
-def test_service_account_empty_raises_error() -> None:
+def test_service_account_empty_raises_error(registry: Registry) -> None:
     with pytest.raises(
         InvalidSpecError,
         match="ServiceAccount must have either credentials_provider/credentials_providers or context",
     ):
-        ServiceAccount.from_dict(INVALID_SERVICE_ACCOUNT_EMPTY)
+        ServiceAccount.from_dict(INVALID_SERVICE_ACCOUNT_EMPTY, registry)
 
 
-def test_service_account_both_credentials_raises_error() -> None:
+def test_service_account_both_credentials_raises_error(registry: Registry) -> None:
     with pytest.raises(
         InvalidSpecError,
         match="Cannot specify both credentials_provider and credentials_providers",
     ):
-        ServiceAccount.from_dict(INVALID_SERVICE_ACCOUNT_BOTH_CREDENTIALS)
+        ServiceAccount.from_dict(INVALID_SERVICE_ACCOUNT_BOTH_CREDENTIALS, registry)
 
 
-def test_service_account_empty_inject_raises_error() -> None:
+def test_service_account_empty_inject_raises_error(registry: Registry) -> None:
     with pytest.raises(InvalidSpecError, match="inject list cannot be empty"):
-        ServiceAccount.from_dict(INVALID_SERVICE_ACCOUNT_EMPTY_INJECT)
+        ServiceAccount.from_dict(INVALID_SERVICE_ACCOUNT_EMPTY_INJECT, registry)
 
 
-def test_context_variables_extraction() -> None:
+def test_context_variables_extraction(registry: Registry) -> None:
     external_state = {
         "user": {"id": "user123"},
         "organization": {"id": "org456"},
         "project": {"id": "proj789"},
     }
 
-    service_account = ServiceAccount.from_dict(VALID_SERVICE_ACCOUNT_WITH_CONTEXT)
+    service_account = ServiceAccount.from_dict(
+        VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
+    )
     context = service_account.get_context_variables(external_state)
 
     assert context["user_id"] == "user123"
     assert context["organization"]["id"] == "org456"
 
 
-def test_context_variables_missing_strict_mode() -> None:
+def test_context_variables_missing_strict_mode(registry: Registry) -> None:
     external_state = {"user": {"id": "user123"}}
 
-    service_account = ServiceAccount.from_dict(VALID_SERVICE_ACCOUNT_WITH_CONTEXT)
+    service_account = ServiceAccount.from_dict(
+        VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
+    )
 
     with pytest.raises(
         ValueError,
@@ -129,7 +144,7 @@ def test_context_variables_missing_strict_mode() -> None:
         service_account.get_context_variables(external_state)
 
 
-def test_context_variables_missing_non_strict_mode() -> None:
+def test_context_variables_missing_non_strict_mode(registry: Registry) -> None:
     external_state = {"user": {"id": "user123"}}
 
     non_strict_config = {
@@ -138,14 +153,14 @@ def test_context_variables_missing_non_strict_mode() -> None:
         "context": {"strict": False, "inject": ["user_id: user.id", "organization.id"]},
     }
 
-    service_account = ServiceAccount.from_dict(non_strict_config)
+    service_account = ServiceAccount.from_dict(non_strict_config, registry)
     context = service_account.get_context_variables(external_state)
 
     assert context["user_id"] == "user123"
     assert "organization" not in context
 
 
-def test_context_variables_nested_paths() -> None:
+def test_context_variables_nested_paths(registry: Registry) -> None:
     external_state = {"user": {"profile": {"personal": {"email": "test@example.com"}}}}
 
     config = {
@@ -154,14 +169,16 @@ def test_context_variables_nested_paths() -> None:
         "context": {"strict": True, "inject": ["email: user.profile.personal.email"]},
     }
 
-    service_account = ServiceAccount.from_dict(config)
+    service_account = ServiceAccount.from_dict(config, registry)
     context = service_account.get_context_variables(external_state)
 
     assert context["email"] == "test@example.com"
 
 
-def test_context_variables_no_external_state() -> None:
-    service_account = ServiceAccount.from_dict(VALID_SERVICE_ACCOUNT_WITH_CONTEXT)
+def test_context_variables_no_external_state(registry: Registry) -> None:
+    service_account = ServiceAccount.from_dict(
+        VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
+    )
     with pytest.raises(
         ValueError,
         match="Required context variable not found in state: 'user.id'",
@@ -169,21 +186,23 @@ def test_context_variables_no_external_state() -> None:
         service_account.get_context_variables({})
 
 
-def test_service_account_without_context() -> None:
+def test_service_account_without_context(registry: Registry) -> None:
     service_account = ServiceAccount.from_dict(
-        VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDER
+        VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDER, registry
     )
     context = service_account.get_context_variables({"some": "state"})
     assert context == {}
 
 
-def test_get_context_variables_method() -> None:
+def test_get_context_variables_method(registry: Registry) -> None:
     external_state = {
         "user": {"id": "user123", "name": "John"},
         "organization": {"id": "org456", "name": "TestOrg"},
     }
 
-    service_account = ServiceAccount.from_dict(VALID_SERVICE_ACCOUNT_WITH_CONTEXT)
+    service_account = ServiceAccount.from_dict(
+        VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
+    )
     context = service_account.get_context_variables(external_state)
 
     assert context["user_id"] == "user123"

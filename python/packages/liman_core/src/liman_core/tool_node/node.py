@@ -1,16 +1,13 @@
 import asyncio
 import inspect
-import sys
 from collections.abc import Callable
 from functools import reduce
 from importlib import import_module
 from typing import Any
 
-from dishka import FromDishka
 from langchain_core.messages import ToolMessage
 
 from liman_core.base import BaseNode, Output
-from liman_core.dishka import inject
 from liman_core.errors import InvalidSpecError, LimanError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.registry import Registry
@@ -21,11 +18,6 @@ from liman_core.tool_node.utils import (
     noop,
     tool_arg_to_jsonschema,
 )
-
-if sys.version_info >= (3, 11):
-    from typing import Self
-else:
-    from typing_extensions import Self
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {name} - {description}
@@ -89,12 +81,12 @@ class ToolNode(BaseNode[ToolNodeSpec]):
     ```
     """
 
-    @inject
+    spec_type = ToolNodeSpec
+
     def __init__(
         self,
         spec: ToolNodeSpec,
-        # injections
-        registry: FromDishka[Registry],
+        registry: Registry,
         *,
         initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
@@ -104,6 +96,7 @@ class ToolNode(BaseNode[ToolNodeSpec]):
     ) -> None:
         super().__init__(
             spec,
+            registry,
             initial_data=initial_data,
             yaml_path=yaml_path,
             strict=strict,
@@ -133,29 +126,6 @@ class ToolNode(BaseNode[ToolNodeSpec]):
                 ) from e
             self.func = noop
         self._compiled = True
-
-    @classmethod
-    def from_dict(
-        cls,
-        data: dict[str, Any],
-        *,
-        yaml_path: str | None = None,
-        strict: bool = False,
-        default_lang: str = "en",
-        fallback_lang: str = "en",
-        **kwargs: Any,
-    ) -> Self:
-        spec = ToolNodeSpec.model_validate(
-            data, strict=strict, context={"default_lang": default_lang}
-        )
-        return cls(
-            spec=spec,
-            initial_data=data,
-            yaml_path=yaml_path,
-            strict=strict,
-            default_lang=default_lang,
-            fallback_lang=fallback_lang,
-        )
 
     def set_func(self, func: Callable[..., Any]) -> None:
         """
