@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 from ruamel.yaml.error import YAMLError
 
-from liman_core.auth import ServiceAccount
 from liman_core.errors import InvalidSpecError
+from liman_core.plugins.auth import ServiceAccount
 from liman_core.registry import Registry
 
 TEST_DATA_PATH = Path(__file__).parent / "data"

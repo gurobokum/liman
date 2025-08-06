@@ -1,5 +1,9 @@
+from typing import TYPE_CHECKING
+
 from liman_core.plugins.core.base import Plugin
-from liman_core.registry import Registry
+
+if TYPE_CHECKING:
+    from liman_core.registry import Registry
 
 
 def register_plugins(plugins: list[Plugin], registry: Registry) -> None:

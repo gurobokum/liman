@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 import sys
 from abc import ABC
 from io import StringIO
-from typing import Any, Generic, TypeAlias, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeAlias, TypeVar
 from uuid import UUID, uuid4
 
-from pydantic import create_model
+from pydantic import Field, create_model
 from rich import print as rich_print
 from rich.syntax import Syntax
 from ruamel.yaml import YAML
@@ -14,7 +16,9 @@ from liman_core.base.schemas import S
 from liman_core.errors import InvalidSpecError
 from liman_core.plugins import PluginFieldConflictError
 from liman_core.plugins.core.base import Plugin
-from liman_core.registry import Registry
+
+if TYPE_CHECKING:
+    from liman_core.registry import Registry
 
 if sys.version_info >= (3, 11):
     from typing import Self
@@ -162,7 +166,7 @@ class Component(Generic[S], ABC):
                     f"Field '{plugin.field_name}' already exists in {kind} spec"
                 )
 
-            plugin_fields[plugin.field_name] = (plugin.field_type, ...)
+            plugin_fields[plugin.field_name] = (plugin.field_type, Field(default=None))
 
         if plugin_fields:
             ExtendedSpecClass = create_model(

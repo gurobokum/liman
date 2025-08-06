@@ -1,47 +1,23 @@
 from abc import abstractmethod
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 
+@runtime_checkable
 class Plugin(Protocol):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """
-        Unique plugin identifier
-        """
-        ...
+    """
+    Plugin interface for extending Liman specifications with additional functionality.
+    """
 
-    @property
-    @abstractmethod
-    def applies_to(self) -> list[str]:
-        """
-        List of spec types this plugin extends (e.g., ['Node', 'LLMNode'])
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def registered_kinds(self) -> list[str]:
-        """
-        List of kinds this plugin supports that extends specifcations (e.g., ['ServiceAccount', 'Metrics'])
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def field_name(self) -> str:
-        """
-        Field name added to specifications
-        """
-        ...
-
-    @property
-    @abstractmethod
-    def field_type(self) -> type:
-        """
-        Field structure type (e.g., Pydantic model in python)
-        """
-        ...
+    # Unique plugin identifier
+    name: str
+    # Spec types this plugin extends (e.g., ['Node', 'LLMNode'])
+    applies_to: list[str]
+    # Kinds this plugin supports (e.g., ['ServiceAccount', 'Metrics'])
+    registered_kinds: list[str]
+    # Field name added to specifications
+    field_name: str
+    # Field structure type (e.g., Pydantic model)
+    field_type: type
 
     @abstractmethod
     def validate(self, spec_data: Any) -> Any:

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 
 from liman_core.errors import LimanError
 from liman_core.plugins import PluginConflictError
+from liman_core.plugins.auth.plugin import AuthPlugin
 from liman_core.plugins.core.base import Plugin
 
 if TYPE_CHECKING:
@@ -18,6 +19,9 @@ class NodeNotFoundError(LimanError):
     code: str = "node_not_found"
 
 
+DEFAULT_PLUGINS = [AuthPlugin()]
+
+
 class Registry:
     """
     A registry that stores nodes and allows for retrieval by name.
@@ -26,9 +30,9 @@ class Registry:
     def __init__(self) -> None:
         self._nodes: dict[str, BaseNode[Any]] = {}
 
-        self._supported_kinds: set[str] = {"Node", "LLMNode", "ToolNode"}
+        self._plugins_kinds: set[str] = {"Node", "LLMNode", "ToolNode"}
         self._plugins: dict[str, list[Plugin]] = {
-            kind: [] for kind in self._supported_kinds
+            kind: [*DEFAULT_PLUGINS] for kind in self._plugins_kinds
         }
 
     def add_plugins(self, plugins: list[Plugin]) -> None:
@@ -40,14 +44,14 @@ class Registry:
         """
         for plugin in plugins:
             for kind in plugin.registered_kinds:
-                if kind in self._supported_kinds:
+                if kind in self._plugins_kinds:
                     raise PluginConflictError(
                         "Kind is already registered: {kind}", plugin_name=plugin.name
                     )
                 self._plugins[kind].append(plugin)
 
             for applied_kind in plugin.applies_to:
-                if applied_kind not in self._supported_kinds:
+                if applied_kind not in self._plugins_kinds:
                     raise PluginConflictError(
                         "Applied kind is not supported: {applied_kind}",
                         plugin_name=plugin.name,

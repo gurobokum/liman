@@ -1,6 +1,7 @@
 from typing import Any
+from uuid import uuid4
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, ValidationInfo, field_validator, model_validator
 
 from liman_core.base.schemas import BaseSpec
 from liman_core.errors import InvalidSpecError
@@ -44,3 +45,24 @@ class ServiceAccountSpec(BaseSpec):
             )
 
         return self
+
+
+class AuthFieldSpec(BaseModel):
+    service_account: str | ServiceAccountSpec | None = None
+
+    @field_validator("service_account", mode="before")
+    @classmethod
+    def parse_service_account(cls, value: Any, info: ValidationInfo) -> Any:
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            return value
+
+        try:
+            name = value.get("name")
+            if not name:
+                value["name"] = f"ServiceAccount-{uuid4()}"
+            return ServiceAccountSpec(**value)
+        except Exception as e:
+            raise InvalidSpecError(f"Invalid service_account spec: {e}") from e

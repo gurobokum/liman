@@ -1,11 +1,21 @@
-from typing import Any
+from __future__ import annotations
+
+import sys
+from typing import TYPE_CHECKING, Any
 
 from ruamel.yaml import YAML
 
-from liman_core.auth.schemas import ServiceAccountSpec
 from liman_core.base.component import Component
 from liman_core.errors import InvalidSpecError
-from liman_core.registry import Registry
+from liman_core.plugins.auth.schemas import ServiceAccountSpec
+
+if TYPE_CHECKING:
+    from liman_core.registry import Registry
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class ServiceAccount(Component[ServiceAccountSpec]):
@@ -22,7 +32,7 @@ class ServiceAccount(Component[ServiceAccountSpec]):
         yaml_path: str | None = None,
         strict: bool = False,
         **kwargs: Any,
-    ) -> "ServiceAccount":
+    ) -> Self:
         spec = ServiceAccountSpec(**data)
         return cls(
             spec,
@@ -40,7 +50,7 @@ class ServiceAccount(Component[ServiceAccountSpec]):
         *,
         strict: bool = True,
         **kwargs: Any,
-    ) -> "ServiceAccount":
+    ) -> Self:
         """
         Create a ServiceAccount from a YAML file.
 
@@ -100,6 +110,7 @@ class ServiceAccount(Component[ServiceAccountSpec]):
             if value is not None:
                 self._set_nested_value(context_vars, target_name, value)
 
+        context_vars["__service_account__"] = self.name
         return context_vars
 
     def _get_nested_value(self, data: dict[str, Any], path: str) -> Any:
