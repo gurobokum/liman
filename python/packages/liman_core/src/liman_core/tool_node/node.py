@@ -7,7 +7,7 @@ from typing import Any
 
 from langchain_core.messages import ToolMessage
 
-from liman_core.base import BaseNode, Output
+from liman_core.base import BaseNode, NodeOutput
 from liman_core.errors import InvalidSpecError, LimanError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.registry import Registry
@@ -137,7 +137,7 @@ class ToolNode(BaseNode[ToolNodeSpec]):
 
     def invoke(
         self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
-    ) -> Output:
+    ) -> NodeOutput:
         """
         Invoke the tool function with the provided arguments.
 
@@ -145,7 +145,7 @@ class ToolNode(BaseNode[ToolNodeSpec]):
             tool_call: Tool call dict with structure like {'name': 'tool_name', 'args': {...}, 'id': '...', 'type': 'tool_call'}
 
         Returns:
-            Output with ToolMessage containing function result and proper tool call metadata
+            NodeOutput with ToolMessage containing function result and proper tool call metadata
         """
         func = self.func
         tool_call_id = tool_call["id"]
@@ -181,11 +181,11 @@ class ToolNode(BaseNode[ToolNodeSpec]):
                 tool_call_id=tool_call_id,
                 name=tool_call_name,
             )
-        return Output(response=response)
+        return NodeOutput(response=response)
 
     async def ainvoke(
         self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
-    ) -> Output:
+    ) -> NodeOutput:
         """
         Asynchronously invoke the tool function with the provided arguments.
 
@@ -222,7 +222,7 @@ class ToolNode(BaseNode[ToolNodeSpec]):
                 tool_call_id=tool_call_id,
                 name=tool_call_name,
             )
-        return Output(response=response)
+        return NodeOutput(response=response)
 
     def _extract_function_args(self, args_dict: dict[str, Any]) -> dict[str, Any]:
         """

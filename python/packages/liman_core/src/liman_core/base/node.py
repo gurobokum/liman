@@ -12,7 +12,7 @@ from liman_core.languages import LanguageCode, is_valid_language_code
 from liman_core.registry import Registry
 
 
-class Output(BaseModel):
+class NodeOutput(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     response: BaseMessage
@@ -72,10 +72,10 @@ class BaseNode(Component[S]):
         ...
 
     @abstractmethod
-    def invoke(self, *args: Any, **kwargs: Any) -> Output: ...
+    def invoke(self, *args: Any, **kwargs: Any) -> NodeOutput: ...
 
     @abstractmethod
-    async def ainvoke(self, *args: Any, **kwargs: Any) -> Output: ...
+    async def ainvoke(self, *args: Any, **kwargs: Any) -> NodeOutput: ...
 
     @property
     def is_llm_node(self) -> bool:

@@ -4,7 +4,7 @@ from uuid import uuid4
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from liman_core.base import Output
+from liman_core.base import NodeOutput
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
 from liman_core.node_actor import NodeActor, NodeActorError, NodeActorStatus
@@ -19,7 +19,7 @@ def mock_node() -> Mock:
     node._compiled = True
     node.is_llm_node = False
     node.is_tool_node = False
-    node.ainvoke = AsyncMock(return_value=Output(response=AIMessage("test_result")))
+    node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("test_result")))
     return node
 
 
@@ -31,7 +31,7 @@ def mock_llm_node() -> Mock:
     node._compiled = True
     node.is_llm_node = True
     node.is_tool_node = False
-    node.ainvoke = AsyncMock(return_value=Output(response=AIMessage("llm_result")))
+    node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("llm_result")))
     return node
 
 
@@ -43,7 +43,7 @@ def mock_tool_node() -> Mock:
     node._compiled = True
     node.is_llm_node = False
     node.is_tool_node = True
-    node.ainvoke = AsyncMock(return_value=Output(response=AIMessage("tool_result")))
+    node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("tool_result")))
     return node
 
 
@@ -100,7 +100,7 @@ async def test_async_actor_execute_success(async_actor: NodeActor) -> None:
 
     result = await async_actor.aexecute(inputs, execution_id)
 
-    assert result.response.content == "test_result"
+    assert result.node_output.response.content == "test_result"
     assert async_actor.status == NodeActorStatus.COMPLETED
 
 
@@ -154,7 +154,7 @@ async def test_async_actor_execute_llm_node_success(
 
     result = await actor.aexecute(inputs, execution_id)
 
-    assert result.response.content == "llm_result"
+    assert result.node_output.response.content == "llm_result"
     mock_llm_node.ainvoke.assert_called_once()
     call_args = mock_llm_node.ainvoke.call_args
     assert call_args[0][0] is mock_llm  # First positional arg should be LLM
@@ -179,7 +179,7 @@ async def test_async_actor_execute_tool_node_success(mock_tool_node: Mock) -> No
 
     result = await actor.aexecute(inputs, execution_id)
 
-    assert result.response.content == "tool_result"
+    assert result.node_output.response.content == "tool_result"
     mock_tool_node.ainvoke.assert_called_once()
 
 

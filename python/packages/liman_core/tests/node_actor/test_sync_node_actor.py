@@ -5,10 +5,11 @@ from uuid import uuid4
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from liman_core.base import Output
+from liman_core.base import NodeOutput
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
 from liman_core.node_actor import NodeActor, NodeActorError, NodeActorStatus
+from liman_core.node_actor.actor import Result
 from liman_core.registry import Registry
 from liman_core.tool_node import ToolNode
 
@@ -21,7 +22,7 @@ def mock_node() -> Mock:
     node._compiled = True
     node.is_llm_node = False
     node.is_tool_node = False
-    node.invoke = Mock(return_value=Output(response=AIMessage("test_result")))
+    node.invoke = Mock(return_value=NodeOutput(response=AIMessage("test_result")))
     return node
 
 
@@ -33,7 +34,7 @@ def mock_llm_node(registry: Registry) -> Mock:
     node._compiled = True
     node.is_llm_node = True
     node.is_tool_node = False
-    node.invoke = Mock(return_value=Output(response=AIMessage("llm_result")))
+    node.invoke = Mock(return_value=NodeOutput(response=AIMessage("llm_result")))
     node.registry = registry
     return node
 
@@ -46,7 +47,7 @@ def mock_tool_node(registry: Registry) -> Mock:
     node._compiled = True
     node.is_llm_node = False
     node.is_tool_node = True
-    node.invoke = Mock(return_value=Output(response=AIMessage("tool_result")))
+    node.invoke = Mock(return_value=NodeOutput(response=AIMessage("tool_result")))
     node.registry = registry
     return node
 
@@ -103,7 +104,7 @@ def test_sync_actor_execute_success(sync_actor: NodeActor) -> None:
 
     result = sync_actor.execute(inputs, execution_id)
 
-    assert result.response.content == "test_result"
+    assert result.node_output.response.content == "test_result"
     assert sync_actor.status == NodeActorStatus.COMPLETED
 
 
@@ -153,7 +154,7 @@ def test_sync_actor_execute_llm_node_success(
 
     result = actor.execute(inputs, execution_id)
 
-    assert result.response.content == "llm_result"
+    assert result.node_output.response.content == "llm_result"
     mock_llm_node.invoke.assert_called_once()
     call_args = mock_llm_node.invoke.call_args
     assert call_args[0][0] is mock_llm  # First positional arg should be LLM
@@ -176,7 +177,7 @@ def test_sync_actor_execute_tool_node_success(mock_tool_node: Mock) -> None:
 
     result = actor.execute(inputs, execution_id)
 
-    assert result.response.content == "tool_result"
+    assert result.node_output.response.content == "tool_result"
     mock_tool_node.invoke.assert_called_once()
 
 
@@ -249,4 +250,4 @@ def test_sync_actor_threading_safety(sync_actor: NodeActor) -> None:
         thread.join()
 
     assert len(executed) == 5 * 3
-    assert all(isinstance(r, Output) for r in executed)
+    assert all(isinstance(r, Result) for r in executed)

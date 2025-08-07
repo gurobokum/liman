@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from langchain_core.messages import ToolMessage
 
-from liman_core.base import Output
+from liman_core.base import NodeOutput
 from liman_core.errors import LimanError
 from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
@@ -81,7 +81,7 @@ def test_invoke_with_valid_tool_call(
 
     result = node.invoke(tool_call)
 
-    assert isinstance(result, Output)
+    assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
     assert result.response.content == "Weather in Moscow: 25°C"
     assert result.response.tool_call_id == "call_123"
@@ -103,7 +103,7 @@ def test_invoke_with_missing_optional_param(
 
     result = node.invoke(tool_call)
 
-    assert isinstance(result, Output)
+    assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
     assert result.response.content == "Weather in Berlin: 20°C"
     assert result.response.tool_call_id == "call_456"
@@ -130,7 +130,7 @@ def test_invoke_with_extra_params_filtered(
 
     result = node.invoke(tool_call)
 
-    assert isinstance(result, Output)
+    assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
     assert result.response.content == "Weather in Paris: 18°C"
     assert result.response.tool_call_id == "call_789"
@@ -169,7 +169,7 @@ def test_invoke_with_function_exception(
 
     result = node.invoke(tool_call)
 
-    assert isinstance(result, Output)
+    assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
     assert "Cannot get weather for UnknownCity" in result.response.content
     assert result.response.tool_call_id == "call_fail"

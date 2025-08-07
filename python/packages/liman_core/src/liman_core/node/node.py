@@ -3,7 +3,7 @@ from typing import Any
 
 from langchain_core.messages import BaseMessage
 
-from liman_core.base import BaseNode, Output
+from liman_core.base import BaseNode, NodeOutput
 from liman_core.errors import LimanError
 from liman_core.node.schemas import NodeSpec
 from liman_core.registry import Registry
@@ -44,7 +44,7 @@ class Node(BaseNode[NodeSpec]):
 
     def invoke(
         self, inputs: Sequence[BaseMessage], state: dict[str, Any], **kwargs: Any
-    ) -> Output:
+    ) -> NodeOutput:
         """
         Invoke method for the Node.
         """
@@ -52,7 +52,7 @@ class Node(BaseNode[NodeSpec]):
 
     async def ainvoke(
         self, inputs: Sequence[BaseMessage], state: dict[str, Any], **kwargs: Any
-    ) -> Output:
+    ) -> NodeOutput:
         """
         Asynchronous invoke method for the Node.
         """

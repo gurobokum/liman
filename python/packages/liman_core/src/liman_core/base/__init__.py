@@ -1,4 +1,4 @@
-from .node import BaseNode, Output
+from .node import BaseNode, NodeOutput
 from .schemas import BaseSpec
 
-__all__ = ["BaseNode", "Output", "BaseSpec"]
+__all__ = ["BaseNode", "NodeOutput", "BaseSpec"]

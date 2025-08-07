@@ -4,7 +4,7 @@ from typing import Any, cast
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from liman_core.base.node import BaseNode, Output
+from liman_core.base.node import BaseNode, NodeOutput
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
 from liman_core.llm_node.schemas import LLMNodeSpec, LLMPrompts, LLMPromptsBundle
@@ -113,7 +113,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         state: dict[str, Any] | None = None,
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> Output:
+    ) -> NodeOutput:
         raise NotImplementedError("LLMNode.invoke() is not implemented yet")
 
     async def ainvoke(
@@ -122,7 +122,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         inputs: Sequence[BaseMessage],
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> Output:
+    ) -> NodeOutput:
         if not self._compiled:
             raise LimanError(
                 "LLMNode must be compiled before invoking. Use `compile()` method."
@@ -151,21 +151,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
             tools=tools_jsonschema,
         )
 
-        next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []
-
-        if hasattr(response, "tool_calls"):
-            for tool_call in getattr(response, "tool_calls", []):
-                tool_name = tool_call["name"]
-                next_nodes.append(
-                    (
-                        tools[tool_name],
-                        tool_call,
-                    )
-                )
-
-        output = Output(response=response)
-
-        return output
+        return NodeOutput(response=response)
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(

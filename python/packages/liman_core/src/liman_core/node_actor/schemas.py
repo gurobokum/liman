@@ -1,3 +1,8 @@
+from typing import Any
+
+from pydantic import BaseModel
+
+
 class NodeActorStatus:
     """
     Represents the current status of a NodeActor
@@ -11,3 +16,9 @@ class NodeActorStatus:
 
     COMPLETED = "completed"
     SHUTDOWN = "shutdown"
+
+
+class NodeActorState(BaseModel):
+    input_: Any
+    output: Any | None = None
+    context: dict[str, Any] | None = None

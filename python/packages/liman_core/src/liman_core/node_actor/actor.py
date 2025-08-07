@@ -7,8 +7,9 @@ from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
+from pydantic import BaseModel, ConfigDict
 
-from liman_core.base.node import BaseNode, Output
+from liman_core.base.node import BaseNode, NodeOutput
 from liman_core.llm_node.node import LLMNode
 from liman_core.node.node import Node
 from liman_core.node_actor.errors import NodeActorError
@@ -25,6 +26,17 @@ else:
 
 class State(TypedDict):
     messages: list[BaseMessage]
+
+
+class Result(BaseModel):
+    """
+    Represents the output of a node execution.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    node_output: NodeOutput
+    next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []
 
 
 class NodeActor:
@@ -138,7 +150,7 @@ class NodeActor:
         input_: Any,
         execution_id: UUID,
         context: dict[str, Any] | None = None,
-    ) -> Output:
+    ) -> Result:
         """
         Execute the wrapped node with the provided inputs.
 
@@ -148,7 +160,7 @@ class NodeActor:
             execution_id: Optional execution tracking ID
 
         Returns:
-            Output from node execution
+            Result from node execution
 
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
@@ -169,7 +181,7 @@ class NodeActor:
         input_: Any,
         execution_id: UUID,
         context: dict[str, Any] | None = None,
-    ) -> Output:
+    ) -> Result:
         """
         Execute the wrapped node with the provided inputs (async version).
 
@@ -179,7 +191,7 @@ class NodeActor:
             execution_id: Optional execution tracking ID
 
         Returns:
-            Output from node execution
+            Result from node execution
 
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
@@ -226,7 +238,7 @@ class NodeActor:
 
     def _execute_internal(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any], execution_id: UUID
-    ) -> Output:
+    ) -> Result:
         self.status = NodeActorStatus.EXECUTING
 
         registry = self.node.registry
@@ -248,14 +260,16 @@ class NodeActor:
             execution_context = self._prepare_execution_context(context, execution_id)
 
             if self.node.is_llm_node:
-                result = self._execute_llm_node(inputs, state, execution_context)
+                node_output = self._execute_llm_node(inputs, state, execution_context)
             elif self.node.is_tool_node:
-                result = self._execute_tool_node(state, execution_context)
+                node_output = self._execute_tool_node(state, execution_context)
             else:
-                result = self._execute_generic_node(inputs, state, execution_context)
+                node_output = self._execute_generic_node(
+                    inputs, state, execution_context
+                )
 
             self.status = NodeActorStatus.COMPLETED
-            return result
+            return Result(node_output=node_output)
 
         except Exception as e:
             self.error = create_error(
@@ -265,22 +279,29 @@ class NodeActor:
 
     async def _aexecute_internal(
         self, input_: Any, context: dict[str, Any], execution_id: UUID
-    ) -> Output:
+    ) -> Result:
         self.status = NodeActorStatus.EXECUTING
 
         try:
             execution_context = self._prepare_execution_context(context, execution_id)
 
             if self.node.is_llm_node:
-                result = await self._aexecute_llm_node(input_, execution_context)
-                self._state["messages"].append(result.response)
+                node_output = await self._aexecute_llm_node(input_, execution_context)
             elif self.node.is_tool_node:
-                result = await self._aexecute_tool_node(input_)
+                node_output = await self._aexecute_tool_node(input_)
             else:
-                result = await self._aexecute_generic_node(input_, execution_context)
+                node_output = await self._aexecute_generic_node(
+                    input_, execution_context
+                )
+
+            self._sync_state(node_output)
+            next_nodes = self._get_next_nodes(node_output)
 
             self.status = NodeActorStatus.COMPLETED
-            return result
+            return Result(
+                node_output=node_output,
+                next_nodes=next_nodes,
+            )
 
         except Exception as e:
             self.error = create_error(
@@ -293,7 +314,7 @@ class NodeActor:
         inputs: Sequence[BaseMessage],
         state: dict[str, Any],
         context: dict[str, Any],
-    ) -> Output:
+    ) -> NodeOutput:
         if not self.llm:
             raise create_error(
                 "LLM required for LLMNode execution but not provided", self
@@ -305,18 +326,21 @@ class NodeActor:
 
     async def _aexecute_llm_node(
         self, input_: BaseMessage, context: dict[str, Any]
-    ) -> Output:
+    ) -> NodeOutput:
         if not self.llm:
             raise create_error(
                 "LLM required for LLMNode execution but not provided", self
             )
 
         self._state["messages"].append(input_)
-        return await self.node.ainvoke(self.llm, self._state["messages"], **context)
+        node_output = await self.node.ainvoke(
+            self.llm, self._state["messages"], **context
+        )
+        return node_output
 
     def _execute_tool_node(
         self, tool_call: dict[str, Any], state: dict[str, Any]
-    ) -> Output:
+    ) -> NodeOutput:
         if not isinstance(self.node, ToolNode):
             raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
 
@@ -324,7 +348,7 @@ class NodeActor:
 
     async def _aexecute_tool_node(
         self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
-    ) -> Output:
+    ) -> NodeOutput:
         if not isinstance(self.node, ToolNode):
             raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
 
@@ -335,7 +359,7 @@ class NodeActor:
         inputs: Sequence[BaseMessage],
         state: dict[str, Any],
         context: dict[str, Any],
-    ) -> Output:
+    ) -> NodeOutput:
         if not isinstance(self.node, Node):
             raise create_error(f"Expected Node, got {type(self.node)}", self)
 
@@ -343,7 +367,7 @@ class NodeActor:
 
     async def _aexecute_generic_node(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any]
-    ) -> Output:
+    ) -> NodeOutput:
         if not isinstance(self.node, Node):
             raise create_error(f"Expected Node, got {type(self.node)}", self)
 
@@ -368,6 +392,42 @@ class NodeActor:
 
         if not self.node._compiled:
             raise create_error("Node is not compiled", self)
+
+    def _sync_state(self, output: NodeOutput) -> None:
+        """
+        Synchronize the actor's state with the output
+        """
+        if self.node.is_llm_node:
+            self._state["messages"].append(output.response)
+
+    def _get_next_nodes(
+        self, output: NodeOutput
+    ) -> list[tuple[BaseNode[Any], dict[str, Any]]]:
+        """
+        Get the next nodes to execute based on the output
+        """
+
+        next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []
+
+        registry = self.node.registry
+
+        # LLMNode
+        if (
+            self.node.is_llm_node
+            and self.node.spec.tools
+            and hasattr(output.response, "tool_calls")
+        ):
+            for tool_call in getattr(output.response, "tool_calls", []):
+                tool_name = tool_call["name"]
+                tool = registry.lookup(ToolNode, tool_name)
+                next_nodes.append((tool, tool_call))
+
+            return next_nodes
+
+        if self.node.is_tool_node:
+            return next_nodes
+
+        return next_nodes
 
     def _prepare_execution_context(
         self, context: dict[str, Any], execution_id: UUID
