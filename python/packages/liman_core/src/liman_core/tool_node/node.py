@@ -135,7 +135,9 @@ class ToolNode(BaseNode[ToolNodeSpec]):
         self.func = func
         self.spec.func = str(func)
 
-    def invoke(self, tool_call: dict[str, Any]) -> Output[Any]:
+    def invoke(
+        self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
+    ) -> Output:
         """
         Invoke the tool function with the provided arguments.
 
@@ -181,7 +183,9 @@ class ToolNode(BaseNode[ToolNodeSpec]):
             )
         return Output(response=response)
 
-    async def ainvoke(self, tool_call: dict[str, Any]) -> Output[Any]:
+    async def ainvoke(
+        self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
+    ) -> Output:
         """
         Asynchronously invoke the tool function with the provided arguments.
 

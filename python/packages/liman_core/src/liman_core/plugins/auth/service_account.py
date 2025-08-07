@@ -77,9 +77,9 @@ class ServiceAccount(Component[ServiceAccountSpec]):
             **kwargs,
         )
 
-    def get_context_variables(self, external_state: dict[str, Any]) -> dict[str, Any]:
+    def get_internal_state(self, external_state: dict[str, Any]) -> dict[str, Any]:
         """
-        Extract and return context variables from external state based on inject configuration
+        Extract and return internal state from external state based on inject configuration
         """
         if not self.spec.context:
             return {}

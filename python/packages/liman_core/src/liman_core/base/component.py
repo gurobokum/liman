@@ -15,9 +15,9 @@ from ruamel.yaml.scalarstring import PreservedScalarString
 from liman_core.base.schemas import S
 from liman_core.errors import InvalidSpecError
 from liman_core.plugins import PluginFieldConflictError
-from liman_core.plugins.core.base import Plugin
 
 if TYPE_CHECKING:
+    from liman_core.plugins.core.base import Plugin
     from liman_core.registry import Registry
 
 if sys.version_info >= (3, 11):
@@ -36,6 +36,7 @@ class Component(Generic[S], ABC):
         # spec
         "spec",
         "yaml_path",
+        "registry",
         # private
         "_initial_data",
     )
@@ -56,6 +57,7 @@ class Component(Generic[S], ABC):
         self.spec = spec
         self.yaml_path = yaml_path
         self.strict = strict
+        self.registry = registry
 
         self.id = self.generate_id()
         self.name = self.spec.name

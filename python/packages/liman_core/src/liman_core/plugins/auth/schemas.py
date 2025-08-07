@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 from uuid import uuid4
 
@@ -35,7 +37,7 @@ class ServiceAccountSpec(BaseSpec):
         return data
 
     @model_validator(mode="after")
-    def validate_required_fields(self) -> "ServiceAccountSpec":
+    def validate_required_fields(self) -> ServiceAccountSpec:
         has_credentials = bool(self.credentials_provider or self.credentials_providers)
         has_context = bool(self.context)
 

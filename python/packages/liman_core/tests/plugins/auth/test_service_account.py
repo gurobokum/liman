@@ -124,7 +124,7 @@ def test_context_variables_extraction(registry: Registry) -> None:
     service_account = ServiceAccount.from_dict(
         VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
     )
-    context = service_account.get_context_variables(external_state)
+    context = service_account.get_internal_state(external_state)
 
     assert context["user_id"] == "user123"
     assert context["organization"]["id"] == "org456"
@@ -141,7 +141,7 @@ def test_context_variables_missing_strict_mode(registry: Registry) -> None:
         ValueError,
         match="Required context variable not found in state: 'organization.id'",
     ):
-        service_account.get_context_variables(external_state)
+        service_account.get_internal_state(external_state)
 
 
 def test_context_variables_missing_non_strict_mode(registry: Registry) -> None:
@@ -154,7 +154,7 @@ def test_context_variables_missing_non_strict_mode(registry: Registry) -> None:
     }
 
     service_account = ServiceAccount.from_dict(non_strict_config, registry)
-    context = service_account.get_context_variables(external_state)
+    context = service_account.get_internal_state(external_state)
 
     assert context["user_id"] == "user123"
     assert "organization" not in context
@@ -170,7 +170,7 @@ def test_context_variables_nested_paths(registry: Registry) -> None:
     }
 
     service_account = ServiceAccount.from_dict(config, registry)
-    context = service_account.get_context_variables(external_state)
+    context = service_account.get_internal_state(external_state)
 
     assert context["email"] == "test@example.com"
 
@@ -183,14 +183,14 @@ def test_context_variables_no_external_state(registry: Registry) -> None:
         ValueError,
         match="Required context variable not found in state: 'user.id'",
     ):
-        service_account.get_context_variables({})
+        service_account.get_internal_state({})
 
 
 def test_service_account_without_context(registry: Registry) -> None:
     service_account = ServiceAccount.from_dict(
         VALID_SERVICE_ACCOUNT_WITH_CREDENTIALS_PROVIDER, registry
     )
-    context = service_account.get_context_variables({"some": "state"})
+    context = service_account.get_internal_state({"some": "state"})
     assert context == {}
 
 
@@ -203,7 +203,7 @@ def test_get_context_variables_method(registry: Registry) -> None:
     service_account = ServiceAccount.from_dict(
         VALID_SERVICE_ACCOUNT_WITH_CONTEXT, registry
     )
-    context = service_account.get_context_variables(external_state)
+    context = service_account.get_internal_state(external_state)
 
     assert context["user_id"] == "user123"
     assert context["organization"]["id"] == "org456"

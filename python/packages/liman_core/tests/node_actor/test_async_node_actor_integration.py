@@ -1,13 +1,14 @@
 import asyncio
 from unittest.mock import Mock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import AsyncNodeActor, NodeActorStatus
+from liman_core.node_actor.actor import NodeActor
 from liman_core.node_actor.errors import NodeActorError
+from liman_core.node_actor.schemas import NodeActorStatus
 from liman_core.registry import Registry
 from liman_core.tool_node import ToolNode
 
@@ -58,34 +59,32 @@ def real_tool_node(registry: Registry) -> ToolNode | None:
 
 
 async def test_async_actor_factory_pattern(real_node: Node) -> None:
-    custom_id: UUID = uuid4()
+    actor_id = uuid4()
     mock_llm = Mock()
 
-    async_actor = AsyncNodeActor.create(
-        node=real_node, actor_id=custom_id, llm=mock_llm
-    )
+    async_actor = NodeActor.create(node=real_node, actor_id=actor_id, llm=mock_llm)
 
-    assert async_actor.id == custom_id
+    assert async_actor.id == actor_id
     assert async_actor.node is real_node
     assert async_actor.llm is mock_llm
 
 
 async def test_async_actor_composite_id_format(real_node: Node) -> None:
-    actor_id: UUID = uuid4()
-    async_actor = AsyncNodeActor(node=real_node, actor_id=actor_id)
+    actor_id = uuid4()
+    async_actor = NodeActor(node=real_node, actor_id=actor_id)
 
     async_composite = async_actor.composite_id
     async_parts = async_composite.split("/")
 
     assert len(async_parts) == 4
-    assert async_parts[0] == "async_node_actor"
+    assert async_parts[0] == "node_actor"
     assert async_parts[1] == "node"
     assert async_parts[2] == "AsyncIntegrationTestNode"
     assert async_parts[3] == str(actor_id)
 
 
 async def test_async_actor_status_format(real_node: Node) -> None:
-    async_actor = AsyncNodeActor(node=real_node)
+    async_actor = NodeActor(node=real_node)
 
     async_status = async_actor.get_status()
 
@@ -97,22 +96,22 @@ async def test_async_actor_status_format(real_node: Node) -> None:
 
 
 async def test_async_actor_lifecycle(real_node: Node) -> None:
-    async_actor = AsyncNodeActor(node=real_node)
+    async_actor = NodeActor(node=real_node)
 
     assert async_actor.status == NodeActorStatus.IDLE
 
-    await async_actor.initialize()
+    await async_actor.ainitialize()
     assert async_actor.status == NodeActorStatus.READY
 
-    await async_actor.shutdown()
+    await async_actor.ashutdown()
     assert async_actor.status == NodeActorStatus.SHUTDOWN
 
 
 async def test_async_actor_execution_context(real_node: Node) -> None:
-    execution_id: UUID = uuid4()
     context = {"custom_key": "custom_value"}
+    execution_id = uuid4()
 
-    async_actor = AsyncNodeActor(node=real_node)
+    async_actor = NodeActor(node=real_node)
     async_ctx = async_actor._prepare_execution_context(context, execution_id)
 
     assert async_ctx["custom_key"] == "custom_value"
@@ -123,53 +122,53 @@ async def test_async_actor_execution_context(real_node: Node) -> None:
 
 
 async def test_async_actor_validation_consistency(real_llm_node: LLMNode) -> None:
-    async_actor = AsyncNodeActor(node=real_llm_node)
+    async_actor = NodeActor(node=real_llm_node)
 
     with pytest.raises(NodeActorError):
-        await async_actor._validate_requirements()
+        async_actor._validate_requirements()
 
     # Should pass validation with LLM
     mock_llm = Mock()
-    async_actor_with_llm = AsyncNodeActor(node=real_llm_node, llm=mock_llm)
-    await async_actor_with_llm._validate_requirements()  # Should not raise
+    async_actor_with_llm = NodeActor(node=real_llm_node, llm=mock_llm)
+    async_actor_with_llm._validate_requirements()  # Should not raise
 
 
 async def test_async_actor_node_type_detection(
     real_node: Node, real_llm_node: LLMNode
 ) -> None:
-    async_actor = AsyncNodeActor(node=real_node)
+    async_actor = NodeActor(node=real_node)
 
     assert not async_actor.node.is_llm_node
     assert not async_actor.node.is_tool_node
 
-    async_llm_actor = AsyncNodeActor(node=real_llm_node)
+    async_llm_actor = NodeActor(node=real_llm_node)
 
     assert async_llm_actor.node.is_llm_node
     assert not async_llm_actor.node.is_tool_node
 
 
 async def test_async_actor_repr_consistency(real_node: Node) -> None:
-    actor_id: UUID = uuid4()
-    async_actor = AsyncNodeActor(node=real_node, actor_id=actor_id)
+    actor_id = uuid4()
+    async_actor = NodeActor(node=real_node, actor_id=actor_id)
 
     async_repr = repr(async_actor)
 
     assert str(actor_id) in async_repr
     assert "AsyncIntegrationTestNode" in async_repr
     assert NodeActorStatus.IDLE in async_repr
-    assert "AsyncNodeActor" in async_repr
+    assert "NodeActor" in async_repr
 
 
 async def test_async_actor_multiple_instances(real_node: Node) -> None:
     actors = [
-        AsyncNodeActor(node=real_node),
-        AsyncNodeActor(node=real_node),
-        AsyncNodeActor(node=real_node),
+        NodeActor(node=real_node),
+        NodeActor(node=real_node),
+        NodeActor(node=real_node),
     ]
 
     # Initialize all
     for actor in actors:
-        await actor.initialize()
+        await actor.ainitialize()
 
     # All should be ready
     for actor in actors:
@@ -177,7 +176,7 @@ async def test_async_actor_multiple_instances(real_node: Node) -> None:
 
     # Shutdown all
     for actor in actors:
-        await actor.shutdown()
+        await actor.ashutdown()
 
     # All should be shutdown
     for actor in actors:
@@ -186,20 +185,20 @@ async def test_async_actor_multiple_instances(real_node: Node) -> None:
 
 async def test_async_actor_multiple_instances_concurrent(real_node: Node) -> None:
     actors = [
-        AsyncNodeActor(node=real_node),
-        AsyncNodeActor(node=real_node),
-        AsyncNodeActor(node=real_node),
+        NodeActor(node=real_node),
+        NodeActor(node=real_node),
+        NodeActor(node=real_node),
     ]
 
     # Initialize all concurrently
-    await asyncio.gather(*[actor.initialize() for actor in actors])
+    await asyncio.gather(*[actor.ainitialize() for actor in actors])
 
     # All should be ready
     for actor in actors:
         assert actor.status == NodeActorStatus.READY
 
     # Shutdown all concurrently
-    await asyncio.gather(*[actor.shutdown() for actor in actors])
+    await asyncio.gather(*[actor.ashutdown() for actor in actors])
 
     # All should be shutdown
     for actor in actors:

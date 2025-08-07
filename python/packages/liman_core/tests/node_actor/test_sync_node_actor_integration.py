@@ -1,5 +1,5 @@
 from unittest.mock import Mock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
@@ -66,18 +66,18 @@ def real_tool_node(registry: Registry) -> ToolNode | None:
 
 
 def test_sync_actor_factory_pattern(real_node: Node) -> None:
-    custom_id: UUID = uuid4()
+    actor_id = uuid4()
     mock_llm = Mock()
 
-    sync_actor = NodeActor.create(node=real_node, actor_id=custom_id, llm=mock_llm)
+    sync_actor = NodeActor.create(node=real_node, actor_id=actor_id, llm=mock_llm)
 
-    assert sync_actor.id == custom_id
+    assert sync_actor.id == actor_id
     assert sync_actor.node is real_node
     assert sync_actor.llm is mock_llm
 
 
 def test_sync_actor_composite_id_format(real_node: Node) -> None:
-    actor_id: UUID = uuid4()
+    actor_id = uuid4()
     sync_actor = NodeActor(node=real_node, actor_id=actor_id)
 
     sync_composite = sync_actor.composite_id
@@ -115,8 +115,8 @@ def test_sync_actor_lifecycle(real_node: Node) -> None:
 
 
 def test_sync_actor_execution_context(real_node: Node) -> None:
-    execution_id: UUID = uuid4()
     context = {"custom_key": "custom_value"}
+    execution_id = uuid4()
 
     sync_actor = NodeActor(node=real_node)
     sync_ctx = sync_actor._prepare_execution_context(context, execution_id)
@@ -155,7 +155,7 @@ def test_sync_actor_node_type_detection(
 
 
 def test_sync_actor_repr_consistency(real_node: Node) -> None:
-    actor_id: UUID = uuid4()
+    actor_id = uuid4()
     sync_actor = NodeActor(node=real_node, actor_id=actor_id)
 
     sync_repr = repr(sync_actor)

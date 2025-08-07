@@ -21,3 +21,9 @@ class InvalidSpecError(LimanError):
     """Raised when a node specification is invalid."""
 
     code: str = "invalid_spec"
+
+
+class ComponentNotFoundError(LimanError):
+    """Raised when a component is not found in the registry."""
+
+    code: str = "component_not_found"

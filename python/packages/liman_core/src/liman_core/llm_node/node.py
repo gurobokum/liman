@@ -4,7 +4,7 @@ from typing import Any, cast
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from liman_core.base import BaseNode, Output
+from liman_core.base.node import BaseNode, Output
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
 from liman_core.llm_node.schemas import LLMNodeSpec, LLMPrompts, LLMPromptsBundle
@@ -110,9 +110,10 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         self,
         llm: BaseChatModel,
         inputs: Sequence[BaseMessage],
+        state: dict[str, Any] | None = None,
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> Output[Any]:
+    ) -> Output:
         raise NotImplementedError("LLMNode.invoke() is not implemented yet")
 
     async def ainvoke(
@@ -121,7 +122,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         inputs: Sequence[BaseMessage],
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> Output[Any]:
+    ) -> Output:
         if not self._compiled:
             raise LimanError(
                 "LLMNode must be compiled before invoking. Use `compile()` method."
@@ -162,7 +163,7 @@ class LLMNode(BaseNode[LLMNodeSpec]):
                     )
                 )
 
-        output = Output(response=response, next_nodes=next_nodes)
+        output = Output(response=response)
 
         return output
 

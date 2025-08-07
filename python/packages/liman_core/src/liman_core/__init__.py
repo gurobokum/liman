@@ -1,6 +1,6 @@
 from liman_core.base import BaseNode
 from liman_core.llm_node import LLMNode
-from liman_core.node_actor import AsyncNodeActor, NodeActor
+from liman_core.node_actor import NodeActor
 from liman_core.tool_node import ToolNode
 
 # Don't update the version manually, it is set by the build system.
@@ -10,6 +10,5 @@ __all__ = [
     "BaseNode",
     "LLMNode",
     "ToolNode",
-    "AsyncNodeActor",
     "NodeActor",
 ]

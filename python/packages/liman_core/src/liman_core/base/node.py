@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Generic
+from typing import Any
 from uuid import UUID, uuid4
 
 from langchain_core.messages import BaseMessage
@@ -12,12 +12,10 @@ from liman_core.languages import LanguageCode, is_valid_language_code
 from liman_core.registry import Registry
 
 
-class Output(BaseModel, Generic[S]):
+class Output(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     response: BaseMessage
-
-    next_nodes: list[tuple["BaseNode[S]", dict[str, Any]]] = []
 
 
 class BaseNode(Component[S]):
@@ -74,10 +72,10 @@ class BaseNode(Component[S]):
         ...
 
     @abstractmethod
-    def invoke(self, *args: Any, **kwargs: Any) -> Output[Any]: ...
+    def invoke(self, *args: Any, **kwargs: Any) -> Output: ...
 
     @abstractmethod
-    async def ainvoke(self, *args: Any, **kwargs: Any) -> Output[Any]: ...
+    async def ainvoke(self, *args: Any, **kwargs: Any) -> Output: ...
 
     @property
     def is_llm_node(self) -> bool:

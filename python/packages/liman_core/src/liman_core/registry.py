@@ -1,22 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, TypeVar
 
-from liman_core.errors import LimanError
+from liman_core.base.component import Component
+from liman_core.errors import ComponentNotFoundError, LimanError
 from liman_core.plugins import PluginConflictError
 from liman_core.plugins.auth.plugin import AuthPlugin
 from liman_core.plugins.core.base import Plugin
 
-if TYPE_CHECKING:
-    from liman_core.base import BaseNode
-
-T = TypeVar("T", bound="BaseNode[Any]")
-
-
-class NodeNotFoundError(LimanError):
-    """Raised when a node is not found in the registry."""
-
-    code: str = "node_not_found"
+T = TypeVar("T", bound="Component[Any]")
 
 
 DEFAULT_PLUGINS = [AuthPlugin()]
@@ -28,7 +20,7 @@ class Registry:
     """
 
     def __init__(self) -> None:
-        self._nodes: dict[str, BaseNode[Any]] = {}
+        self._components: dict[str, Component[Any]] = {}
 
         self._plugins_kinds: set[str] = {"Node", "LLMNode", "ToolNode"}
         self._plugins: dict[str, list[Plugin]] = {
@@ -80,8 +72,8 @@ class Registry:
             BaseNode: The node associated with the given name.
         """
         key = f"{kind.__name__}:{name}"
-        if key in self._nodes:
-            node = self._nodes[key]
+        if key in self._components:
+            node = self._components[key]
 
             if not isinstance(node, kind):
                 raise TypeError(
@@ -90,9 +82,11 @@ class Registry:
                 )
             return node
         else:
-            raise NodeNotFoundError(f"Node with key '{key}' not found in the registry.")
+            raise ComponentNotFoundError(
+                f"Component with key '{key}' not found in the registry."
+            )
 
-    def add(self, node: BaseNode[Any]) -> None:
+    def add(self, node: Component[Any]) -> None:
         """
         Add a node to the registry.
 
@@ -100,6 +94,6 @@ class Registry:
             node (BaseNode): The node to add to the registry.
         """
         key = f"{node.spec.kind}:{node.name}"
-        if self._nodes.get(key):
+        if self._components.get(key):
             raise LimanError(f"Node with key '{key}' already exists in the registry.")
-        self._nodes[key] = node
+        self._components[key] = node

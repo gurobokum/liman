@@ -1,5 +1,5 @@
 from unittest.mock import AsyncMock, Mock
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from liman_core.base import Output
 from liman_core.llm_node import LLMNode
 from liman_core.node import Node
-from liman_core.node_actor import AsyncNodeActor, NodeActorError, NodeActorStatus
+from liman_core.node_actor import NodeActor, NodeActorError, NodeActorStatus
 from liman_core.tool_node import ToolNode
 
 
@@ -53,87 +53,90 @@ def mock_llm() -> Mock:
 
 
 @pytest.fixture
-async def async_actor(mock_node: Mock) -> AsyncNodeActor:
-    return AsyncNodeActor(node=mock_node)
+def async_actor(mock_node: Mock) -> NodeActor:
+    return NodeActor(node=mock_node)
 
 
 async def test_async_actor_create_method(mock_node: Mock) -> None:
-    actor = AsyncNodeActor.create(node=mock_node)
+    actor = NodeActor.create(node=mock_node)
 
-    assert isinstance(actor, AsyncNodeActor)
+    assert isinstance(actor, NodeActor)
     assert actor.node is mock_node
     assert actor.status == NodeActorStatus.IDLE
 
 
-async def test_async_actor_initialize_success(async_actor: AsyncNodeActor) -> None:
-    await async_actor.initialize()
+async def test_async_actor_initialize_success(async_actor: NodeActor) -> None:
+    await async_actor.ainitialize()
 
     assert async_actor.status == NodeActorStatus.READY
 
 
 async def test_async_actor_initialize_wrong_status_raises(
-    async_actor: AsyncNodeActor,
+    async_actor: NodeActor,
 ) -> None:
     async_actor.status = NodeActorStatus.READY
 
     with pytest.raises(NodeActorError) as exc_info:
-        await async_actor.initialize()
+        await async_actor.ainitialize()
 
     assert "Cannot initialize actor in status" in str(exc_info.value)
 
 
 async def test_async_actor_initialize_uncompiled_node_raises(mock_node: Mock) -> None:
     mock_node._compiled = False
-    actor = AsyncNodeActor(node=mock_node)
+    actor = NodeActor(node=mock_node)
 
     with pytest.raises(NodeActorError) as exc_info:
-        await actor.initialize()
+        await actor.ainitialize()
 
     assert "Failed to initialize actor" in str(exc_info.value)
     assert actor.error is not None
 
 
-async def test_async_actor_execute_success(async_actor: AsyncNodeActor) -> None:
-    await async_actor.initialize()
+async def test_async_actor_execute_success(async_actor: NodeActor) -> None:
+    await async_actor.ainitialize()
     inputs = [HumanMessage(content="test")]
+    execution_id = uuid4()
 
-    result = await async_actor.execute(inputs)
+    result = await async_actor.aexecute(inputs, execution_id)
 
     assert result.response.content == "test_result"
     assert async_actor.status == NodeActorStatus.COMPLETED
 
 
 async def test_async_actor_execute_wrong_status_raises(
-    async_actor: AsyncNodeActor,
+    async_actor: NodeActor,
 ) -> None:
     inputs = [HumanMessage(content="test")]
+    execution_id = uuid4()
 
     with pytest.raises(NodeActorError) as exc_info:
-        await async_actor.execute(inputs)
+        await async_actor.aexecute(inputs, execution_id)
 
     assert "Cannot execute actor in status" in str(exc_info.value)
 
 
 async def test_async_actor_execute_after_shutdown_raises(
-    async_actor: AsyncNodeActor,
+    async_actor: NodeActor,
 ) -> None:
-    await async_actor.initialize()
-    await async_actor.shutdown()
+    await async_actor.ainitialize()
+    await async_actor.ashutdown()
     inputs = [HumanMessage(content="test")]
+    execution_id = uuid4()
 
     with pytest.raises(NodeActorError) as exc_info:
-        await async_actor.execute(inputs)
+        await async_actor.aexecute(inputs, execution_id)
 
     assert "Cannot execute actor in status shutdown" in str(exc_info.value)
 
 
-async def test_async_actor_execute_with_context(async_actor: AsyncNodeActor) -> None:
-    await async_actor.initialize()
+async def test_async_actor_execute_with_context(async_actor: NodeActor) -> None:
+    await async_actor.ainitialize()
     inputs = [HumanMessage(content="test")]
     context = {"custom_key": "custom_value"}
-    execution_id: UUID = uuid4()
+    execution_id = uuid4()
 
-    await async_actor.execute(inputs, context=context, execution_id=execution_id)
+    await async_actor.aexecute(inputs, context=context, execution_id=execution_id)
 
     call_kwargs = async_actor.node.ainvoke.call_args[1]  # type: ignore
     assert call_kwargs["custom_key"] == "custom_value"
@@ -144,11 +147,12 @@ async def test_async_actor_execute_with_context(async_actor: AsyncNodeActor) -> 
 async def test_async_actor_execute_llm_node_success(
     mock_llm_node: Mock, mock_llm: Mock
 ) -> None:
-    actor = AsyncNodeActor(node=mock_llm_node, llm=mock_llm)
-    await actor.initialize()
+    actor = NodeActor(node=mock_llm_node, llm=mock_llm)
+    await actor.ainitialize()
     inputs = [HumanMessage(content="test")]
+    execution_id = uuid4()
 
-    result = await actor.execute(inputs)
+    result = await actor.aexecute(inputs, execution_id)
 
     assert result.response.content == "llm_result"
     mock_llm_node.ainvoke.assert_called_once()
@@ -159,51 +163,53 @@ async def test_async_actor_execute_llm_node_success(
 async def test_async_actor_execute_llm_node_without_llm_raises(
     mock_llm_node: Mock,
 ) -> None:
-    actor = AsyncNodeActor(node=mock_llm_node)
+    actor = NodeActor(node=mock_llm_node)
 
     with pytest.raises(NodeActorError) as exc_info:
-        await actor.initialize()
+        await actor.ainitialize()
 
     assert "LLMNode requires LLM but none provided" in str(exc_info.value)
 
 
 async def test_async_actor_execute_tool_node_success(mock_tool_node: Mock) -> None:
-    actor = AsyncNodeActor(node=mock_tool_node)
-    await actor.initialize()
+    actor = NodeActor(node=mock_tool_node)
+    await actor.ainitialize()
     inputs = [HumanMessage(content="test")]
+    execution_id = uuid4()
 
-    result = await actor.execute(inputs)
+    result = await actor.aexecute(inputs, execution_id)
 
     assert result.response.content == "tool_result"
     mock_tool_node.ainvoke.assert_called_once()
 
 
 async def test_async_actor_execute_node_exception_raises(
-    async_actor: AsyncNodeActor,
+    async_actor: NodeActor,
 ) -> None:
-    await async_actor.initialize()
+    await async_actor.ainitialize()
     async_actor.node.ainvoke.side_effect = Exception("Node failed")  # type: ignore
     inputs = [HumanMessage(content="test")]
+    execution_id = uuid4()
 
     with pytest.raises(NodeActorError) as exc_info:
-        await async_actor.execute(inputs)
+        await async_actor.aexecute(inputs, execution_id)
 
     assert "Node execution failed" in str(exc_info.value)
     assert async_actor.error is not None
 
 
-async def test_async_actor_shutdown(async_actor: AsyncNodeActor) -> None:
-    await async_actor.shutdown()
+async def test_async_actor_shutdown(async_actor: NodeActor) -> None:
+    await async_actor.ashutdown()
 
     assert async_actor.status == NodeActorStatus.SHUTDOWN
-    assert async_actor._is_shutdown()
+    assert async_actor._is_async_shutdown()
 
 
-async def test_async_actor_composite_id_format(async_actor: AsyncNodeActor) -> None:
+async def test_async_actor_composite_id_format(async_actor: NodeActor) -> None:
     composite_id = async_actor.composite_id
     parts = composite_id.split("/")
 
-    assert parts[0] == "async_node_actor"
+    assert parts[0] == "node_actor"
     assert parts[1] == "node"
     assert parts[2] == "test_node"
     assert parts[3] == str(async_actor.id)
