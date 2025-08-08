@@ -1,9 +1,10 @@
 from typing import Literal
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import BaseMessage, SystemMessage
 from pydantic import BaseModel
 
 from liman_core.base import BaseSpec
+from liman_core.base.schemas import NodeState
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.languages import LanguageCode, LanguagesBundle, LocalizedValue
 
@@ -32,3 +33,14 @@ class LLMNodeSpec(BaseSpec):
     prompts: LocalizedValue
     tools: list[str] = []
     nodes: list[str | EdgeSpec] = []
+
+
+class LLMNodeState(NodeState):
+    """
+    State for LLMNode.
+    This class can be extended to add custom state attributes.
+    """
+
+    messages: list[BaseMessage] = []
+    input_: BaseMessage | None = None
+    output: BaseMessage | None = None

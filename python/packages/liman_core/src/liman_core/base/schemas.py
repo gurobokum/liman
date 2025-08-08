@@ -1,6 +1,7 @@
 from typing import TypeVar
 
-from pydantic import BaseModel
+from langchain_core.messages import BaseMessage
+from pydantic import BaseModel, ConfigDict
 
 
 class BaseSpec(BaseModel):
@@ -8,4 +9,20 @@ class BaseSpec(BaseModel):
     name: str
 
 
+class NodeOutput(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    response: BaseMessage
+
+
+class NodeState(BaseModel):
+    """
+    State for Node.
+    This class can be extended to add custom state attributes.
+    """
+
+    ...
+
+
 S = TypeVar("S", bound=BaseSpec)
+NS = TypeVar("NS", bound=NodeState)

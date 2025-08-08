@@ -2,18 +2,19 @@ import asyncio
 import sys
 import threading
 from collections.abc import Sequence
-from typing import Any, TypedDict
+from typing import Any, Generic
 from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
-from pydantic import BaseModel, ConfigDict
 
-from liman_core.base.node import BaseNode, NodeOutput
+from liman_core.base.node import BaseNode
+from liman_core.base.schemas import NS, NodeOutput, S
 from liman_core.llm_node.node import LLMNode
+from liman_core.llm_node.schemas import LLMNodeState
 from liman_core.node.node import Node
 from liman_core.node_actor.errors import NodeActorError
-from liman_core.node_actor.schemas import NodeActorStatus
+from liman_core.node_actor.schemas import NodeActorState, NodeActorStatus, Result
 from liman_core.plugins.core.base import ExecutionStateProvider
 from liman_core.tool_node.node import ToolNode
 from liman_core.utils import to_snake_case
@@ -24,29 +25,14 @@ else:
     from typing_extensions import Self
 
 
-class State(TypedDict):
-    messages: list[BaseMessage]
-
-
-class Result(BaseModel):
-    """
-    Represents the output of a node execution.
-    """
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    node_output: NodeOutput
-    next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []
-
-
-class NodeActor:
+class NodeActor(Generic[S, NS]):
     """
     Unified NodeActor supporting both sync and async execution
     """
 
     def __init__(
         self,
-        node: BaseNode[Any],
+        node: BaseNode[S, NS],
         actor_id: UUID | None = None,
         llm: BaseChatModel | None = None,
     ):
@@ -54,17 +40,29 @@ class NodeActor:
         self.node = node
         self.llm = llm
 
-        self.status = NodeActorStatus.IDLE
         self.error: NodeActorError | None = None
+
+        self.state = NodeActorState(
+            actor_id=self.id,
+            node_id=self.node.id,
+            status=NodeActorStatus.IDLE,
+            node_state=self.node.get_new_state(),
+        )
 
         self._execution_lock = threading.Lock()
         self._async_execution_lock = asyncio.Lock()
         self._shutdown_event = threading.Event()
         self._async_shutdown_event = asyncio.Event()
-        self._state: State = {"messages": []}
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, status={self.status})"
+        return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, status={self.state.status.value})"
+
+    @property
+    def status(self) -> NodeActorStatus:
+        """
+        Get the current status of the actor.
+        """
+        return self.state.status
 
     @property
     def composite_id(self) -> str:
@@ -77,9 +75,26 @@ class NodeActor:
         return f"{actor_type}/{node_type}/{node_name}/{self.id}"
 
     @classmethod
+    def can_restore(cls, node: BaseNode[S, NS], saved_state: dict[str, Any]) -> bool:
+        """
+        Check if NodeActor can be restored based on node type and status
+        """
+        status = saved_state.get("status")
+
+        if node.is_tool_node:
+            return status == NodeActorStatus.READY
+        elif isinstance(node, Node | LLMNode):
+            return status in [
+                NodeActorStatus.READY,
+                NodeActorStatus.EXECUTING,
+                NodeActorStatus.COMPLETED,
+            ]
+        return False
+
+    @classmethod
     def create(
         cls,
-        node: BaseNode[Any],
+        node: BaseNode[S, NS],
         actor_id: UUID | None = None,
         llm: BaseChatModel | None = None,
     ) -> Self:
@@ -97,52 +112,81 @@ class NodeActor:
         actor = cls(node=node, actor_id=actor_id, llm=llm)
         return actor
 
-    def _is_shutdown(self) -> bool:
-        """Check if actor is shutdown"""
-        return self._shutdown_event.is_set()
+    @classmethod
+    async def acreate_or_restore(
+        cls,
+        node: BaseNode[S, NS],
+        execution_id: UUID,
+        state_storage: Any,
+        llm: BaseChatModel | None = None,
+    ) -> Self:
+        """
+        Create a new NodeActor or restore from saved state
 
-    def _is_async_shutdown(self) -> bool:
-        """Check if actor is shutdown (async version)"""
-        return self._async_shutdown_event.is_set()
+        Args:
+            node: The node to wrap in this actor
+            execution_id: Execution ID for state lookup
+            state_storage: Storage backend for state persistence
+            llm: Optional LLM instance for LLMNodes
+
+        Returns:
+            NodeActor instance (new or restored)
+        """
+        saved_state = await state_storage.aload_actor_state(execution_id, node.id)
+
+        if saved_state and cls.can_restore(node, saved_state):
+            actor = cls(node=node, llm=llm)
+            actor._restore_state(saved_state)
+            return actor
+        else:
+            return cls.create(node=node, llm=llm)
 
     def initialize(self) -> None:
         """
         Initialize the actor and prepare for execution
         """
-        if self.status != NodeActorStatus.IDLE:
-            raise create_error(f"Cannot initialize actor in status {self.status}", self)
+        if self.state.status != NodeActorStatus.IDLE:
+            raise create_error(
+                f"Cannot initialize actor in status {self.state.status}", self
+            )
 
-        self.status = NodeActorStatus.INITIALIZING
+        self.state.status = NodeActorStatus.INITIALIZING
+        self.state.has_error = False
 
         try:
             if not self.node._compiled:
                 self.node.compile()
 
             self._validate_requirements()
-            self.status = NodeActorStatus.READY
+            self.state.status = NodeActorStatus.READY
 
         except Exception as e:
             self.error = create_error(f"Failed to initialize actor: {e}", self)
+            self.state.has_error = True
             raise self.error from e
 
     async def ainitialize(self) -> None:
         """
         Initialize the actor and prepare for execution (async version)
         """
-        if self.status != NodeActorStatus.IDLE:
-            raise create_error(f"Cannot initialize actor in status {self.status}", self)
+        if self.state.status != NodeActorStatus.IDLE:
+            raise create_error(
+                f"Cannot initialize actor in status {self.state.status}", self
+            )
 
-        self.status = NodeActorStatus.INITIALIZING
+        self.state.status = NodeActorStatus.INITIALIZING
+        self.state.has_error = False
 
         try:
             if not self.node._compiled:
                 self.node.compile()
 
             await self._avalidate_requirements()
-            self.status = NodeActorStatus.READY
+            self.state.status = NodeActorStatus.READY
 
         except Exception as e:
             self.error = create_error(f"Failed to initialize actor: {e}", self)
+            self.state.has_error = True
             raise self.error from e
 
     def execute(
@@ -150,7 +194,7 @@ class NodeActor:
         input_: Any,
         execution_id: UUID,
         context: dict[str, Any] | None = None,
-    ) -> Result:
+    ) -> Result[S, NS]:
         """
         Execute the wrapped node with the provided inputs.
 
@@ -165,8 +209,10 @@ class NodeActor:
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
         """
-        if self.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
-            raise create_error(f"Cannot execute actor in status {self.status}", self)
+        if self.state.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
+            raise create_error(
+                f"Cannot execute actor in status {self.state.status.value}", self
+            )
 
         if self._shutdown_event.is_set():
             raise create_error("Actor is shutting down", self)
@@ -181,7 +227,7 @@ class NodeActor:
         input_: Any,
         execution_id: UUID,
         context: dict[str, Any] | None = None,
-    ) -> Result:
+    ) -> Result[S, NS]:
         """
         Execute the wrapped node with the provided inputs (async version).
 
@@ -196,8 +242,10 @@ class NodeActor:
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
         """
-        if self.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
-            raise create_error(f"Cannot execute actor in status {self.status}", self)
+        if self.state.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
+            raise create_error(
+                f"Cannot execute actor in status {self.state.status.value}", self
+            )
 
         if self._async_shutdown_event.is_set():
             raise create_error("Actor is shutting down", self)
@@ -211,7 +259,7 @@ class NodeActor:
     def shutdown(self) -> None:
         """Gracefully shutdown the actor"""
         self._shutdown_event.set()
-        self.status = NodeActorStatus.SHUTDOWN
+        self.state.status = NodeActorStatus.SHUTDOWN
 
         if self._execution_lock.locked():
             with self._execution_lock:
@@ -220,26 +268,24 @@ class NodeActor:
     async def ashutdown(self) -> None:
         """Gracefully shutdown the actor (async version)"""
         self._async_shutdown_event.set()
-        self.status = NodeActorStatus.SHUTDOWN
+        self.state.status = NodeActorStatus.SHUTDOWN
 
         if self._async_execution_lock.locked():
             async with self._async_execution_lock:
                 ...
 
-    def get_status(self) -> dict[str, Any]:
-        """Get current actor status"""
-        return {
-            "actor_id": str(self.id),
-            "node_name": self.node.name,
-            "node_type": self.node.spec.kind,
-            "status": self.status,
-            "is_shutdown": self._is_shutdown(),
-        }
+    def serialize_state(self) -> dict[str, Any]:
+        """
+        Serialize NodeActor state for persistence
+        """
+        return self.state.model_dump()
+
+    # Execution private methods
 
     def _execute_internal(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any], execution_id: UUID
-    ) -> Result:
-        self.status = NodeActorStatus.EXECUTING
+    ) -> Result[S, NS]:
+        self.state.status = NodeActorStatus.EXECUTING
 
         registry = self.node.registry
         plugins = [
@@ -268,19 +314,20 @@ class NodeActor:
                     inputs, state, execution_context
                 )
 
-            self.status = NodeActorStatus.COMPLETED
+            self.state.status = NodeActorStatus.COMPLETED
             return Result(node_output=node_output)
 
         except Exception as e:
             self.error = create_error(
                 f"Node execution failed: {e}", self, execution_id=execution_id
             )
+            self.state.has_error = True
             raise self.error from e
 
     async def _aexecute_internal(
         self, input_: Any, context: dict[str, Any], execution_id: UUID
-    ) -> Result:
-        self.status = NodeActorStatus.EXECUTING
+    ) -> Result[S, NS]:
+        self.state.status = NodeActorStatus.EXECUTING
 
         try:
             execution_context = self._prepare_execution_context(context, execution_id)
@@ -297,7 +344,7 @@ class NodeActor:
             self._sync_state(node_output)
             next_nodes = self._get_next_nodes(node_output)
 
-            self.status = NodeActorStatus.COMPLETED
+            self.state.status = NodeActorStatus.COMPLETED
             return Result(
                 node_output=node_output,
                 next_nodes=next_nodes,
@@ -332,10 +379,20 @@ class NodeActor:
                 "LLM required for LLMNode execution but not provided", self
             )
 
-        self._state["messages"].append(input_)
+        node_state = self.state.node_state
+
+        # if is needed for proper typing
+        if not isinstance(node_state, LLMNodeState):
+            raise create_error(
+                "NodeActor state has improper node_state for LLMNode", self
+            )
+
         node_output = await self.node.ainvoke(
-            self.llm, self._state["messages"], **context
+            self.llm, [*node_state.messages, input_], **context
         )
+
+        node_state.messages.append(input_)
+        node_state.messages.append(node_output.response)
         return node_output
 
     def _execute_tool_node(
@@ -393,27 +450,29 @@ class NodeActor:
         if not self.node._compiled:
             raise create_error("Node is not compiled", self)
 
+    # State synchronization privatemethods
+
     def _sync_state(self, output: NodeOutput) -> None:
         """
         Synchronize the actor's state with the output
         """
-        if self.node.is_llm_node:
-            self._state["messages"].append(output.response)
+        if isinstance(self.state, LLMNodeState):
+            self.state.messages.append(output.response)
 
     def _get_next_nodes(
         self, output: NodeOutput
-    ) -> list[tuple[BaseNode[Any], dict[str, Any]]]:
+    ) -> list[tuple[BaseNode[S, NS], dict[str, Any]]]:
         """
         Get the next nodes to execute based on the output
         """
 
-        next_nodes: list[tuple[BaseNode[Any], dict[str, Any]]] = []
+        next_nodes: list[tuple[BaseNode[Any, Any], dict[str, Any]]] = []
 
         registry = self.node.registry
 
         # LLMNode
         if (
-            self.node.is_llm_node
+            isinstance(self.node, LLMNode)
             and self.node.spec.tools
             and hasattr(output.response, "tool_calls")
         ):
@@ -445,9 +504,26 @@ class NodeActor:
 
         return execution_context
 
+    def _restore_state(self, saved_state: dict[str, Any]) -> None:
+        """
+        Restore NodeActor state from serialized data
+        """
+        try:
+            self.state = NodeActorState.model_validate(saved_state)
+        except Exception as e:
+            raise create_error(f"Failed to restore actor state: {e}", self) from e
+
+    def _is_shutdown(self) -> bool:
+        """Check if actor is shutdown"""
+        return self._shutdown_event.is_set()
+
+    def _is_async_shutdown(self) -> bool:
+        """Check if actor is shutdown (async version)"""
+        return self._async_shutdown_event.is_set()
+
 
 def create_error(
-    message: str, actor: NodeActor, *, execution_id: UUID | None = None
+    message: str, actor: NodeActor[S, NS], *, execution_id: UUID | None = None
 ) -> NodeActorError:
     return NodeActorError(
         message,

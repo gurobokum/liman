@@ -4,15 +4,21 @@ from typing import Any, cast
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from liman_core.base.node import BaseNode, NodeOutput
+from liman_core.base.node import BaseNode
+from liman_core.base.schemas import NodeOutput
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
-from liman_core.llm_node.schemas import LLMNodeSpec, LLMPrompts, LLMPromptsBundle
+from liman_core.llm_node.schemas import (
+    LLMNodeSpec,
+    LLMNodeState,
+    LLMPrompts,
+    LLMPromptsBundle,
+)
 from liman_core.registry import Registry
 from liman_core.tool_node.node import ToolNode
 
 
-class LLMNode(BaseNode[LLMNodeSpec]):
+class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
     """
     Represents a node in a graph that uses a Large Language Model (LLM).
 
@@ -152,6 +158,15 @@ class LLMNode(BaseNode[LLMNodeSpec]):
         )
 
         return NodeOutput(response=response)
+
+    def get_new_state(self) -> LLMNodeState:
+        """
+        Get a new state for the LLMNode.
+
+        Returns:
+            LLMNodeState: A new instance of LLMNodeState.
+        """
+        return LLMNodeState(messages=[])
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(

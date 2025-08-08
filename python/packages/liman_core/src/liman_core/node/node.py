@@ -5,11 +5,11 @@ from langchain_core.messages import BaseMessage
 
 from liman_core.base import BaseNode, NodeOutput
 from liman_core.errors import LimanError
-from liman_core.node.schemas import NodeSpec
+from liman_core.node.schemas import NodeSpec, NodeState
 from liman_core.registry import Registry
 
 
-class Node(BaseNode[NodeSpec]):
+class Node(BaseNode[NodeSpec, NodeState]):
     spec_type = NodeSpec
 
     def __init__(
@@ -57,3 +57,12 @@ class Node(BaseNode[NodeSpec]):
         Asynchronous invoke method for the Node.
         """
         raise NotImplementedError("Node.ainvoke() is not implemented yet")
+
+    def get_new_state(self) -> NodeState:
+        """
+        Get a new state for the Node.
+
+        Returns:
+            NodeState: A new instance of NodeState with the specified language.
+        """
+        return NodeState(messages=[])

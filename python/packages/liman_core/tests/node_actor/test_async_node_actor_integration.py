@@ -83,25 +83,13 @@ async def test_async_actor_composite_id_format(real_node: Node) -> None:
     assert async_parts[3] == str(actor_id)
 
 
-async def test_async_actor_status_format(real_node: Node) -> None:
-    async_actor = NodeActor(node=real_node)
-
-    async_status = async_actor.get_status()
-
-    expected_keys = {"actor_id", "node_name", "node_type", "status", "is_shutdown"}
-    assert set(async_status.keys()) == expected_keys
-    assert async_status["node_name"] == "AsyncIntegrationTestNode"
-    assert async_status["node_type"] == "Node"
-    assert async_status["status"] == NodeActorStatus.IDLE
-
-
 async def test_async_actor_lifecycle(real_node: Node) -> None:
     async_actor = NodeActor(node=real_node)
 
     assert async_actor.status == NodeActorStatus.IDLE
 
     await async_actor.ainitialize()
-    assert async_actor.status == NodeActorStatus.READY
+    assert async_actor.status == NodeActorStatus.READY  # type: ignore[comparison-overlap]
 
     await async_actor.ashutdown()
     assert async_actor.status == NodeActorStatus.SHUTDOWN
@@ -155,7 +143,7 @@ async def test_async_actor_repr_consistency(real_node: Node) -> None:
 
     assert str(actor_id) in async_repr
     assert "AsyncIntegrationTestNode" in async_repr
-    assert NodeActorStatus.IDLE in async_repr
+    assert NodeActorStatus.IDLE.value in async_repr
     assert "NodeActor" in async_repr
 
 

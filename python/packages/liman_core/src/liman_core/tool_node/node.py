@@ -12,7 +12,7 @@ from liman_core.errors import InvalidSpecError, LimanError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.registry import Registry
 from liman_core.tool_node.errors import ToolExecutionError
-from liman_core.tool_node.schemas import ToolNodeSpec
+from liman_core.tool_node.schemas import ToolNodeSpec, ToolNodeState
 from liman_core.tool_node.utils import (
     ToolArgumentJSONSchema,
     noop,
@@ -25,7 +25,7 @@ DEFAULT_TOOL_PROMPT_TEMPLATE = """
 """.strip()
 
 
-class ToolNode(BaseNode[ToolNodeSpec]):
+class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
     """
     Represents a tool node in a directed graph.
     This node can be used to execute specific tools or functions within a workflow.
@@ -312,6 +312,15 @@ class ToolNode(BaseNode[ToolNodeSpec]):
                 },
             },
         }
+
+    def get_new_state(self) -> ToolNodeState:
+        """
+        Get a new state for the ToolNode.
+
+        Returns:
+            ToolNodeState: A new instance of ToolNodeState.
+        """
+        return ToolNodeState()
 
     def _get_tool_prompt_template(self, lang: LanguageCode) -> str:
         """

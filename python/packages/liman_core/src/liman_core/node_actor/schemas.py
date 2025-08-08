@@ -1,9 +1,14 @@
-from typing import Any
+from enum import Enum
+from typing import Any, Generic
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+
+from liman_core.base.node import BaseNode
+from liman_core.base.schemas import NS, NodeOutput, S
 
 
-class NodeActorStatus:
+class NodeActorStatus(str, Enum):
     """
     Represents the current status of a NodeActor
     """
@@ -18,7 +23,22 @@ class NodeActorStatus:
     SHUTDOWN = "shutdown"
 
 
-class NodeActorState(BaseModel):
-    input_: Any
-    output: Any | None = None
-    context: dict[str, Any] | None = None
+class NodeActorState(BaseModel, Generic[NS]):
+    actor_id: UUID
+    node_id: UUID
+
+    status: NodeActorStatus
+    has_error: bool = False
+
+    node_state: NS
+
+
+class Result(BaseModel, Generic[S, NS]):
+    """
+    Represents the output of a node execution.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    node_output: NodeOutput
+    next_nodes: list[tuple[BaseNode[S, NS], dict[str, Any]]] = []

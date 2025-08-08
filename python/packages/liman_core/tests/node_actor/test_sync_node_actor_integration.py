@@ -90,25 +90,13 @@ def test_sync_actor_composite_id_format(real_node: Node) -> None:
     assert sync_parts[3] == str(actor_id)
 
 
-def test_sync_actor_status_format(real_node: Node) -> None:
-    sync_actor = NodeActor(node=real_node)
-
-    sync_status = sync_actor.get_status()
-
-    expected_keys = {"actor_id", "node_name", "node_type", "status", "is_shutdown"}
-    assert set(sync_status.keys()) == expected_keys
-    assert sync_status["node_name"] == "SyncIntegrationTestNode"
-    assert sync_status["node_type"] == "Node"
-    assert sync_status["status"] == NodeActorStatus.IDLE
-
-
 def test_sync_actor_lifecycle(real_node: Node) -> None:
     sync_actor = NodeActor(node=real_node)
 
     assert sync_actor.status == NodeActorStatus.IDLE
 
     sync_actor.initialize()
-    assert sync_actor.status == NodeActorStatus.READY
+    assert sync_actor.status == NodeActorStatus.READY  # type: ignore[comparison-overlap]
 
     sync_actor.shutdown()
     assert sync_actor.status == NodeActorStatus.SHUTDOWN
@@ -162,7 +150,7 @@ def test_sync_actor_repr_consistency(real_node: Node) -> None:
 
     assert str(actor_id) in sync_repr
     assert "SyncIntegrationTestNode" in sync_repr
-    assert NodeActorStatus.IDLE in sync_repr
+    assert NodeActorStatus.IDLE.value in sync_repr
     assert "NodeActor" in sync_repr
 
 

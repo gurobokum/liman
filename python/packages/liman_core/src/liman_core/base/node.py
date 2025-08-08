@@ -1,24 +1,15 @@
 from abc import abstractmethod
-from typing import Any
+from typing import Any, Generic
 from uuid import UUID, uuid4
 
-from langchain_core.messages import BaseMessage
-from pydantic import BaseModel, ConfigDict
-
 from liman_core.base.component import Component
-from liman_core.base.schemas import S
+from liman_core.base.schemas import NS, NodeOutput, S
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
 from liman_core.registry import Registry
 
 
-class NodeOutput(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    response: BaseMessage
-
-
-class BaseNode(Component[S]):
+class BaseNode(Component[S], Generic[S, NS]):
     __slots__ = Component.__slots__ + (
         # lang
         "default_lang",
@@ -64,6 +55,14 @@ class BaseNode(Component[S]):
     def generate_id(self) -> UUID:
         return uuid4()
 
+    @property
+    def is_llm_node(self) -> bool:
+        return self.spec.kind == "LLMNode"
+
+    @property
+    def is_tool_node(self) -> bool:
+        return self.spec.kind == "ToolNode"
+
     @abstractmethod
     def compile(self) -> None:
         """
@@ -72,15 +71,22 @@ class BaseNode(Component[S]):
         ...
 
     @abstractmethod
-    def invoke(self, *args: Any, **kwargs: Any) -> NodeOutput: ...
+    def invoke(self, *args: Any, **kwargs: Any) -> NodeOutput:
+        """
+        Invoke method for the Node.
+        """
+        ...
 
     @abstractmethod
-    async def ainvoke(self, *args: Any, **kwargs: Any) -> NodeOutput: ...
+    async def ainvoke(self, *args: Any, **kwargs: Any) -> NodeOutput:
+        """
+        Async invoke method for the Node.
+        """
+        ...
 
-    @property
-    def is_llm_node(self) -> bool:
-        return self.spec.kind == "LLMNode"
-
-    @property
-    def is_tool_node(self) -> bool:
-        return self.spec.kind == "ToolNode"
+    @abstractmethod
+    def get_new_state(self) -> NS:
+        """
+        Get the new state of the node
+        """
+        ...
