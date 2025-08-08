@@ -26,6 +26,8 @@ def mock_node() -> Node:
     node.is_tool_node = False
     node.get_new_state.return_value = NodeState()
     node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("test_result")))
+    node.spec.nodes = []
+    node.spec.llm_nodes = []
     return cast(Node, node)
 
 
@@ -40,6 +42,7 @@ def mock_llm_node() -> LLMNode:
     node.is_tool_node = False
     node.get_new_state.return_value = LLMNodeState()
     node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("llm_result")))
+    node.spec.nodes = []
     return cast(LLMNode, node)
 
 
@@ -54,6 +57,8 @@ def mock_tool_node() -> ToolNode:
     node.is_tool_node = True
     node.get_new_state.return_value = NodeState()
     node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("tool_result")))
+    node.spec.nodes = []
+    node.spec.llm_nodes = []
     return cast(ToolNode, node)
 
 

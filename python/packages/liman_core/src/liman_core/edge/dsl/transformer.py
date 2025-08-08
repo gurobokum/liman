@@ -1,29 +1,70 @@
+from enum import Enum
+from typing import Literal, NamedTuple
+
 from lark import Token, Transformer, v_args
 
+
 # Type aliases for DSL AST nodes
-VarNode = tuple[str, str]  # ("var", "variable_name")
+# ("var", "variable_name")
+class VarNode(NamedTuple):
+    type_: Literal["var"]
+    name: str
+
+
 BoolNode = bool
 NumberNode = float
 StringNode = str
 ValueNode = BoolNode | NumberNode | StringNode | VarNode
 
-ComparisonNode = tuple[str, VarNode, ValueNode]  # ("==", var, value)
-LogicalNode = tuple[str, "ExprNode", "ExprNode"]  # ("and", expr1, expr2)
-NotNode = tuple[str, "ExprNode"]  # ("not", expr)
-ExprNode = ValueNode | ComparisonNode | LogicalNode | NotNode
 
-ConditionalExprNode = tuple[str, ExprNode]  # ("liman_ce", expr)
-FunctionRefNode = tuple[str, str]  # ("function_ref", "module.function")
+# ("==", operand, operand) - both sides can be variables or values
+class ComparisonNode(NamedTuple):
+    type_: Literal["==", "!=", ">", "<"]
+    left: ValueNode
+    right: ValueNode
+
+
+# ("and", expr1, expr2)
+class LogicalNode(NamedTuple):
+    type_: Literal["and", "or", "&&", "||"]
+    left: "ExprNode"
+    right: "ExprNode"
+
+
+# ("not", expr)
+class NotNode(NamedTuple):
+    type_: Literal["not"]
+    expr: "ExprNode"
+
+
+ExprNode = ComparisonNode | LogicalNode | NotNode | ValueNode
+
+
+class ExprType(str, Enum):
+    LIMAN_CE = "liman_ce"
+    FUNCTION_REF = "function_ref"
+
+
+class ConditionalExprNode(NamedTuple):
+    type_: Literal[ExprType.LIMAN_CE]
+    expr: ExprNode
+
+
+class FunctionRefNode(NamedTuple):
+    type_: Literal[ExprType.FUNCTION_REF]
+    dotted_name: str
+
+
 WhenExprNode = ConditionalExprNode | FunctionRefNode
 
 
 @v_args(inline=True)
 class WhenTransformer(Transformer[Token, WhenExprNode]):
     def conditional_expr(self, expr: ExprNode) -> ConditionalExprNode:
-        return ("liman_ce", expr)
+        return ConditionalExprNode(ExprType.LIMAN_CE, expr)
 
     def function_ref(self, dotted_name: str) -> FunctionRefNode:
-        return ("function_ref", dotted_name)
+        return FunctionRefNode(ExprType.FUNCTION_REF, dotted_name)
 
     def dotted_name(self, *names: Token) -> str:
         return ".".join(str(name) for name in names)
@@ -46,25 +87,25 @@ class WhenTransformer(Transformer[Token, WhenExprNode]):
         return str(s)[1:-1]  # handle Token objects
 
     def var(self, name: Token) -> VarNode:
-        return ("var", str(name))
+        return VarNode("var", str(name))
 
-    def eq(self, a: VarNode, b: ValueNode) -> ComparisonNode:
-        return ("==", a, b)
+    def eq(self, a: ValueNode, b: ValueNode) -> ComparisonNode:
+        return ComparisonNode("==", a, b)
 
-    def neq(self, a: VarNode, b: ValueNode) -> ComparisonNode:
-        return ("!=", a, b)
+    def neq(self, a: ValueNode, b: ValueNode) -> ComparisonNode:
+        return ComparisonNode("!=", a, b)
 
-    def gt(self, a: VarNode, b: ValueNode) -> ComparisonNode:
-        return (">", a, b)
+    def gt(self, a: ValueNode, b: ValueNode) -> ComparisonNode:
+        return ComparisonNode(">", a, b)
 
-    def lt(self, a: VarNode, b: ValueNode) -> ComparisonNode:
-        return ("<", a, b)
+    def lt(self, a: ValueNode, b: ValueNode) -> ComparisonNode:
+        return ComparisonNode("<", a, b)
 
     def and_expr(self, a: ExprNode, b: ExprNode) -> LogicalNode:
-        return ("and", a, b)
+        return LogicalNode("and", a, b)
 
     def or_expr(self, a: ExprNode, b: ExprNode) -> LogicalNode:
-        return ("or", a, b)
+        return LogicalNode("or", a, b)
 
     def not_expr(self, a: ExprNode) -> NotNode:
-        return ("not", a)
+        return NotNode("not", a)

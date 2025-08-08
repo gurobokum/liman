@@ -10,9 +10,13 @@ from langchain_core.messages import BaseMessage
 
 from liman_core.base.node import BaseNode
 from liman_core.base.schemas import NS, NodeOutput, S
+from liman_core.edge.dsl.grammar import when_parser
+from liman_core.edge.dsl.transformer import WhenTransformer
+from liman_core.edge.schemas import EdgeSpec
 from liman_core.llm_node.node import LLMNode
 from liman_core.llm_node.schemas import LLMNodeState
 from liman_core.node.node import Node
+from liman_core.node_actor.conditional_evaluator import ConditionalEvaluator
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.node_actor.schemas import NodeActorState, NodeActorStatus, Result
 from liman_core.plugins.core.base import ExecutionStateProvider
@@ -35,6 +39,7 @@ class NodeActor(Generic[S, NS]):
         node: BaseNode[S, NS],
         actor_id: UUID | None = None,
         llm: BaseChatModel | None = None,
+        parent_node_name: str | None = None,
     ):
         self.id = actor_id or uuid4()
         self.node = node
@@ -47,6 +52,7 @@ class NodeActor(Generic[S, NS]):
             node_id=self.node.id,
             status=NodeActorStatus.IDLE,
             node_state=self.node.get_new_state(),
+            parent_node_name=parent_node_name,
         )
 
         self._execution_lock = threading.Lock()
@@ -470,7 +476,7 @@ class NodeActor(Generic[S, NS]):
 
         registry = self.node.registry
 
-        # LLMNode
+        # LLMNode tool calls
         if (
             isinstance(self.node, LLMNode)
             and self.node.spec.tools
@@ -483,10 +489,79 @@ class NodeActor(Generic[S, NS]):
 
             return next_nodes
 
-        if self.node.is_tool_node:
-            return next_nodes
+        edges = self._get_node_edges()
+        if edges:
+            context, state_context = self._build_evaluation_context(output)
+            transformer = WhenTransformer()
+
+            for node_type, edge in edges:
+                if self._should_follow_edge(edge, context, state_context, transformer):
+                    target_node = registry.lookup(node_type, edge.target)
+                    next_nodes.append((target_node, {}))
+
+        # If no edges defined and node is a ToolNode, return to the parent LLMNode
+        if not edges and isinstance(self.node, ToolNode):
+            parent_node_name = self.state.parent_node_name
+            if not parent_node_name:
+                return next_nodes
+            parent_node = registry.lookup(LLMNode, parent_node_name)
+            next_nodes.append((parent_node, {}))
 
         return next_nodes
+
+    def _get_node_edges(self) -> list[tuple[type[Node | LLMNode], EdgeSpec]]:
+        edges: list[tuple[type[Node | LLMNode], EdgeSpec]] = []
+
+        if nodes := getattr(self.node.spec, "nodes", []):
+            for node_ref in nodes:
+                if isinstance(node_ref, EdgeSpec):
+                    edges.append((Node, node_ref))
+
+        if llm_nodes := getattr(self.node.spec, "llm_nodes", []):
+            for node_ref in llm_nodes:
+                if isinstance(node_ref, EdgeSpec):
+                    edges.append((LLMNode, node_ref))
+
+        return edges
+
+    def _build_evaluation_context(
+        self, output: NodeOutput
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """
+        Build context for edge condition evaluation
+        Variables with $ prefix: $output, $status, $state
+        Variables without $ prefix: taken from $state.context
+        """
+        state_data = self.state.node_state.model_dump()
+
+        context = {
+            "$output": output.model_dump(),
+            "$status": self.state.status.value,
+            "$state": state_data,
+        }
+
+        return context, state_data.get("context", {})
+
+    def _should_follow_edge(
+        self,
+        edge: EdgeSpec,
+        context: dict[str, Any],
+        state_context: dict[str, Any],
+        transformer: WhenTransformer,
+    ) -> bool:
+        """
+        Determine if an edge should be followed based on its conditions
+        """
+        if not edge.when:
+            return True
+
+        try:
+            tree = when_parser.parse(edge.when)
+            ast = transformer.transform(tree)
+            evaluator = ConditionalEvaluator(context, state_context)
+            return evaluator.evaluate(ast)
+        except Exception:
+            return False
 
     def _prepare_execution_context(
         self, context: dict[str, Any], execution_id: UUID

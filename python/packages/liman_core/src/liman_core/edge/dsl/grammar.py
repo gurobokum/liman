@@ -14,13 +14,15 @@ when_grammar = r"""
          | expr "or" expr   -> or_expr
          | "!" expr         -> not_expr
          | "not" expr       -> not_expr
-         | var "==" value   -> eq
-         | var "!=" value   -> neq
-         | var ">" value    -> gt
-         | var "<" value    -> lt
+         | operand "==" operand   -> eq
+         | operand "!=" operand   -> neq
+         | operand ">" operand    -> gt
+         | operand "<" operand    -> lt
          | "(" expr ")"
          | var
          | value
+
+    ?operand: var | value
 
     ?var: NAME              -> var
 

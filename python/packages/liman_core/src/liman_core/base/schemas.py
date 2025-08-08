@@ -1,4 +1,4 @@
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel, ConfigDict
@@ -21,7 +21,7 @@ class NodeState(BaseModel):
     This class can be extended to add custom state attributes.
     """
 
-    ...
+    context: dict[str, Any] = {}
 
 
 S = TypeVar("S", bound=BaseSpec)

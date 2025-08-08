@@ -31,6 +31,7 @@ class NodeActorState(BaseModel, Generic[NS]):
     has_error: bool = False
 
     node_state: NS
+    parent_node_name: str | None = None
 
 
 class Result(BaseModel, Generic[S, NS]):
