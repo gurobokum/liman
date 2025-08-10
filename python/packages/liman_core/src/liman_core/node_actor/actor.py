@@ -7,20 +7,23 @@ from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
+from pydantic import BaseModel
 
 from liman_core.base.node import BaseNode
-from liman_core.base.schemas import NS, NodeOutput, S
+from liman_core.base.schemas import NS, LangChainMessage, NodeOutput, S
 from liman_core.edge.dsl.grammar import when_parser
 from liman_core.edge.dsl.transformer import WhenTransformer
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.llm_node.node import LLMNode
 from liman_core.llm_node.schemas import LLMNodeState
 from liman_core.node.node import Node
+from liman_core.node.schemas import NodeState
 from liman_core.node_actor.conditional_evaluator import ConditionalEvaluator
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.node_actor.schemas import NodeActorState, NodeActorStatus, Result
 from liman_core.plugins.core.base import ExecutionStateProvider
 from liman_core.tool_node.node import ToolNode
+from liman_core.tool_node.schemas import ToolNodeState
 from liman_core.utils import to_snake_case
 
 if sys.version_info >= (3, 11):
@@ -52,6 +55,8 @@ class NodeActor(Generic[S, NS]):
             node_id=self.node.id,
             status=NodeActorStatus.IDLE,
             node_state=self.node.get_new_state(),
+            node_type=self.node.spec.kind,
+            node_name=self.node.name,
             parent_node_name=parent_node_name,
         )
 
@@ -122,8 +127,7 @@ class NodeActor(Generic[S, NS]):
     async def acreate_or_restore(
         cls,
         node: BaseNode[S, NS],
-        execution_id: UUID,
-        state_storage: Any,
+        state: dict[str, Any] | None,
         llm: BaseChatModel | None = None,
     ) -> Self:
         """
@@ -131,18 +135,16 @@ class NodeActor(Generic[S, NS]):
 
         Args:
             node: The node to wrap in this actor
-            execution_id: Execution ID for state lookup
-            state_storage: Storage backend for state persistence
+            state: Saved state to restore
             llm: Optional LLM instance for LLMNodes
 
         Returns:
             NodeActor instance (new or restored)
         """
-        saved_state = await state_storage.aload_actor_state(execution_id, node.id)
 
-        if saved_state and cls.can_restore(node, saved_state):
+        if state and cls.can_restore(node, state):
             actor = cls(node=node, llm=llm)
-            actor._restore_state(saved_state)
+            actor._restore_state(state)
             return actor
         else:
             return cls.create(node=node, llm=llm)
@@ -215,7 +217,7 @@ class NodeActor(Generic[S, NS]):
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
         """
-        if self.state.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
+        if self.state.status in (NodeActorStatus.IDLE, NodeActorStatus.SHUTDOWN):
             raise create_error(
                 f"Cannot execute actor in status {self.state.status.value}", self
             )
@@ -248,7 +250,7 @@ class NodeActor(Generic[S, NS]):
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
         """
-        if self.state.status not in (NodeActorStatus.READY, NodeActorStatus.COMPLETED):
+        if self.state.status in (NodeActorStatus.IDLE, NodeActorStatus.SHUTDOWN):
             raise create_error(
                 f"Cannot execute actor in status {self.state.status.value}", self
             )
@@ -284,7 +286,7 @@ class NodeActor(Generic[S, NS]):
         """
         Serialize NodeActor state for persistence
         """
-        return self.state.model_dump()
+        return self.state.model_dump(mode="json")
 
     # Execution private methods
 
@@ -378,7 +380,7 @@ class NodeActor(Generic[S, NS]):
         return self.node.invoke(self.llm, inputs, state, **context)
 
     async def _aexecute_llm_node(
-        self, input_: BaseMessage, context: dict[str, Any]
+        self, input_: LangChainMessage, context: dict[str, Any]
     ) -> NodeOutput:
         if not self.llm:
             raise create_error(
@@ -389,6 +391,7 @@ class NodeActor(Generic[S, NS]):
 
         # if is needed for proper typing
         if not isinstance(node_state, LLMNodeState):
+            print(f"NodeActor state has improper node_state type: {type(node_state)}")
             raise create_error(
                 "NodeActor state has improper node_state for LLMNode", self
             )
@@ -584,7 +587,18 @@ class NodeActor(Generic[S, NS]):
         Restore NodeActor state from serialized data
         """
         try:
-            self.state = NodeActorState.model_validate(saved_state)
+            states: dict[str, type[BaseModel]] = {
+                "LLMNode": LLMNodeState,
+                "ToolNode": ToolNodeState,
+                "Node": NodeState,
+            }
+
+            state_cls = states[saved_state["node_type"]]
+            node_state = state_cls.model_validate(saved_state["node_state"])
+
+            self.state = NodeActorState.model_validate(
+                {**saved_state, "node_state": node_state}
+            )
         except Exception as e:
             raise create_error(f"Failed to restore actor state: {e}", self) from e
 

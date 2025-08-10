@@ -30,7 +30,9 @@ class NodeActorState(BaseModel, Generic[NS]):
     status: NodeActorStatus
     has_error: bool = False
 
+    node_name: str
     node_state: NS
+    node_type: str
     parent_node_name: str | None = None
 
 

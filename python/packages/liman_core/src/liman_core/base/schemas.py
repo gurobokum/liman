@@ -1,7 +1,7 @@
-from typing import Any, TypeVar
+from typing import Annotated, Any, TypeVar
 
-from langchain_core.messages import BaseMessage
-from pydantic import BaseModel, ConfigDict
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BaseSpec(BaseModel):
@@ -12,7 +12,11 @@ class BaseSpec(BaseModel):
 class NodeOutput(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    response: BaseMessage
+    response: "LangChainMessage"
+
+
+class NodeInput(BaseModel):
+    input_: Any
 
 
 class NodeState(BaseModel):
@@ -26,3 +30,8 @@ class NodeState(BaseModel):
 
 S = TypeVar("S", bound=BaseSpec)
 NS = TypeVar("NS", bound=NodeState)
+
+
+LangChainMessage = Annotated[
+    AIMessage | HumanMessage | ToolMessage, Field(discriminator="type")
+]

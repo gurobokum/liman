@@ -5,7 +5,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
 from liman_core.base.node import BaseNode
-from liman_core.base.schemas import NodeOutput
+from liman_core.base.schemas import LangChainMessage, NodeOutput
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
 from liman_core.llm_node.schemas import (
@@ -157,7 +157,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
             tools=tools_jsonschema,
         )
 
-        return NodeOutput(response=response)
+        return NodeOutput(response=cast(LangChainMessage, response))
 
     def get_new_state(self) -> LLMNodeState:
         """
