@@ -13,10 +13,11 @@ from liman_core.nodes.llm_node.schemas import LLMNodeState
 from liman_core.nodes.node import Node
 from liman_core.nodes.node.schemas import NodeSpec, NodeState
 from liman_core.nodes.tool_node import ToolNode
+from liman_core.registry import Registry
 
 
 @pytest.fixture
-def mock_node() -> Node:
+def mock_node(registry: Registry) -> Node:
     node = Mock(spec=Node)
     node.name = "test_node"
     node.id = uuid4()
@@ -25,14 +26,15 @@ def mock_node() -> Node:
     node.is_llm_node = False
     node.is_tool_node = False
     node.get_new_state.return_value = NodeState()
-    node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("test_result")))
+    node.invoke = AsyncMock(return_value=NodeOutput(response=AIMessage("test_result")))
     node.spec.nodes = []
     node.spec.llm_nodes = []
+    node.registry = registry
     return cast(Node, node)
 
 
 @pytest.fixture
-def mock_llm_node() -> LLMNode:
+def mock_llm_node(registry: Registry) -> LLMNode:
     node = Mock(spec=LLMNode)
     node.name = "llm_test_node"
     node.id = uuid4()
@@ -41,13 +43,14 @@ def mock_llm_node() -> LLMNode:
     node.is_llm_node = True
     node.is_tool_node = False
     node.get_new_state.return_value = LLMNodeState()
-    node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("llm_result")))
+    node.invoke = AsyncMock(return_value=NodeOutput(response=AIMessage("llm_result")))
     node.spec.nodes = []
+    node.registry = registry
     return cast(LLMNode, node)
 
 
 @pytest.fixture
-def mock_tool_node() -> ToolNode:
+def mock_tool_node(registry: Registry) -> ToolNode:
     node = Mock(spec=ToolNode)
     node.name = "tool_test_node"
     node.id = uuid4()
@@ -56,9 +59,10 @@ def mock_tool_node() -> ToolNode:
     node.is_llm_node = False
     node.is_tool_node = True
     node.get_new_state.return_value = NodeState()
-    node.ainvoke = AsyncMock(return_value=NodeOutput(response=AIMessage("tool_result")))
+    node.invoke = AsyncMock(return_value=NodeOutput(response=AIMessage("tool_result")))
     node.spec.nodes = []
     node.spec.llm_nodes = []
+    node.registry = registry
     return cast(ToolNode, node)
 
 
@@ -153,7 +157,7 @@ async def test_async_actor_execute_with_context(async_actor: NodeActor[S, NS]) -
 
     await async_actor.aexecute(inputs, context=context, execution_id=execution_id)
 
-    call_kwargs = async_actor.node.ainvoke.call_args[1]  # type: ignore[attr-defined]
+    call_kwargs = async_actor.node.invoke.call_args[1]  # type: ignore[attr-defined]
     assert call_kwargs["custom_key"] == "custom_value"
     assert call_kwargs["actor_id"] == async_actor.id
     assert call_kwargs["execution_id"] == execution_id
@@ -170,9 +174,9 @@ async def test_async_actor_execute_llm_node_success(
     result = await actor.aexecute(inputs, execution_id)
 
     assert result.node_output.response.content == "llm_result"
-    mock_ainvoke = cast(Mock, mock_llm_node.ainvoke)
-    mock_ainvoke.assert_called_once()
-    call_args = mock_ainvoke.call_args
+    mock_invoke = cast(Mock, mock_llm_node.invoke)
+    mock_invoke.assert_called_once()
+    call_args = mock_invoke.call_args
     assert call_args[0][0] is mock_llm  # First positional arg should be LLM
 
 
@@ -190,13 +194,13 @@ async def test_async_actor_execute_llm_node_without_llm_raises(
 async def test_async_actor_execute_tool_node_success(mock_tool_node: ToolNode) -> None:
     actor = NodeActor(node=mock_tool_node)
     await actor.ainitialize()
-    inputs = [HumanMessage(content="test")]
+    inputs = {"name": "test", "args": {}}
     execution_id = uuid4()
 
     result = await actor.aexecute(inputs, execution_id)
 
     assert result.node_output.response.content == "tool_result"
-    mock_ainvoke = cast(Mock, mock_tool_node.ainvoke)
+    mock_ainvoke = cast(Mock, mock_tool_node.invoke)
     mock_ainvoke.assert_called_once()
 
 
@@ -204,7 +208,7 @@ async def test_async_actor_execute_node_exception_raises(
     async_actor: NodeActor[S, NS],
 ) -> None:
     await async_actor.ainitialize()
-    async_actor.node.ainvoke.side_effect = Exception("Node failed")  # type: ignore[attr-defined]
+    async_actor.node.invoke.side_effect = Exception("Node failed")  # type: ignore[attr-defined]
     inputs = [HumanMessage(content="test")]
     execution_id = uuid4()
 

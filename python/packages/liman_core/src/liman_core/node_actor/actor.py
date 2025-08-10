@@ -6,7 +6,7 @@ from typing import Any, Generic
 from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage
 from pydantic import BaseModel
 
 from liman_core.base.schemas import S
@@ -17,13 +17,18 @@ from liman_core.node_actor.conditional_evaluator import ConditionalEvaluator
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.node_actor.schemas import NodeActorState, NodeActorStatus, Result
 from liman_core.nodes.base.node import BaseNode
-from liman_core.nodes.base.schemas import NS, LangChainMessage, NodeOutput
+from liman_core.nodes.base.schemas import (
+    NS,
+    LangChainMessage,
+    LangChainMessageT,
+    NodeOutput,
+)
 from liman_core.nodes.llm_node.node import LLMNode
 from liman_core.nodes.llm_node.schemas import LLMNodeState
 from liman_core.nodes.node.node import Node
 from liman_core.nodes.node.schemas import NodeState
 from liman_core.nodes.tool_node.node import ToolNode
-from liman_core.nodes.tool_node.schemas import ToolNodeState
+from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeState
 from liman_core.plugins.core.base import ExecutionStateProvider
 from liman_core.utils import to_snake_case
 
@@ -294,6 +299,11 @@ class NodeActor(Generic[S, NS]):
     def _execute_internal(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any], execution_id: UUID
     ) -> Result[S, NS]:
+        return asyncio.run(self._aexecute_internal(inputs, context, execution_id))
+
+    async def _aexecute_internal(
+        self, input_: Any, context: dict[str, Any], execution_id: UUID
+    ) -> Result[S, NS]:
         self.state.status = NodeActorStatus.EXECUTING
 
         registry = self.node.registry
@@ -315,36 +325,9 @@ class NodeActor(Generic[S, NS]):
             execution_context = self._prepare_execution_context(context, execution_id)
 
             if self.node.is_llm_node:
-                node_output = self._execute_llm_node(inputs, state, execution_context)
-            elif self.node.is_tool_node:
-                node_output = self._execute_tool_node(state, execution_context)
-            else:
-                node_output = self._execute_generic_node(
-                    inputs, state, execution_context
-                )
-
-            self.state.status = NodeActorStatus.COMPLETED
-            return Result(node_output=node_output)
-
-        except Exception as e:
-            self.error = create_error(
-                f"Node execution failed: {e}", self, execution_id=execution_id
-            )
-            self.state.has_error = True
-            raise self.error from e
-
-    async def _aexecute_internal(
-        self, input_: Any, context: dict[str, Any], execution_id: UUID
-    ) -> Result[S, NS]:
-        self.state.status = NodeActorStatus.EXECUTING
-
-        try:
-            execution_context = self._prepare_execution_context(context, execution_id)
-
-            if self.node.is_llm_node:
                 node_output = await self._aexecute_llm_node(input_, execution_context)
             elif self.node.is_tool_node:
-                node_output = await self._aexecute_tool_node(input_)
+                node_output = await self._aexecute_tool_node(input_, execution_context)
             else:
                 node_output = await self._aexecute_generic_node(
                     input_, execution_context
@@ -371,17 +354,10 @@ class NodeActor(Generic[S, NS]):
         state: dict[str, Any],
         context: dict[str, Any],
     ) -> NodeOutput:
-        if not self.llm:
-            raise create_error(
-                "LLM required for LLMNode execution but not provided", self
-            )
-        if not isinstance(self.node, LLMNode):
-            raise create_error(f"Expected LLMNode, got {type(self.node)}", self)
-
-        return self.node.invoke(self.llm, inputs, state, **context)
+        return asyncio.run(self._aexecute_llm_node(inputs, context))
 
     async def _aexecute_llm_node(
-        self, input_: LangChainMessage, context: dict[str, Any]
+        self, input_: Any, context: dict[str, Any]
     ) -> NodeOutput:
         if not self.llm:
             raise create_error(
@@ -389,7 +365,6 @@ class NodeActor(Generic[S, NS]):
             )
 
         node_state = self.state.node_state
-
         # if is needed for proper typing
         if not isinstance(node_state, LLMNodeState):
             print(f"NodeActor state has improper node_state type: {type(node_state)}")
@@ -397,29 +372,39 @@ class NodeActor(Generic[S, NS]):
                 "NodeActor state has improper node_state for LLMNode", self
             )
 
-        node_output = await self.node.ainvoke(
-            self.llm, [*node_state.messages, input_], **context
+        inputs: list[LangChainMessage] = []
+        if isinstance(input_, str):
+            inputs.append(HumanMessage(content=input_))
+        elif isinstance(input_, LangChainMessageT):
+            inputs.append(input_)
+        elif isinstance(input_, list):
+            inputs.extend(input_)
+        else:
+            raise create_error(
+                f"Unsupported input type {type(input_)} for LLMNode", self
+            )
+
+        node_output = await self.node.invoke(
+            self.llm, [*node_state.messages, inputs], **context
         )
 
-        node_state.messages.append(input_)
+        node_state.messages.extend(inputs)
         node_state.messages.append(node_output.response)
         return node_output
 
     def _execute_tool_node(
-        self, tool_call: dict[str, Any], state: dict[str, Any]
+        self, input_: dict[str, Any], state: dict[str, Any]
     ) -> NodeOutput:
-        if not isinstance(self.node, ToolNode):
-            raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
-
-        return self.node.invoke(tool_call, state)
+        return asyncio.run(self._aexecute_tool_node(input_, state))
 
     async def _aexecute_tool_node(
-        self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
+        self, input_: Any, context: dict[str, Any] | None = None
     ) -> NodeOutput:
         if not isinstance(self.node, ToolNode):
             raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
 
-        return await self.node.ainvoke(tool_call, state=state)
+        tool_call = ToolCall.model_validate(input_)
+        return await self.node.invoke(tool_call, state=context)
 
     def _execute_generic_node(
         self,
@@ -427,10 +412,7 @@ class NodeActor(Generic[S, NS]):
         state: dict[str, Any],
         context: dict[str, Any],
     ) -> NodeOutput:
-        if not isinstance(self.node, Node):
-            raise create_error(f"Expected Node, got {type(self.node)}", self)
-
-        return self.node.invoke(inputs, state, **context)
+        return asyncio.run(self._aexecute_generic_node(inputs, state, **context))
 
     async def _aexecute_generic_node(
         self, inputs: Sequence[BaseMessage], context: dict[str, Any]
@@ -438,7 +420,7 @@ class NodeActor(Generic[S, NS]):
         if not isinstance(self.node, Node):
             raise create_error(f"Expected Node, got {type(self.node)}", self)
 
-        return await self.node.ainvoke(inputs, **context)
+        return await self.node.invoke(inputs, **context)
 
     def _validate_requirements(self) -> None:
         """

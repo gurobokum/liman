@@ -7,12 +7,11 @@ from typing import Any
 
 from langchain_core.messages import ToolMessage
 
-from liman_core.errors import InvalidSpecError, LimanError
+from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.nodes.base.node import BaseNode
 from liman_core.nodes.base.schemas import NodeOutput
-from liman_core.nodes.tool_node.errors import ToolExecutionError
-from liman_core.nodes.tool_node.schemas import ToolNodeSpec, ToolNodeState
+from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeSpec, ToolNodeState
 from liman_core.nodes.tool_node.utils import (
     ToolArgumentJSONSchema,
     noop,
@@ -136,56 +135,8 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         self.func = func
         self.spec.func = str(func)
 
-    def invoke(
-        self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
-    ) -> NodeOutput:
-        """
-        Invoke the tool function with the provided arguments.
-
-        Args:
-            tool_call: Tool call dict with structure like {'name': 'tool_name', 'args': {...}, 'id': '...', 'type': 'tool_call'}
-
-        Returns:
-            NodeOutput with ToolMessage containing function result and proper tool call metadata
-        """
-        func = self.func
-        tool_call_id = tool_call["id"]
-        tool_call_name = tool_call["name"]
-
-        if "args" not in tool_call:
-            raise LimanError(
-                "Tool call must contain 'args' field with function arguments."
-            )
-
-        call_args = self._extract_function_args(tool_call["args"])
-        try:
-            if asyncio.iscoroutinefunction(func):
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                result = asyncio.run_coroutine_threadsafe(
-                    func(**call_args), loop
-                ).result()
-            else:
-                result = func(**call_args)
-        except Exception as e:
-            response = ToolMessage(
-                content=str(e),
-                tool_call_id=tool_call_id,
-                name=tool_call_name,
-            )
-        else:
-            response = ToolMessage(
-                content=str(result),
-                tool_call_id=tool_call_id,
-                name=tool_call_name,
-            )
-        return NodeOutput(response=response)
-
-    async def ainvoke(
-        self, tool_call: dict[str, Any], state: dict[str, Any] | None = None
+    async def invoke(
+        self, tool_call: ToolCall, state: dict[str, Any] | None = None
     ) -> NodeOutput:
         """
         Asynchronously invoke the tool function with the provided arguments.
@@ -197,15 +148,10 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
             ToolMessage with function result and proper tool call metadata
         """
         func = self.func
-        tool_call_id = tool_call["id"]
-        tool_call_name = tool_call["name"]
+        tool_call_id = tool_call.id_
+        tool_call_name = tool_call.name
+        call_args = self._extract_function_args(tool_call.args)
 
-        if "args" not in tool_call:
-            raise ToolExecutionError(
-                "Tool call must contain 'args' field with function arguments."
-            )
-
-        call_args = self._extract_function_args(tool_call["args"])
         try:
             if asyncio.iscoroutinefunction(func):
                 result = await func(**call_args)
@@ -215,7 +161,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
             response = ToolMessage(
                 content=str(e),
                 tool_call_id=tool_call_id,
-                name=tool_call_name,
+                name=tool_call.name,
             )
         else:
             response = ToolMessage(

@@ -26,6 +26,5 @@ class NodeState(BaseModel):
 NS = TypeVar("NS", bound=NodeState)
 
 
-LangChainMessage = Annotated[
-    AIMessage | HumanMessage | ToolMessage, Field(discriminator="type")
-]
+LangChainMessageT = AIMessage | HumanMessage | ToolMessage
+LangChainMessage = Annotated[LangChainMessageT, Field(discriminator="type")]

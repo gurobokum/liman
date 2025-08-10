@@ -1,11 +1,13 @@
+import asyncio
 from typing import Any
 
 import pytest
 from langchain_core.messages import ToolMessage
+from pydantic import ValidationError
 
-from liman_core.errors import LimanError
 from liman_core.nodes.base.schemas import NodeOutput
 from liman_core.nodes.tool_node.node import ToolNode
+from liman_core.nodes.tool_node.schemas import ToolCall
 from liman_core.registry import Registry
 
 
@@ -79,7 +81,7 @@ def test_invoke_with_valid_tool_call(
         "type": "tool_call",
     }
 
-    result = node.invoke(tool_call)
+    result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
     assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
@@ -101,7 +103,7 @@ def test_invoke_with_missing_optional_param(
         "type": "tool_call",
     }
 
-    result = node.invoke(tool_call)
+    result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
     assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
@@ -128,7 +130,7 @@ def test_invoke_with_extra_params_filtered(
         "type": "tool_call",
     }
 
-    result = node.invoke(tool_call)
+    result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
     assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
@@ -151,7 +153,7 @@ def test_invoke_with_missing_required_param(
     }
 
     with pytest.raises(ValueError, match="Required parameter is missing: 'location'"):
-        node.invoke(tool_call)
+        asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
 
 def test_invoke_with_function_exception(
@@ -167,7 +169,7 @@ def test_invoke_with_function_exception(
         "type": "tool_call",
     }
 
-    result = node.invoke(tool_call)
+    result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
     assert isinstance(result, NodeOutput)
     assert isinstance(result.response, ToolMessage)
@@ -188,8 +190,8 @@ def test_invoke_missing_args_field(
         "type": "tool_call",
     }
 
-    with pytest.raises(LimanError, match="must contain 'args' field"):
-        node.invoke(tool_call)
+    with pytest.raises(ValidationError):
+        asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
 
 def test_invoke_with_optional_param_function(
@@ -206,7 +208,7 @@ def test_invoke_with_optional_param_function(
         "type": "tool_call",
     }
 
-    result = node.invoke(tool_call)
+    result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
     assert result.response.content == "Hi, Alice!"
 
 
@@ -223,5 +225,5 @@ def test_invoke_with_optional_param_function_no_arg(
         "type": "tool_call",
     }
 
-    result = node.invoke(tool_call)
+    result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
     assert result.response.content == "Hello, Bob!"

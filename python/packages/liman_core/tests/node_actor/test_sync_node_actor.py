@@ -1,6 +1,6 @@
 import threading
 from typing import cast
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
 
 import pytest
@@ -24,11 +24,13 @@ def mock_node() -> Node:
     node.name = "test_node"
     node.id = uuid4()
     node.spec.kind = "Node"
+    node.spec.nodes = []
+    node.spec.llm_nodes = []
     node._compiled = True
     node.is_llm_node = False
     node.is_tool_node = False
     node.get_new_state.return_value = NodeState()
-    node.invoke = Mock(return_value=NodeOutput(response=AIMessage("test_result")))
+    node.invoke = AsyncMock(return_value=NodeOutput(response=AIMessage("test_result")))
     return cast(Node, node)
 
 
@@ -38,11 +40,12 @@ def mock_llm_node(registry: Registry) -> LLMNode:
     node.name = "llm_test_node"
     node.id = uuid4()
     node.spec.kind = "LLMNode"
+    node.spec.nodes = []
     node._compiled = True
     node.is_llm_node = True
     node.is_tool_node = False
     node.get_new_state.return_value = LLMNodeState()
-    node.invoke = Mock(return_value=NodeOutput(response=AIMessage("llm_result")))
+    node.invoke = AsyncMock(return_value=NodeOutput(response=AIMessage("llm_result")))
     node.registry = registry
     return cast(LLMNode, node)
 
@@ -53,11 +56,14 @@ def mock_tool_node(registry: Registry) -> ToolNode:
     node.name = "tool_test_node"
     node.id = uuid4()
     node.spec.kind = "ToolNode"
+    node.spec.nodes = []
+    node.spec.tool_nodes = []
+    node.spec.llm_nodes = []
     node._compiled = True
     node.is_llm_node = False
     node.is_tool_node = True
     node.get_new_state.return_value = NodeState()
-    node.invoke = Mock(return_value=NodeOutput(response=AIMessage("tool_result")))
+    node.invoke = AsyncMock(return_value=NodeOutput(response=AIMessage("tool_result")))
     node.registry = registry
     return cast(ToolNode, node)
 
@@ -185,7 +191,7 @@ def test_sync_actor_execute_llm_node_without_llm_raises(mock_llm_node: LLMNode) 
 def test_sync_actor_execute_tool_node_success(mock_tool_node: ToolNode) -> None:
     actor = NodeActor(node=mock_tool_node)
     actor.initialize()
-    inputs = [HumanMessage(content="test")]
+    inputs = {"name": "tool_name", "args": {"arg1": "value1"}}
     execution_id = uuid4()
 
     result = actor.execute(inputs, execution_id)

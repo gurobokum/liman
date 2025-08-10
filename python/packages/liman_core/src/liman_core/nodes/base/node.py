@@ -72,14 +72,7 @@ class BaseNode(Component[S], Generic[S, NS]):
         ...
 
     @abstractmethod
-    def invoke(self, *args: Any, **kwargs: Any) -> NodeOutput:
-        """
-        Invoke method for the Node.
-        """
-        ...
-
-    @abstractmethod
-    async def ainvoke(self, *args: Any, **kwargs: Any) -> NodeOutput:
+    async def invoke(self, *args: Any, **kwargs: Any) -> NodeOutput:
         """
         Async invoke method for the Node.
         """

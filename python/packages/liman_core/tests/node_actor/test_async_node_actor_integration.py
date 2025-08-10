@@ -13,11 +13,6 @@ from liman_core.nodes.tool_node import ToolNode
 from liman_core.registry import Registry
 
 
-@pytest.fixture
-def registry() -> Registry:
-    return Registry()
-
-
 @pytest.fixture(scope="function")
 def real_node(registry: Registry) -> Node:
     node_dict = {

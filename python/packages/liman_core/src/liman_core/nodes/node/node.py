@@ -43,15 +43,7 @@ class Node(BaseNode[NodeSpec, NodeState]):
 
         self._compiled = True
 
-    def invoke(
-        self, inputs: Sequence[BaseMessage], state: dict[str, Any], **kwargs: Any
-    ) -> NodeOutput:
-        """
-        Invoke method for the Node.
-        """
-        raise NotImplementedError("Node.invoke() is not implemented yet")
-
-    async def ainvoke(
+    async def invoke(
         self, inputs: Sequence[BaseMessage], state: dict[str, Any], **kwargs: Any
     ) -> NodeOutput:
         """

@@ -112,17 +112,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         self._init_prompts()
         self._compiled = True
 
-    def invoke(
-        self,
-        llm: BaseChatModel,
-        inputs: Sequence[BaseMessage],
-        state: dict[str, Any] | None = None,
-        lang: LanguageCode | None = None,
-        **kwargs: Any,
-    ) -> NodeOutput:
-        raise NotImplementedError("LLMNode.invoke() is not implemented yet")
-
-    async def ainvoke(
+    async def invoke(
         self,
         llm: BaseChatModel,
         inputs: Sequence[BaseMessage],

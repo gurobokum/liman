@@ -1,7 +1,7 @@
-from typing import Literal
+from typing import Annotated, Any, Literal
 
 from langchain_core.messages import BaseMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from liman_core.base.schemas import BaseSpec
 from liman_core.languages import LocalizedValue
@@ -29,3 +29,10 @@ class ToolNodeSpec(BaseSpec):
 class ToolNodeState(NodeState):
     input_: BaseMessage | None = None
     output: BaseMessage | None = None
+
+
+class ToolCall(BaseModel):
+    name: str
+    args: dict[str, Any]
+    id_: Annotated[str | None, Field(alias="id")] = None
+    type_: Literal["tool_call"] = "tool_call"
