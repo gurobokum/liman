@@ -7,7 +7,7 @@ from liman_core.languages import (
     flatten_dict,
     get_localized_value,
 )
-from liman_core.tool_node.schemas import ToolArgument
+from liman_core.nodes.tool_node.schemas import ToolArgument
 
 
 class ToolArgumentJSONSchema(TypedDict):

@@ -3,8 +3,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 from jsonschema_path.typing import Schema
+from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
-from liman_core.tool_node.node import ToolNode
 
 from liman_openapi.operation import OpenAPIOperation
 from liman_openapi.schemas import Endpoint

@@ -3,10 +3,10 @@ from typing import Any
 import pytest
 from langchain_core.messages import ToolMessage
 
-from liman_core.base import NodeOutput
 from liman_core.errors import LimanError
+from liman_core.nodes.base.schemas import NodeOutput
+from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
-from liman_core.tool_node.node import ToolNode
 
 
 def sync_test_func(location: str, temperature: int = 20) -> str:

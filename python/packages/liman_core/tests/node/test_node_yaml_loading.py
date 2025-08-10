@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from ruamel.yaml.error import YAMLError
 
 from liman_core.errors import InvalidSpecError
-from liman_core.node import Node
+from liman_core.nodes.node.node import Node
 from liman_core.registry import Registry
 
 TEST_DATA_PATH = Path(__file__).parent / "data"

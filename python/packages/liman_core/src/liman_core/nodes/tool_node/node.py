@@ -7,17 +7,18 @@ from typing import Any
 
 from langchain_core.messages import ToolMessage
 
-from liman_core.base import BaseNode, NodeOutput
 from liman_core.errors import InvalidSpecError, LimanError
 from liman_core.languages import LanguageCode, flatten_dict
-from liman_core.registry import Registry
-from liman_core.tool_node.errors import ToolExecutionError
-from liman_core.tool_node.schemas import ToolNodeSpec, ToolNodeState
-from liman_core.tool_node.utils import (
+from liman_core.nodes.base.node import BaseNode
+from liman_core.nodes.base.schemas import NodeOutput
+from liman_core.nodes.tool_node.errors import ToolExecutionError
+from liman_core.nodes.tool_node.schemas import ToolNodeSpec, ToolNodeState
+from liman_core.nodes.tool_node.utils import (
     ToolArgumentJSONSchema,
     noop,
     tool_arg_to_jsonschema,
 )
+from liman_core.registry import Registry
 
 DEFAULT_TOOL_PROMPT_TEMPLATE = """
 {name} - {description}

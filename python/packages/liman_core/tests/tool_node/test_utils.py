@@ -1,8 +1,8 @@
 import pytest
 
 from liman_core.errors import InvalidSpecError
-from liman_core.tool_node.schemas import ToolArgument
-from liman_core.tool_node.utils import tool_arg_to_jsonschema
+from liman_core.nodes.tool_node.schemas import ToolArgument
+from liman_core.nodes.tool_node.utils import tool_arg_to_jsonschema
 
 
 def test_tool_arg_to_jsonschema_string() -> None:

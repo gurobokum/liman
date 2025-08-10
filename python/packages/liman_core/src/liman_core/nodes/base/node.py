@@ -3,9 +3,10 @@ from typing import Any, Generic
 from uuid import UUID, uuid4
 
 from liman_core.base.component import Component
-from liman_core.base.schemas import NS, NodeOutput, S
+from liman_core.base.schemas import S
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
+from liman_core.nodes.base.schemas import NS, NodeOutput
 from liman_core.registry import Registry
 
 

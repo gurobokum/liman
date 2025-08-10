@@ -3,9 +3,9 @@ from typing import Literal
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel
 
-from liman_core.base import BaseSpec
-from liman_core.base.schemas import NodeState
+from liman_core.base.schemas import BaseSpec
 from liman_core.languages import LocalizedValue
+from liman_core.nodes.base.schemas import NodeState
 
 
 class ToolArgument(BaseModel):

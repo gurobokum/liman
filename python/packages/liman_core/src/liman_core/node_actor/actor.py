@@ -9,21 +9,22 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 from pydantic import BaseModel
 
-from liman_core.base.node import BaseNode
-from liman_core.base.schemas import NS, LangChainMessage, NodeOutput, S
+from liman_core.base.schemas import S
 from liman_core.edge.dsl.grammar import when_parser
 from liman_core.edge.dsl.transformer import WhenTransformer
 from liman_core.edge.schemas import EdgeSpec
-from liman_core.llm_node.node import LLMNode
-from liman_core.llm_node.schemas import LLMNodeState
-from liman_core.node.node import Node
-from liman_core.node.schemas import NodeState
 from liman_core.node_actor.conditional_evaluator import ConditionalEvaluator
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.node_actor.schemas import NodeActorState, NodeActorStatus, Result
+from liman_core.nodes.base.node import BaseNode
+from liman_core.nodes.base.schemas import NS, LangChainMessage, NodeOutput
+from liman_core.nodes.llm_node.node import LLMNode
+from liman_core.nodes.llm_node.schemas import LLMNodeState
+from liman_core.nodes.node.node import Node
+from liman_core.nodes.node.schemas import NodeState
+from liman_core.nodes.tool_node.node import ToolNode
+from liman_core.nodes.tool_node.schemas import ToolNodeState
 from liman_core.plugins.core.base import ExecutionStateProvider
-from liman_core.tool_node.node import ToolNode
-from liman_core.tool_node.schemas import ToolNodeState
 from liman_core.utils import to_snake_case
 
 if sys.version_info >= (3, 11):

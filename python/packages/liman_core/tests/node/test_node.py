@@ -2,7 +2,7 @@
 import pytest
 from pydantic import ValidationError
 
-from liman_core.node import Node
+from liman_core.nodes.node import Node
 from liman_core.registry import Registry
 
 YAML_STYLE_1 = {

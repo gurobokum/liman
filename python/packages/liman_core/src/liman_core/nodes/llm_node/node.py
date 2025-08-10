@@ -4,18 +4,18 @@ from typing import Any, cast
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage
 
-from liman_core.base.node import BaseNode
-from liman_core.base.schemas import LangChainMessage, NodeOutput
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
-from liman_core.llm_node.schemas import (
+from liman_core.nodes.base.node import BaseNode
+from liman_core.nodes.base.schemas import LangChainMessage, NodeOutput
+from liman_core.nodes.llm_node.schemas import (
     LLMNodeSpec,
     LLMNodeState,
     LLMPrompts,
     LLMPromptsBundle,
 )
+from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
-from liman_core.tool_node.node import ToolNode
 
 
 class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):

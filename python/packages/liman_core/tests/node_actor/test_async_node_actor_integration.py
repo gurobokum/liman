@@ -4,13 +4,13 @@ from uuid import uuid4
 
 import pytest
 
-from liman_core.llm_node import LLMNode
-from liman_core.node import Node
 from liman_core.node_actor.actor import NodeActor
 from liman_core.node_actor.errors import NodeActorError
 from liman_core.node_actor.schemas import NodeActorStatus
+from liman_core.nodes.llm_node import LLMNode
+from liman_core.nodes.node.node import Node
+from liman_core.nodes.tool_node import ToolNode
 from liman_core.registry import Registry
-from liman_core.tool_node import ToolNode
 
 
 @pytest.fixture

@@ -4,8 +4,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from liman_core.base.node import BaseNode
-from liman_core.base.schemas import NS, NodeOutput, S
+from liman_core.base.schemas import S
+from liman_core.nodes.base.node import BaseNode
+from liman_core.nodes.base.schemas import NS, NodeOutput
 
 
 class NodeActorStatus(str, Enum):

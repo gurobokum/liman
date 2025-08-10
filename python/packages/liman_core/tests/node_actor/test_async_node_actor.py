@@ -5,14 +5,14 @@ from uuid import uuid4
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage
 
-from liman_core.base import NodeOutput
-from liman_core.base.schemas import NS, S
-from liman_core.llm_node import LLMNode
-from liman_core.llm_node.schemas import LLMNodeState
-from liman_core.node import Node
-from liman_core.node.schemas import NodeSpec, NodeState
+from liman_core.base.schemas import S
 from liman_core.node_actor import NodeActor, NodeActorError, NodeActorStatus
-from liman_core.tool_node import ToolNode
+from liman_core.nodes.base.schemas import NS, NodeOutput
+from liman_core.nodes.llm_node import LLMNode
+from liman_core.nodes.llm_node.schemas import LLMNodeState
+from liman_core.nodes.node import Node
+from liman_core.nodes.node.schemas import NodeSpec, NodeState
+from liman_core.nodes.tool_node import ToolNode
 
 
 @pytest.fixture

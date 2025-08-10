@@ -9,11 +9,12 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage
 from pydantic import BaseModel
 
-from liman_core.base.node import BaseNode
-from liman_core.base.schemas import NS, NodeOutput, S
+from liman_core.base.schemas import S
 from liman_core.executor.state import ExecutorState, ExecutorStatus, StateStorage
 from liman_core.node_actor.actor import NodeActor
 from liman_core.node_actor.schemas import Result
+from liman_core.nodes.base.node import BaseNode
+from liman_core.nodes.base.schemas import NS, NodeOutput
 from liman_core.nodes.supported_types import get_node_cls
 from liman_core.registry import Registry
 

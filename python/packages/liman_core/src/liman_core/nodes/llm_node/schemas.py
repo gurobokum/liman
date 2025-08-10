@@ -3,10 +3,10 @@ from typing import Literal
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel
 
-from liman_core.base import BaseSpec
-from liman_core.base.schemas import LangChainMessage, NodeState
+from liman_core.base.schemas import BaseSpec
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.languages import LanguageCode, LanguagesBundle, LocalizedValue
+from liman_core.nodes.base.schemas import LangChainMessage, NodeState
 
 
 class LLMPrompts(BaseModel):

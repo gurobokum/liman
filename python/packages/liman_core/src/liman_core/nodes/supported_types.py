@@ -1,6 +1,6 @@
-from liman_core.llm_node import LLMNode
-from liman_core.node import Node
-from liman_core.tool_node import ToolNode
+from liman_core.nodes.llm_node import LLMNode
+from liman_core.nodes.node import Node
+from liman_core.nodes.tool_node import ToolNode
 
 
 def get_node_cls(node_type: str) -> type[LLMNode | ToolNode | Node]:

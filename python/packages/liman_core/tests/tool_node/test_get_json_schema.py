@@ -4,8 +4,8 @@ import pytest
 
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode
+from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
-from liman_core.tool_node.node import ToolNode
 
 
 def make_tool_node(

@@ -3,9 +3,10 @@ from typing import Any
 
 from langchain_core.messages import BaseMessage
 
-from liman_core.base import BaseNode, NodeOutput
 from liman_core.errors import LimanError
-from liman_core.node.schemas import NodeSpec, NodeState
+from liman_core.nodes.base.node import BaseNode
+from liman_core.nodes.base.schemas import NodeOutput
+from liman_core.nodes.node.schemas import NodeSpec, NodeState
 from liman_core.registry import Registry
 
 

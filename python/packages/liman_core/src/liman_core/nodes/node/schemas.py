@@ -2,10 +2,10 @@ from typing import Any, Literal
 
 from langchain_core.messages import BaseMessage
 
-from liman_core.base import BaseSpec
-from liman_core.base.schemas import NodeState as BaseNodeState
+from liman_core.base.schemas import BaseSpec
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.languages import LocalizedValue
+from liman_core.nodes.base.schemas import NodeState as BaseNodeState
 
 
 class NodeSpec(BaseSpec):
