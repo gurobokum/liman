@@ -9,7 +9,10 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      python/packages/liman_core--release_created: ${{ steps.release-please.outputs['python/packages/liman_core--release_created'] }}
+      liman: ${{ steps.release-please.outputs['python/packages/liman--release_created'] }}
+      liman_core: ${{ steps.release-please.outputs['python/packages/liman_core--release_created'] }}
+      liman_finops: ${{ steps.release-please.outputs['python/packages/liman_finops--release_created'] }}
+      liman_openapi: ${{ steps.release-please.outputs['python/packages/liman_openapi--release_created'] }}
     permissions:
       contents: write
       pull-requests: write
@@ -20,10 +23,17 @@ jobs:
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
-  release-py-liman-core:
+  release-py-packages:
     runs-on: ubuntu-latest
     needs: release-please
-    if: ${{ needs.release-please.outputs['python/packages/liman_core--release_created'] == 'true' }}
+    if: |
+      needs.release-please.outputs.liman == 'true' ||
+      needs.release-please.outputs.liman_core == 'true' ||
+      needs.release-please.outputs.liman_finops == 'true' ||
+      needs.release-please.outputs.liman_openapi == 'true'
+    strategy:
+      matrix:
+        package: [liman, liman_core, liman_finops, liman_openapi]
     defaults:
       run:
         working-directory: python/
@@ -31,14 +41,20 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
+        if: ${{ needs.release-please.outputs[matrix.package] == 'true' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: astral-sh/setup-uv@v6
+      - name: Setup uv
+        if: ${{ needs.release-please.outputs[matrix.package] == 'true' }}
+        uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-      - run: uv build --package liman_core --out-dir dist/
+      - name: Build package
+        if: ${{ needs.release-please.outputs[matrix.package] == 'true' }}
+        run: uv build --package ${{ matrix.package }} --out-dir dist/
       - name: Publish package to PyPI
+        if: ${{ needs.release-please.outputs[matrix.package] == 'true' }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: python/dist/
