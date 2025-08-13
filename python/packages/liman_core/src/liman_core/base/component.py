@@ -180,6 +180,13 @@ class Component(Generic[S], ABC):
 
         return base_spec_class
 
+    @property
+    def full_name(self) -> str:
+        """
+        Get the full name of the component, which is a combination of its kind and name.
+        """
+        return f"{self.spec.kind}/{self.name}"
+
     def print_spec(self, initial: bool = False) -> None:
         """
         Print the tool node specification in YAML format.
