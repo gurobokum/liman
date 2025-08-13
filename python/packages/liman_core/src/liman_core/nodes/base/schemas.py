@@ -1,17 +1,7 @@
 from typing import Annotated, Any, TypeVar
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class NodeOutput(BaseModel):
-    model_config = ConfigDict(arbitrary_types_allowed=True)
-
-    response: "LangChainMessage"
-
-
-class NodeInput(BaseModel):
-    input_: Any
+from pydantic import BaseModel, Field
 
 
 class NodeState(BaseModel):
@@ -20,11 +10,14 @@ class NodeState(BaseModel):
     This class can be extended to add custom state attributes.
     """
 
+    kind: str
+    name: str
+
     context: dict[str, Any] = {}
 
 
 NS = TypeVar("NS", bound=NodeState)
 
 
-LangChainMessageT = AIMessage | HumanMessage | ToolMessage
-LangChainMessage = Annotated[LangChainMessageT, Field(discriminator="type")]
+LangChainMessage = AIMessage | HumanMessage | ToolMessage
+LangChainMessageT = Annotated[LangChainMessage, Field(discriminator="type")]

@@ -6,7 +6,7 @@ from liman_core.base.component import Component
 from liman_core.base.schemas import S
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode, is_valid_language_code
-from liman_core.nodes.base.schemas import NS, NodeOutput
+from liman_core.nodes.base.schemas import NS
 from liman_core.registry import Registry
 
 
@@ -72,7 +72,7 @@ class BaseNode(Component[S], Generic[S, NS]):
         ...
 
     @abstractmethod
-    async def invoke(self, *args: Any, **kwargs: Any) -> NodeOutput:
+    async def invoke(self, *args: Any, **kwargs: Any) -> Any:
         """
         Async invoke method for the Node.
         """

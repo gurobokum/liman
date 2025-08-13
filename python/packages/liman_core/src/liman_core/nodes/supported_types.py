@@ -1,9 +1,9 @@
+from liman_core.nodes.function_node import FunctionNode
 from liman_core.nodes.llm_node import LLMNode
-from liman_core.nodes.node import Node
 from liman_core.nodes.tool_node import ToolNode
 
 
-def get_node_cls(node_type: str) -> type[LLMNode | ToolNode | Node]:
+def get_node_cls(node_type: str) -> type[LLMNode | ToolNode | FunctionNode]:
     """
     Get the Node class based on the node type.
 
@@ -18,7 +18,6 @@ def get_node_cls(node_type: str) -> type[LLMNode | ToolNode | Node]:
             return LLMNode
         case "ToolNode":
             return ToolNode
-        case "Node":
-            return Node
-        case _:
-            return Node
+        case "FunctionNode":
+            return FunctionNode
+    raise ValueError(f"Unsupported node type: {node_type}")

@@ -5,7 +5,6 @@ from langchain_core.messages import BaseMessage
 
 from liman_core.errors import LimanError
 from liman_core.nodes.base.node import BaseNode
-from liman_core.nodes.base.schemas import NodeOutput
 from liman_core.nodes.node.schemas import NodeSpec, NodeState
 from liman_core.registry import Registry
 
@@ -45,7 +44,7 @@ class Node(BaseNode[NodeSpec, NodeState]):
 
     async def invoke(
         self, inputs: Sequence[BaseMessage], state: dict[str, Any], **kwargs: Any
-    ) -> NodeOutput:
+    ) -> Any:
         """
         Asynchronous invoke method for the Node.
         """
@@ -58,4 +57,4 @@ class Node(BaseNode[NodeSpec, NodeState]):
         Returns:
             NodeState: A new instance of NodeState with the specified language.
         """
-        return NodeState(messages=[])
+        return NodeState(name=self.spec.name, messages=[])

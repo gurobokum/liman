@@ -7,7 +7,7 @@ from langchain_core.messages import BaseMessage
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
 from liman_core.nodes.base.node import BaseNode
-from liman_core.nodes.base.schemas import LangChainMessage, NodeOutput
+from liman_core.nodes.base.schemas import LangChainMessage
 from liman_core.nodes.llm_node.schemas import (
     LLMNodeSpec,
     LLMNodeState,
@@ -68,6 +68,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
     )
 
     spec_type = LLMNodeSpec
+    state_type = LLMNodeState
 
     def __init__(
         self,
@@ -118,7 +119,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         inputs: Sequence[BaseMessage],
         lang: LanguageCode | None = None,
         **kwargs: Any,
-    ) -> NodeOutput:
+    ) -> LangChainMessage:
         if not self._compiled:
             raise LimanError(
                 "LLMNode must be compiled before invoking. Use `compile()` method."
@@ -147,7 +148,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
             tools=tools_jsonschema,
         )
 
-        return NodeOutput(response=cast(LangChainMessage, response))
+        return cast(LangChainMessage, response)
 
     def get_new_state(self) -> LLMNodeState:
         """
@@ -156,7 +157,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         Returns:
             LLMNodeState: A new instance of LLMNodeState.
         """
-        return LLMNodeState(messages=[])
+        return LLMNodeState(kind=self.spec.kind, name=self.spec.name, messages=[])
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(

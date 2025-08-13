@@ -8,10 +8,10 @@ from liman_core.languages import LocalizedValue
 from liman_core.nodes.base.schemas import NodeState as BaseNodeState
 
 
-class NodeSpec(BaseSpec):
-    kind: Literal["Node"] = "Node"
+class FunctionNodeSpec(BaseSpec):
+    kind: Literal["FunctionNode"] = "FunctionNode"
     name: str
-    func: str
+    func: str | None = None
 
     description: LocalizedValue | None = None
     prompts: LocalizedValue | None = None
@@ -21,12 +21,9 @@ class NodeSpec(BaseSpec):
     tools: list[str] = []
 
 
-class NodeState(BaseNodeState):
-    """
-    State for Node.
-    """
-
-    kind: Literal["Node"] = "Node"
+class FunctionNodeState(BaseNodeState):
+    kind: Literal["FunctionNode"] = "FunctionNode"
+    name: str
 
     messages: list[BaseMessage] = []
     input_: Any | None = None

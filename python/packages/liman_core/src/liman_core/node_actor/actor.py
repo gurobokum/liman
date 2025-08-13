@@ -1,32 +1,34 @@
 import asyncio
+import logging
 import sys
-import threading
-from collections.abc import Sequence
-from typing import Any, Generic
+from typing import Any, Generic, TypeVar
 from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage, HumanMessage
-from pydantic import BaseModel
+from langchain_core.messages import HumanMessage, ToolMessage
 
 from liman_core.base.schemas import S
+from liman_core.conf import settings
 from liman_core.edge.dsl.grammar import when_parser
 from liman_core.edge.dsl.transformer import WhenTransformer
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.node_actor.conditional_evaluator import ConditionalEvaluator
 from liman_core.node_actor.errors import NodeActorError
-from liman_core.node_actor.schemas import NodeActorState, NodeActorStatus, Result
+from liman_core.node_actor.schemas import (
+    NextNode,
+    NodeActorStatus,
+    Result,
+)
 from liman_core.nodes.base.node import BaseNode
 from liman_core.nodes.base.schemas import (
     NS,
     LangChainMessage,
-    LangChainMessageT,
-    NodeOutput,
 )
+from liman_core.nodes.function_node.node import FunctionNode
 from liman_core.nodes.llm_node.node import LLMNode
 from liman_core.nodes.llm_node.schemas import LLMNodeState
 from liman_core.nodes.node.node import Node
-from liman_core.nodes.node.schemas import NodeState
+from liman_core.nodes.supported_types import get_node_cls
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeState
 from liman_core.plugins.core.base import ExecutionStateProvider
@@ -37,49 +39,52 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
+logger = logging.getLogger(__name__)
 
-class NodeActor(Generic[S, NS]):
+if settings.DEBUG:
+    try:
+        from rich.logging import RichHandler
+    except ImportError:
+        logger.warning(
+            "Rich logging is not available. Install 'rich' package to enable rich logging."
+        )
+    else:
+        handler = RichHandler(show_time=True, show_path=True, rich_tracebacks=True)
+        handler.setFormatter(logging.Formatter("%(actor_id)s %(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+
+
+T = TypeVar("T", bound=BaseNode[Any, Any])
+
+
+class NodeActor(Generic[T]):
     """
     Unified NodeActor supporting both sync and async execution
     """
 
     def __init__(
         self,
-        node: BaseNode[S, NS],
+        node: T,
         actor_id: UUID | None = None,
         llm: BaseChatModel | None = None,
-        parent_node_name: str | None = None,
     ):
         self.id = actor_id or uuid4()
-        self.node = node
         self.llm = llm
+        self.node = node
+        self.node_state = node.get_new_state()
 
+        self.status = NodeActorStatus.IDLE
         self.error: NodeActorError | None = None
 
-        self.state = NodeActorState(
-            actor_id=self.id,
-            node_id=self.node.id,
-            status=NodeActorStatus.IDLE,
-            node_state=self.node.get_new_state(),
-            node_type=self.node.spec.kind,
-            node_name=self.node.name,
-            parent_node_name=parent_node_name,
-        )
+        self._execution_lock = asyncio.Lock()
 
-        self._execution_lock = threading.Lock()
-        self._async_execution_lock = asyncio.Lock()
-        self._shutdown_event = threading.Event()
-        self._async_shutdown_event = asyncio.Event()
+        self.logger = logging.LoggerAdapter(logger, {"actor_id": str(self.id)})
+
+        self._initialize()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, status={self.state.status.value})"
-
-    @property
-    def status(self) -> NodeActorStatus:
-        """
-        Get the current status of the actor.
-        """
-        return self.state.status
+        return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, status={self.status.value})"
 
     @property
     def composite_id(self) -> str:
@@ -100,7 +105,7 @@ class NodeActor(Generic[S, NS]):
 
         if node.is_tool_node:
             return status == NodeActorStatus.READY
-        elif isinstance(node, Node | LLMNode):
+        elif isinstance(node, LLMNode):
             return status in [
                 NodeActorStatus.READY,
                 NodeActorStatus.EXECUTING,
@@ -111,7 +116,7 @@ class NodeActor(Generic[S, NS]):
     @classmethod
     def create(
         cls,
-        node: BaseNode[S, NS],
+        node: T,
         actor_id: UUID | None = None,
         llm: BaseChatModel | None = None,
     ) -> Self:
@@ -130,9 +135,9 @@ class NodeActor(Generic[S, NS]):
         return actor
 
     @classmethod
-    async def acreate_or_restore(
+    async def create_or_restore(
         cls,
-        node: BaseNode[S, NS],
+        node: T,
         state: dict[str, Any] | None,
         llm: BaseChatModel | None = None,
     ) -> Self:
@@ -147,108 +152,27 @@ class NodeActor(Generic[S, NS]):
         Returns:
             NodeActor instance (new or restored)
         """
-
         if state and cls.can_restore(node, state):
-            actor = cls(node=node, llm=llm)
+            actor_id = UUID(state["actor_id"])
+            actor = cls(node=node, actor_id=actor_id, llm=llm)
             actor._restore_state(state)
             return actor
         else:
             return cls.create(node=node, llm=llm)
 
-    def initialize(self) -> None:
-        """
-        Initialize the actor and prepare for execution
-        """
-        if self.state.status != NodeActorStatus.IDLE:
-            raise create_error(
-                f"Cannot initialize actor in status {self.state.status}", self
-            )
-
-        self.state.status = NodeActorStatus.INITIALIZING
-        self.state.has_error = False
-
-        try:
-            if not self.node._compiled:
-                self.node.compile()
-
-            self._validate_requirements()
-            self.state.status = NodeActorStatus.READY
-
-        except Exception as e:
-            self.error = create_error(f"Failed to initialize actor: {e}", self)
-            self.state.has_error = True
-            raise self.error from e
-
-    async def ainitialize(self) -> None:
-        """
-        Initialize the actor and prepare for execution (async version)
-        """
-        if self.state.status != NodeActorStatus.IDLE:
-            raise create_error(
-                f"Cannot initialize actor in status {self.state.status}", self
-            )
-
-        self.state.status = NodeActorStatus.INITIALIZING
-        self.state.has_error = False
-
-        try:
-            if not self.node._compiled:
-                self.node.compile()
-
-            await self._avalidate_requirements()
-            self.state.status = NodeActorStatus.READY
-
-        except Exception as e:
-            self.error = create_error(f"Failed to initialize actor: {e}", self)
-            self.state.has_error = True
-            raise self.error from e
-
-    def execute(
+    async def execute(
         self,
         input_: Any,
         execution_id: UUID,
         context: dict[str, Any] | None = None,
-    ) -> Result[S, NS]:
-        """
-        Execute the wrapped node with the provided inputs.
-
-        Args:
-            input_: Input for the node
-            context: Additional execution context
-            execution_id: Optional execution tracking ID
-
-        Returns:
-            Result from node execution
-
-        Raises:
-            NodeActorError: If execution fails or actor is in invalid state
-        """
-        if self.state.status in (NodeActorStatus.IDLE, NodeActorStatus.SHUTDOWN):
-            raise create_error(
-                f"Cannot execute actor in status {self.state.status.value}", self
-            )
-
-        if self._shutdown_event.is_set():
-            raise create_error("Actor is shutting down", self)
-
-        context = context or {}
-
-        with self._execution_lock:
-            return self._execute_internal(input_, context, execution_id)
-
-    async def aexecute(
-        self,
-        input_: Any,
-        execution_id: UUID,
-        context: dict[str, Any] | None = None,
-    ) -> Result[S, NS]:
+    ) -> Result:
         """
         Execute the wrapped node with the provided inputs (async version).
 
         Args:
             input_: Input for the node
             context: Additional execution context
-            execution_id: Optional execution tracking ID
+            execution_id: Execution tracking ID
 
         Returns:
             Result from node execution
@@ -256,55 +180,51 @@ class NodeActor(Generic[S, NS]):
         Raises:
             NodeActorError: If execution fails or actor is in invalid state
         """
-        if self.state.status in (NodeActorStatus.IDLE, NodeActorStatus.SHUTDOWN):
+        if self.status in (NodeActorStatus.IDLE, NodeActorStatus.SHUTDOWN):
             raise create_error(
-                f"Cannot execute actor in status {self.state.status.value}", self
+                f"Cannot execute actor in status {self.status.value}", self
             )
 
-        if self._async_shutdown_event.is_set():
-            raise create_error("Actor is shutting down", self)
-
-        execution_id = execution_id or uuid4()
         context = context or {}
-
-        async with self._async_execution_lock:
-            return await self._aexecute_internal(input_, context, execution_id)
-
-    def shutdown(self) -> None:
-        """Gracefully shutdown the actor"""
-        self._shutdown_event.set()
-        self.state.status = NodeActorStatus.SHUTDOWN
-
-        if self._execution_lock.locked():
-            with self._execution_lock:
-                ...
-
-    async def ashutdown(self) -> None:
-        """Gracefully shutdown the actor (async version)"""
-        self._async_shutdown_event.set()
-        self.state.status = NodeActorStatus.SHUTDOWN
-
-        if self._async_execution_lock.locked():
-            async with self._async_execution_lock:
-                ...
+        async with self._execution_lock:
+            return await self._execute_internal(input_, context, execution_id)
 
     def serialize_state(self) -> dict[str, Any]:
         """
         Serialize NodeActor state for persistence
         """
-        return self.state.model_dump(mode="json")
+        return {
+            "actor_id": str(self.id),
+            "node_id": str(self.node.id),
+            "status": self.status.value,
+            "node_state": self.node_state.model_dump(),
+        }
 
-    # Execution private methods
+    def _initialize(self) -> None:
+        """
+        Initialize the actor and prepare for execution (async version)
+        """
+        if self.status != NodeActorStatus.IDLE:
+            raise create_error(f"Cannot initialize actor in status {self.status}", self)
 
-    def _execute_internal(
-        self, inputs: Sequence[BaseMessage], context: dict[str, Any], execution_id: UUID
-    ) -> Result[S, NS]:
-        return asyncio.run(self._aexecute_internal(inputs, context, execution_id))
+        self.status = NodeActorStatus.INITIALIZING
+        self.has_error = False
 
-    async def _aexecute_internal(
+        try:
+            if not self.node._compiled:
+                self.node.compile()
+
+            self.status = NodeActorStatus.READY
+
+        except Exception as e:
+            self.error = create_error(f"Failed to initialize actor: {e}", self)
+            self.has_error = True
+            raise self.error from e
+
+    async def _execute_internal(
         self, input_: Any, context: dict[str, Any], execution_id: UUID
-    ) -> Result[S, NS]:
-        self.state.status = NodeActorStatus.EXECUTING
+    ) -> Result:
+        self.status = NodeActorStatus.EXECUTING
 
         registry = self.node.registry
         plugins = [
@@ -321,24 +241,36 @@ class NodeActor(Generic[S, NS]):
             for k, v in d.items()
         }
 
+        self.logger.debug(
+            f"NodeActor executes {self.node.full_name} with input: {input_}, state: {state}"
+        )
+
         try:
             execution_context = self._prepare_execution_context(context, execution_id)
 
-            if self.node.is_llm_node:
-                node_output = await self._aexecute_llm_node(input_, execution_context)
-            elif self.node.is_tool_node:
-                node_output = await self._aexecute_tool_node(input_, execution_context)
-            else:
-                node_output = await self._aexecute_generic_node(
+            if isinstance(self.node, LLMNode):
+                node_output = await self._execute_llm_node(input_, execution_context)
+            elif isinstance(self.node, ToolNode):
+                node_output = await self._execute_tool_node(input_, execution_context)
+            elif isinstance(self.node, FunctionNode):
+                node_output = await self._execute_function_node(
                     input_, execution_context
                 )
+            else:
+                raise create_error(
+                    f"Unsupported node type {self.node.spec.kind} for execution", self
+                )
 
-            self._sync_state(node_output)
+            self.logger.debug(
+                f"NodeActor completed {self.node.full_name} with output: {node_output}"
+            )
+
             next_nodes = self._get_next_nodes(node_output)
+            self.logger.debug(f"Next nodes to execute: {next_nodes}")
 
-            self.state.status = NodeActorStatus.COMPLETED
+            self.status = NodeActorStatus.COMPLETED
             return Result(
-                node_output=node_output,
+                output=node_output,
                 next_nodes=next_nodes,
             )
 
@@ -348,26 +280,20 @@ class NodeActor(Generic[S, NS]):
             )
             raise self.error from e
 
-    def _execute_llm_node(
-        self,
-        inputs: Sequence[BaseMessage],
-        state: dict[str, Any],
-        context: dict[str, Any],
-    ) -> NodeOutput:
-        return asyncio.run(self._aexecute_llm_node(inputs, context))
-
-    async def _aexecute_llm_node(
+    async def _execute_llm_node(
         self, input_: Any, context: dict[str, Any]
-    ) -> NodeOutput:
+    ) -> LangChainMessage:
         if not self.llm:
             raise create_error(
                 "LLM required for LLMNode execution but not provided", self
             )
 
-        node_state = self.state.node_state
-        # if is needed for proper typing
+        node_state = self.node_state
+
+        # it's needed for proper typing
+        if not isinstance(self.node, LLMNode):
+            raise create_error(f"Expected LLMNode, got {type(self.node)}", self)
         if not isinstance(node_state, LLMNodeState):
-            print(f"NodeActor state has improper node_state type: {type(node_state)}")
             raise create_error(
                 "NodeActor state has improper node_state for LLMNode", self
             )
@@ -375,7 +301,7 @@ class NodeActor(Generic[S, NS]):
         inputs: list[LangChainMessage] = []
         if isinstance(input_, str):
             inputs.append(HumanMessage(content=input_))
-        elif isinstance(input_, LangChainMessageT):
+        elif isinstance(input_, HumanMessage | ToolMessage):
             inputs.append(input_)
         elif isinstance(input_, list):
             inputs.extend(input_)
@@ -385,115 +311,77 @@ class NodeActor(Generic[S, NS]):
             )
 
         node_output = await self.node.invoke(
-            self.llm, [*node_state.messages, inputs], **context
+            self.llm, [*node_state.messages, *inputs], **context
         )
 
         node_state.messages.extend(inputs)
-        node_state.messages.append(node_output.response)
+        node_state.messages.append(node_output)
         return node_output
 
-    def _execute_tool_node(
-        self, input_: dict[str, Any], state: dict[str, Any]
-    ) -> NodeOutput:
-        return asyncio.run(self._aexecute_tool_node(input_, state))
-
-    async def _aexecute_tool_node(
+    async def _execute_tool_node(
         self, input_: Any, context: dict[str, Any] | None = None
-    ) -> NodeOutput:
+    ) -> ToolMessage:
+        # it's needed for proper typing
         if not isinstance(self.node, ToolNode):
             raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
+        if not isinstance(self.node_state, ToolNodeState):
+            raise create_error(
+                f"Expected ToolNodeState, got {type(self.node_state)}", self
+            )
 
         tool_call = ToolCall.model_validate(input_)
-        return await self.node.invoke(tool_call, state=context)
+        node_output = await self.node.invoke(tool_call, state=context)
+        self.node_state.input_ = tool_call
+        self.node_state.output = node_output
+        return node_output
 
-    def _execute_generic_node(
-        self,
-        inputs: Sequence[BaseMessage],
-        state: dict[str, Any],
-        context: dict[str, Any],
-    ) -> NodeOutput:
-        return asyncio.run(self._aexecute_generic_node(inputs, state, **context))
+    async def _execute_function_node(
+        self, input_: Any, context: dict[str, Any] | None = None
+    ) -> Any:
+        if not isinstance(self.node, FunctionNode):
+            raise create_error(f"Expected FunctionNode, got {type(self.node)}", self)
 
-    async def _aexecute_generic_node(
-        self, inputs: Sequence[BaseMessage], context: dict[str, Any]
-    ) -> NodeOutput:
-        if not isinstance(self.node, Node):
-            raise create_error(f"Expected Node, got {type(self.node)}", self)
-
-        return await self.node.invoke(inputs, **context)
-
-    def _validate_requirements(self) -> None:
-        """
-        Validate that actor has everything needed for execution
-        """
-        if self.node.is_llm_node and not self.llm:
-            raise create_error("LLMNode requires LLM but none provided", self)
-
-        if not self.node._compiled:
-            raise create_error("Node is not compiled", self)
-
-    async def _avalidate_requirements(self) -> None:
-        """
-        Validate that actor has everything needed for execution (async version)
-        """
-        if self.node.is_llm_node and not self.llm:
-            raise create_error("LLMNode requires LLM but none provided", self)
-
-        if not self.node._compiled:
-            raise create_error("Node is not compiled", self)
+        return await self.node.invoke(input_, state=context or {})
 
     # State synchronization privatemethods
 
-    def _sync_state(self, output: NodeOutput) -> None:
-        """
-        Synchronize the actor's state with the output
-        """
-        if isinstance(self.state, LLMNodeState):
-            self.state.messages.append(output.response)
-
     def _get_next_nodes(
-        self, output: NodeOutput
-    ) -> list[tuple[BaseNode[S, NS], dict[str, Any]]]:
+        self, output: LangChainMessage | ToolMessage | dict[str, Any] | None
+    ) -> list[NextNode]:
         """
         Get the next nodes to execute based on the output
         """
-
-        next_nodes: list[tuple[BaseNode[Any, Any], dict[str, Any]]] = []
-
         registry = self.node.registry
 
-        # LLMNode tool calls
-        if (
-            isinstance(self.node, LLMNode)
-            and self.node.spec.tools
-            and hasattr(output.response, "tool_calls")
-        ):
-            for tool_call in getattr(output.response, "tool_calls", []):
-                tool_name = tool_call["name"]
-                tool = registry.lookup(ToolNode, tool_name)
-                next_nodes.append((tool, tool_call))
+        # LLMNode supports only ToolNode edges
+        if isinstance(self.node, LLMNode):
+            next_nodes = []
+            if tool_calls := getattr(output, "tool_calls", []):
+                for tool_call in tool_calls:
+                    if isinstance(tool_call, dict) and "name" in tool_call:
+                        tool_name: str = tool_call["name"]
+                        tool = registry.lookup(ToolNode, tool_name)
+                        next_nodes.append(NextNode(tool, tool_call))
 
             return next_nodes
 
         edges = self._get_node_edges()
-        if edges:
-            context, state_context = self._build_evaluation_context(output)
-            transformer = WhenTransformer()
+        if not edges:
+            return []
 
+        context, state_context = self._build_evaluation_context(output)
+        transformer = WhenTransformer()
+
+        # ToolNode supports FunctionNode and LLMNode edges
+        if isinstance(self.node, ToolNode) and edges:
+            next_nodes = []
             for node_type, edge in edges:
                 if self._should_follow_edge(edge, context, state_context, transformer):
                     target_node = registry.lookup(node_type, edge.target)
-                    next_nodes.append((target_node, {}))
+                    next_nodes.append(NextNode(target_node, output))
+            return next_nodes
 
-        # If no edges defined and node is a ToolNode, return to the parent LLMNode
-        if not edges and isinstance(self.node, ToolNode):
-            parent_node_name = self.state.parent_node_name
-            if not parent_node_name:
-                return next_nodes
-            parent_node = registry.lookup(LLMNode, parent_node_name)
-            next_nodes.append((parent_node, {}))
-
-        return next_nodes
+        return []
 
     def _get_node_edges(self) -> list[tuple[type[Node | LLMNode], EdgeSpec]]:
         edges: list[tuple[type[Node | LLMNode], EdgeSpec]] = []
@@ -511,18 +399,18 @@ class NodeActor(Generic[S, NS]):
         return edges
 
     def _build_evaluation_context(
-        self, output: NodeOutput
+        self, output: Any
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """
         Build context for edge condition evaluation
         Variables with $ prefix: $output, $status, $state
         Variables without $ prefix: taken from $state.context
         """
-        state_data = self.state.node_state.model_dump()
+        state_data = self.node_state.model_dump()
 
         context = {
-            "$output": output.model_dump(),
-            "$status": self.state.status.value,
+            "$output": output if isinstance(output, dict) else {},
+            "$status": self.status.value,
             "$state": state_data,
         }
 
@@ -565,37 +453,26 @@ class NodeActor(Generic[S, NS]):
 
         return execution_context
 
-    def _restore_state(self, saved_state: dict[str, Any]) -> None:
+    def _restore_state(self, state: dict[str, Any]) -> None:
         """
         Restore NodeActor state from serialized data
         """
         try:
-            states: dict[str, type[BaseModel]] = {
-                "LLMNode": LLMNodeState,
-                "ToolNode": ToolNodeState,
-                "Node": NodeState,
-            }
+            node_cls = get_node_cls(state["node_state"]["kind"])
+            state_cls = node_cls.state_type
 
-            state_cls = states[saved_state["node_type"]]
-            node_state = state_cls.model_validate(saved_state["node_state"])
+            node_state = state_cls.model_validate(state["node_state"])
 
-            self.state = NodeActorState.model_validate(
-                {**saved_state, "node_state": node_state}
-            )
+            self.status = NodeActorStatus(state["status"])
+            self.node_state = node_state
+            self.error = None
+
         except Exception as e:
             raise create_error(f"Failed to restore actor state: {e}", self) from e
 
-    def _is_shutdown(self) -> bool:
-        """Check if actor is shutdown"""
-        return self._shutdown_event.is_set()
-
-    def _is_async_shutdown(self) -> bool:
-        """Check if actor is shutdown (async version)"""
-        return self._async_shutdown_event.is_set()
-
 
 def create_error(
-    message: str, actor: NodeActor[S, NS], *, execution_id: UUID | None = None
+    message: str, actor: NodeActor[T], *, execution_id: UUID | None = None
 ) -> NodeActorError:
     return NodeActorError(
         message,

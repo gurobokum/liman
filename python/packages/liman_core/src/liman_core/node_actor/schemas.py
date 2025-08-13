@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 from enum import Enum
-from typing import Any, Generic
+from typing import Any, Generic, NamedTuple
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from liman_core.base.schemas import S
 from liman_core.nodes.base.node import BaseNode
-from liman_core.nodes.base.schemas import NS, NodeOutput
+from liman_core.nodes.base.schemas import NS
 
 
 class NodeActorStatus(str, Enum):
@@ -37,12 +38,21 @@ class NodeActorState(BaseModel, Generic[NS]):
     parent_node_name: str | None = None
 
 
-class Result(BaseModel, Generic[S, NS]):
+class Result(BaseModel):
     """
     Represents the output of a node execution.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    node_output: NodeOutput
-    next_nodes: list[tuple[BaseNode[S, NS], dict[str, Any]]] = []
+    output: Any
+    next_nodes: list[NextNode] = []
+
+
+class NextNode(NamedTuple):
+    """
+    Represents a next node in the execution flow.
+    """
+
+    node: BaseNode[Any, Any]
+    input_: Any

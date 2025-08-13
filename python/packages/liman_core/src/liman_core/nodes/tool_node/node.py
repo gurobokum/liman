@@ -3,14 +3,13 @@ import inspect
 from collections.abc import Callable
 from functools import reduce
 from importlib import import_module
-from typing import Any
+from typing import Any, cast
 
 from langchain_core.messages import ToolMessage
 
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.nodes.base.node import BaseNode
-from liman_core.nodes.base.schemas import NodeOutput
 from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeSpec, ToolNodeState
 from liman_core.nodes.tool_node.utils import (
     ToolArgumentJSONSchema,
@@ -82,6 +81,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
     """
 
     spec_type = ToolNodeSpec
+    state_type = ToolNodeState
 
     def __init__(
         self,
@@ -109,22 +109,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         self._compiled = False
 
     def compile(self) -> None:
-        # import implementation function
-        if not self.spec.func:
-            raise InvalidSpecError(
-                f"ToolNode '{self.name}' must have a 'func' attribute defined."
-            )
-
-        try:
-            func_path = self.spec.func.split(".")
-            module = import_module(".".join(func_path[:-1]))
-            self.func = getattr(module, func_path[-1])
-        except (ImportError, ValueError) as e:
-            if self.strict:
-                raise InvalidSpecError(
-                    f"Failed to import module for function '{self.spec.func}': {e}"
-                ) from e
-            self.func = noop
+        self.func = self._load_func()
         self._compiled = True
 
     def set_func(self, func: Callable[..., Any]) -> None:
@@ -137,7 +122,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
 
     async def invoke(
         self, tool_call: ToolCall, state: dict[str, Any] | None = None
-    ) -> NodeOutput:
+    ) -> ToolMessage:
         """
         Asynchronously invoke the tool function with the provided arguments.
 
@@ -169,7 +154,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
                 tool_call_id=tool_call_id,
                 name=tool_call_name,
             )
-        return NodeOutput(response=response)
+        return response
 
     def _extract_function_args(self, args_dict: dict[str, Any]) -> dict[str, Any]:
         """
@@ -196,6 +181,31 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
                 raise ValueError(f"Required parameter is missing: '{param_name}'")
 
         return filtered_args
+
+    def _load_func(self) -> Callable[..., Any]:
+        if self.func is not None and str(self.func) == self.spec.func:
+            return self.func
+
+        if not self.spec.func:
+            raise InvalidSpecError(
+                f"ToolNode '{self.name}' must have a 'func' attribute defined."
+            )
+
+        try:
+            func_path = self.spec.func.split(".")
+            module = import_module(".".join(func_path[:-1]))
+            func = getattr(module, func_path[-1])
+            if not callable(func):
+                raise ValueError(
+                    f"Function '{self.spec.func}' is not callable or does not exist."
+                )
+            return cast(Callable[..., Any], func)
+        except (ImportError, ValueError) as e:
+            if self.strict:
+                raise InvalidSpecError(
+                    f"Failed to import module for function '{self.spec.func}': {e}"
+                ) from e
+            return noop
 
     def get_tool_description(self, lang: LanguageCode) -> str:
         template = self._get_tool_prompt_template(lang)
@@ -267,7 +277,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         Returns:
             ToolNodeState: A new instance of ToolNodeState.
         """
-        return ToolNodeState()
+        return ToolNodeState(kind=self.spec.kind, name=self.spec.name)
 
     def _get_tool_prompt_template(self, lang: LanguageCode) -> str:
         """
