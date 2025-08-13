@@ -486,6 +486,12 @@ wheels = [
 [[package]]
 name = "liman"
 source = { editable = "packages/liman" }
+dependencies = [
+    { name = "langchain-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "langchain-core", specifier = ">=0.3.67" }]
 
 [[package]]
 name = "liman-core"
