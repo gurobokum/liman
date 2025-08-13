@@ -22,8 +22,7 @@ dependencies = [
 ]
 
 [tool.hatch.version]
-path = "VERSION"
-pattern = "(?P<version>.+)"
+path = "src/liman/__init__.py"
 
 [tool.uv.sources]
 liman_core = { workspace = true }
