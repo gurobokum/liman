@@ -106,6 +106,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
 
         self.registry = registry
         self.registry.add(self)
+        self.func: Callable[..., Any] | None = None
         self._compiled = False
 
     def compile(self) -> None:
@@ -132,6 +133,10 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         Returns:
             ToolMessage with function result and proper tool call metadata
         """
+        if not self.func:
+            raise ValueError(
+                f"ToolNode {self.name} has no function set. Please compile the node first."
+            )
         func = self.func
         tool_call_id = tool_call.id_
         tool_call_name = tool_call.name
