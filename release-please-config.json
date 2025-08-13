@@ -26,7 +26,7 @@
     "python/packages/liman": {
       "component": "liman_py",
       "release-type": "python",
-      "release-as": "0.1.0-a0",
+      "release-as": "0.1.0-a2",
       "extra-label": "python"
     },
     "python/packages/liman_core": {
