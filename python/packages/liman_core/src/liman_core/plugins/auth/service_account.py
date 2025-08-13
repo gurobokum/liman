@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ruamel.yaml import YAML
@@ -45,7 +46,7 @@ class ServiceAccount(Component[ServiceAccountSpec]):
     @classmethod
     def from_yaml_path(
         cls,
-        yaml_path: str,
+        yaml_path: str | Path,
         registry: Registry,
         *,
         strict: bool = True,
@@ -61,7 +62,8 @@ class ServiceAccount(Component[ServiceAccountSpec]):
             ServiceAccount: An instance of ServiceAccount initialized with the YAML data.
         """
         yaml = YAML()
-        with open(yaml_path, encoding="utf-8") as fd:
+        yaml_path_str = str(yaml_path)
+        with open(yaml_path_str, encoding="utf-8") as fd:
             yaml_data = yaml.load(fd)
 
         if not isinstance(yaml_data, dict):
@@ -72,7 +74,7 @@ class ServiceAccount(Component[ServiceAccountSpec]):
         return cls.from_dict(
             yaml_data,
             registry,
-            yaml_path=yaml_path,
+            yaml_path=yaml_path_str,
             strict=strict,
             **kwargs,
         )

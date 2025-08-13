@@ -32,6 +32,14 @@ def test_from_yaml_path_sets_yaml_path(registry: Registry) -> None:
     assert node.yaml_path == str(yaml_path)
 
 
+def test_from_yaml_path_with_pathlib_path(registry: Registry) -> None:
+    yaml_path = TEST_DATA_PATH / "valid_node.yaml"
+    node = Node.from_yaml_path(yaml_path, registry)
+    assert node.spec.name == "TestNode"
+    assert node.spec.func == "test_function"
+    assert node.yaml_path == str(yaml_path)
+
+
 def test_from_yaml_path_strict_mode(registry: Registry) -> None:
     yaml_path = TEST_DATA_PATH / "valid_node.yaml"
     node = Node.from_yaml_path(str(yaml_path), registry, strict=True)
