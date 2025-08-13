@@ -19,7 +19,7 @@ dev = [
 ]
 
 [tool.poe.tasks]
-typing.sequence = [
+mypy.sequence = [
   { cmd = "poe mypy", cwd = "packages/liman" },
   { cmd = "poe mypy", cwd = "packages/liman_core" },
   { cmd = "poe mypy", cwd = "packages/liman_finops" },

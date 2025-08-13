@@ -14,7 +14,7 @@
     "docs:format:check": "pnpm -F @liman/docs format:check",
     "go:lint": "cd go && bazel run //:lint",
     "python:lint": "cd python && uv run poe lint",
-    "python:typing": "cd python && uv run poe typing",
+    "python:typing": "cd python && uv run poe mypy",
     "commitlint:type": "commitlint --print-config json | jq '.rules.\"type-enum\"[2]'",
     "commitlint:scope": "commitlint --print-config json | jq '.rules.\"scope-enum\"[2]'",
     "scripts:list": "cat package.json | jq -r '\"package_name: \\(.name)\\n\\n\\(.scripts | to_entries[] | \"- \\(.key)\")\"'",
