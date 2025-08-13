@@ -1,5 +1,14 @@
-from liman_core import __version__
+import os
+
+from liman.conf import enable_debug
+
+if os.getenv("LIMAN_DEBUG") == "1":
+    enable_debug()
 
 
-def main() -> None:
-    print("Hello from Liman! with liman_core version:", __version__)
+from liman.executor.base import Executor
+
+__all__ = [
+    "enable_debug",
+    "Executor",
+]

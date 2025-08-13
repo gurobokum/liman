@@ -17,6 +17,9 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+dependencies = [
+    "langchain-core>=0.3.67",
+]
 
 [tool.hatch.version]
 path = "VERSION"
