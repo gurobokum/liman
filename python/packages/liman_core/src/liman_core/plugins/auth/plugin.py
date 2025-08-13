@@ -33,7 +33,7 @@ class AuthPlugin(Plugin, ExecutionStateProvider):
                 f"AuthPlugin cannot provide execution state for component of kind '{component.spec.kind}'"
             )
 
-        auth = component.spec.get(self.field_name, None)
+        auth = getattr(component.spec, self.field_name, None)
         if not auth:
             return state
 
