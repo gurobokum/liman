@@ -5,7 +5,6 @@ import pytest
 from langchain_core.messages import ToolMessage
 from pydantic import ValidationError
 
-from liman_core.nodes.base.schemas import NodeOutput
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.nodes.tool_node.schemas import ToolCall
 from liman_core.registry import Registry
@@ -83,11 +82,10 @@ def test_invoke_with_valid_tool_call(
 
     result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
-    assert isinstance(result, NodeOutput)
-    assert isinstance(result.response, ToolMessage)
-    assert result.response.content == "Weather in Moscow: 25°C"
-    assert result.response.tool_call_id == "call_123"
-    assert result.response.name == "weather_tool"
+    assert isinstance(result, ToolMessage)
+    assert result.content == "Weather in Moscow: 25°C"
+    assert result.tool_call_id == "call_123"
+    assert result.name == "weather_tool"
 
 
 def test_invoke_with_missing_optional_param(
@@ -105,11 +103,10 @@ def test_invoke_with_missing_optional_param(
 
     result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
-    assert isinstance(result, NodeOutput)
-    assert isinstance(result.response, ToolMessage)
-    assert result.response.content == "Weather in Berlin: 20°C"
-    assert result.response.tool_call_id == "call_456"
-    assert result.response.name == "weather_tool"
+    assert isinstance(result, ToolMessage)
+    assert result.content == "Weather in Berlin: 20°C"
+    assert result.tool_call_id == "call_456"
+    assert result.name == "weather_tool"
 
 
 def test_invoke_with_extra_params_filtered(
@@ -132,11 +129,10 @@ def test_invoke_with_extra_params_filtered(
 
     result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
-    assert isinstance(result, NodeOutput)
-    assert isinstance(result.response, ToolMessage)
-    assert result.response.content == "Weather in Paris: 18°C"
-    assert result.response.tool_call_id == "call_789"
-    assert result.response.name == "weather_tool"
+    assert isinstance(result, ToolMessage)
+    assert result.content == "Weather in Paris: 18°C"
+    assert result.tool_call_id == "call_789"
+    assert result.name == "weather_tool"
 
 
 def test_invoke_with_missing_required_param(
@@ -171,11 +167,10 @@ def test_invoke_with_function_exception(
 
     result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
 
-    assert isinstance(result, NodeOutput)
-    assert isinstance(result.response, ToolMessage)
-    assert "Cannot get weather for UnknownCity" in result.response.content
-    assert result.response.tool_call_id == "call_fail"
-    assert result.response.name == "weather_tool"
+    assert isinstance(result, ToolMessage)
+    assert "Cannot get weather for UnknownCity" in result.content
+    assert result.tool_call_id == "call_fail"
+    assert result.name == "weather_tool"
 
 
 def test_invoke_missing_args_field(
@@ -209,7 +204,7 @@ def test_invoke_with_optional_param_function(
     }
 
     result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
-    assert result.response.content == "Hi, Alice!"
+    assert result.content == "Hi, Alice!"
 
 
 def test_invoke_with_optional_param_function_no_arg(
@@ -226,4 +221,4 @@ def test_invoke_with_optional_param_function_no_arg(
     }
 
     result = asyncio.run(node.invoke(ToolCall.model_validate(tool_call)))
-    assert result.response.content == "Hello, Bob!"
+    assert result.content == "Hello, Bob!"

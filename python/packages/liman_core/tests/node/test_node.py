@@ -1,8 +1,7 @@
-# Example YAMLs as dicts (since we don't read files directly in tests)
 import pytest
 from pydantic import ValidationError
 
-from liman_core.nodes.node import Node
+from liman_core.nodes.node.node import Node
 from liman_core.registry import Registry
 
 YAML_STYLE_1 = {
@@ -35,18 +34,18 @@ def registry() -> Registry:
     return Registry()
 
 
-def test_llmnode_parses_style_1(registry: Registry) -> None:
+def test_node_parses_style_1(registry: Registry) -> None:
     node = Node.from_dict(YAML_STYLE_1, registry)
     node.compile()
     assert node.spec.name == "BasicNode"
 
 
-def test_llmnode_parses_style_2(registry: Registry) -> None:
+def test_node_parses_style_2(registry: Registry) -> None:
     node = Node.from_dict(YAML_STYLE_2, registry)
     node.compile()
     assert node.spec.name == "BasicNode2"
 
 
-def test_llmnode_invalid_yaml_raises(registry: Registry) -> None:
+def test_node_invalid_yaml_raises(registry: Registry) -> None:
     with pytest.raises(ValidationError):
         Node.from_dict(INVALID_YAML, registry)

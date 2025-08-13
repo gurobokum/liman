@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from liman_core.nodes.llm_node import LLMNode
+from liman_core.nodes.llm_node.node import LLMNode
 from liman_core.registry import Registry
 
 # Example YAMLs as dicts (since we don't read files directly in tests)
