@@ -15,7 +15,7 @@ def create_tool_nodes(
     openapi_spec: OpenAPI,
     registry: Registry,
     prefix: str = "OpenAPI",
-    is_async: bool = False,
+    base_url: str | None = None,
 ) -> list[ToolNode]:
     """
     Generate ToolNode instances based on OpenAPI endpoints.
@@ -31,10 +31,17 @@ def create_tool_nodes(
     endpoints = parse_endpoints(spec_content)
     refs = parse_refs(spec_content)
 
-    base_url = None
-    servers = spec_content.get("servers", [])
-    if servers:
-        base_url = servers[0].get("url")
+    if not base_url:
+        servers = spec_content.get("servers", [])
+        if servers:
+            base_url = servers[0].get("url")
+
+    if not base_url:
+        raise ValueError(
+            "No base URL found in OpenAPI specification. "
+            "Please ensure the 'servers' section is defined "
+            "or pass a base_url argument."
+        )
 
     for endpoint in endpoints:
         name = f"{prefix}__{endpoint.operation_id}"
@@ -42,7 +49,7 @@ def create_tool_nodes(
             "kind": "ToolNode",
             "name": name,
             "description": endpoint.summary,
-            "arguments": endpoint.get_tool_arguments_spec(),
+            "arguments": endpoint.get_tool_arguments_spec(refs),
         }
 
         node = ToolNode.from_dict(decl, registry)

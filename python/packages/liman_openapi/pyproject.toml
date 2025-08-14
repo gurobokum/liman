@@ -22,6 +22,7 @@ dependencies = [
     "liman-core",
     "openapi-core>=0.19.5",
     "openapi-spec-validator>=0.7.2",
+    "ruamel-yaml>=0.18.14",
 ]
 
 [tool.hatch.version]
