@@ -97,3 +97,49 @@ class Registry:
         if self._components.get(key):
             raise LimanError(f"Node with key '{key}' already exists in the registry.")
         self._components[key] = node
+
+    def print_specs(self, initial: bool = False) -> None:
+        """
+        Print all registered components as YAML with --- separators, sorted by kind.
+
+        Args:
+            initial: If True, print initial data; otherwise, print validated specs.
+        """
+        if not self._components:
+            return
+
+        delim = "---"
+
+        # Group components by kind
+        components_by_kind: dict[str, list[Component[Any]]] = {}
+        for component in self._components.values():
+            kind = component.spec.kind
+            if kind not in components_by_kind:
+                components_by_kind[kind] = []
+            components_by_kind[kind].append(component)
+
+        # Sort components within each kind by name
+        for components in components_by_kind.values():
+            components.sort(key=lambda c: c.name)
+
+        # Print known kinds in order
+        kind_order = ["LLMNode", "ToolNode", "FunctionNode"]
+        first_component = True
+        for kind in kind_order:
+            if kind not in components_by_kind:
+                continue
+
+            for component in components_by_kind[kind]:
+                if not first_component:
+                    print(f"{delim}\n")
+                component.print_spec(initial=initial)
+                first_component = False
+
+        # Print remaining kinds (others) sorted alphabetically
+        remaining_kinds = sorted(k for k in components_by_kind if k not in kind_order)
+        for kind in remaining_kinds:
+            for component in components_by_kind[kind]:
+                if not first_component:
+                    print(f"{delim}\n")
+                component.print_spec(initial=initial)
+                first_component = False
