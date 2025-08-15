@@ -1,0 +1,200 @@
+---
+title: 1. Getting Started
+description: Build your first Liman AI agent step by step
+---
+
+## Overview
+
+This guide walks you through creating a Liman AI agent from scratch. You'll start with a simple LLM node and gradually add more features.
+
+## Step 1: Environment Setup
+
+### Prerequisites
+
+- Python 3.10 or higher
+- uv, poetry or pip
+
+### Create Your Project
+
+Initialize a Python project
+
+```bash tab="uv"
+uv init my-liman-agent
+```
+
+```bash tab="poetry"
+mkdir my-liman-agent
+cd my-liman-agent
+poetry init
+# or poetry new, but expect that directory structure will be different
+# poetry new my-liman-agent
+```
+
+```bash tab="pip"
+mkdir my-liman-agent
+```
+
+Go the project directory:
+
+```bash
+cd my-liman-agent
+```
+
+### Install Dependencies
+
+Add Liman dependencies to your project:
+
+```bash tab="uv"
+uv add liman langchain-openai
+```
+
+```bash tab="poetry"
+poetry add liman langchain-openai
+```
+
+```bash tab="pip"
+pip install liman langchain-openai
+```
+
+## Step 2: Create Your First LLM Node
+
+### Create Specs Directory
+
+Create a directory for your agent specifications:
+
+```bash title=" "
+mkdir specs
+```
+
+### Define Your LLM Node
+
+Create `specs/chat.yaml`:
+
+```yaml title="specs/chat.yaml"
+kind: LLMNode
+name: chat
+prompts:
+  system:
+    en: |
+      You are a helpful assistant.
+      Always be polite and provide clear answers.
+```
+
+This is the simplest possible LLM node:
+
+- **kind**: Specifies this is an LLM node
+- **name**: Unique identifier for the node
+- **prompts.system.en**: System prompt in English
+
+## Step 3: Create the Agent Application
+
+Create your main application file `main.py`:
+
+```python title="main.py"
+import asyncio
+
+from langchain_openai.chat_models import ChatOpenAI
+from liman.agent import Agent
+
+OPENAI_API_KEY = ""  # Replace with your OpenAI API key // [!code highlight]
+
+
+async def main():
+    # Create LangChain LLM model
+    llm = ChatOpenAI(
+        api_key=OPENAI_API_KEY,
+        model="gpt-4o",
+    )
+
+    # Define agent
+    # args:
+    #   - specs directory
+    #   - start_node: the node to start with
+    #   - llm: LangChain LLM model
+    agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
+    print("Agent ready! Type 'exit' to quit.")
+
+    # Simulate chat
+    while True:
+        user_input = input("\nYou: ")
+        if user_input.lower() == "exit":
+            break
+
+        response = await agent.step(user_input)
+        print(f"Agent: {response}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Step 4: Run Your Agent
+
+Run your first agent:
+
+```bash title=" "
+python main.py
+```
+
+You should see:
+
+```
+Agent ready! Type 'exit' to quit.
+
+You:
+```
+
+Try it out:
+
+```
+You: Hello, how are you?
+Agent: Hello! I'm just a computer program, so I don't have feelings, but I'm here and ready to help you. How can I assist you today?
+
+You: What's 2+2?
+Agent: 2 + 2 is 4.
+```
+
+## Understanding the Code
+
+Let's break down what happened:
+
+### Agent Initialization
+
+```python
+agent = Agent("./specs", start_node="LLMNode/chat", llm=get_llm())
+```
+
+- `"./specs"`: Directory containing your YAML specifications
+- `start_node="LLMNode/chat"`: Tells the agent to start with the `chat` LLM node
+- `llm=get_llm()`: Provides the language model to use, you can use any **LangChain**-compatible model
+
+### Agent Execution
+
+```python
+response = await agent.step(user_input)
+```
+
+The `step()` method:
+
+1. Takes your input
+2. Passes it to the LLM with the system prompt
+3. Returns the response
+4. Underneath it's smart enough and can pass through multiple nodes, parallelize execution, and handle complex workflows
+
+## Next Steps
+
+Congratulations! You've created your first Liman agent. Your project structure now looks like:
+
+import { File, Folder, Files } from "fumadocs-ui/components/files";
+
+<Files>
+  <Folder name="my-liman-agent" defaultOpen>
+    <Folder name="specs" defaultOpen>
+      <File name="chat.yaml" />
+    </Folder>
+    <File name="main.py" />
+    <File name="pyproject.toml (optional)" />
+  </Folder>
+</Files>
+
+Try modifying the system prompt in `specs/chat.yaml` and restart your agent to see how it changes behavior!

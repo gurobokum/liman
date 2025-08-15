@@ -1,0 +1,5 @@
+{
+  "title": "User Guide",
+  "defaultOpen": true,
+  "pages": ["getting-started", "..."]
+}
