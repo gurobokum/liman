@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a2...liman_py-v0.1.0-a3) (2025-08-15)
+
+
+### ✨ Features
+
+* **liman:** implement __str__ for ExecutorOutput ([eaccf58](https://github.com/gurobokum/liman/commit/eaccf584cf300967fa7cd86c50a4b11dc279014c))
+* **liman:** implement Agent class ([2233933](https://github.com/gurobokum/liman/commit/2233933b2bc5b0c4979d8a64a5964d3a4e70c462))
+* **liman:** implement loader ([8d607d0](https://github.com/gurobokum/liman/commit/8d607d04d02f858ba1a68faba79062a230daeac0))
+
+
+### 📚 Documentation
+
+* **liman:** update README.md ([dc622c7](https://github.com/gurobokum/liman/commit/dc622c7206d1505333f2db5f457206a66dca7b51))
+* **liman:** update README.md ([e4e3c33](https://github.com/gurobokum/liman/commit/e4e3c33007b9e7387f024fdd76d0e6f084fc3bb4))
+
 ## 0.1.0-a2 (2025-08-13)
 
 
