@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a1...liman_core_py-v0.1.0-a3) (2025-08-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **liman_core:** rework NodeActor
+
+### ✨ Features
+
+* **liman_core:** add full_name for nodes ([24c6038](https://github.com/gurobokum/liman/commit/24c60387857b70d7d97e761ae186e88c7563d384))
+* **liman_core:** add StateStorage design ([5c11ac6](https://github.com/gurobokum/liman/commit/5c11ac61e60147f349659362486cc285a315e16b))
+* **liman_core:** design Plugins system ([ef8bda2](https://github.com/gurobokum/liman/commit/ef8bda21a429d9a6ca91a9aacd4bb3d5320dcea7))
+* **liman_core:** implement ConditionalEvaluator ([36a3d46](https://github.com/gurobokum/liman/commit/36a3d46f41dde87ee6879290131a3d42fe7044bd))
+* **liman_core:** implement Executor ([e2529be](https://github.com/gurobokum/liman/commit/e2529be1bf82238c17ad2e2b795ba70aa4c2000b))
+* **liman_core:** implement NodeActor and Nodes states ([843cd62](https://github.com/gurobokum/liman/commit/843cd6207efb589d5f0ff0df775a31bd54ab6abb))
+* **liman_core:** implement ServiceAccount ([1e0613f](https://github.com/gurobokum/liman/commit/1e0613f79ba51519466873802ae3b5394a36b06b))
+* **liman_core:** provide implementation for ToolNode invoke/ainvoke ([3559731](https://github.com/gurobokum/liman/commit/355973168436d5890552be00130d4aa9870e76ef))
+* **liman_core:** support debug logging ([5707a15](https://github.com/gurobokum/liman/commit/5707a155f1c58a874d17359390dd9204f1342263))
+* **liman_core:** support object parameter type in ToolNode ([6af6f4a](https://github.com/gurobokum/liman/commit/6af6f4aec1c68c9ad316e39491728bbc52e0ddd6))
+* **liman_core:** support pathlib.Path as yaml_path ([374c367](https://github.com/gurobokum/liman/commit/374c3671082dbf47fc5b3aef81d754acd2e83131))
+* **liman_core:** support print_spec for whole registry ([41248ed](https://github.com/gurobokum/liman/commit/41248ed9e29f42d6a3ce340b980e2349b433762b))
+
+
+### 🐛 Bug Fixes
+
+* **liman_core:** add self.node on init in ToolNode ([bdc7d92](https://github.com/gurobokum/liman/commit/bdc7d92728c0335d39b354445843ef31d7fda91c))
+* **liman_core:** fix getting field name from spec of the auth plugin ([f3bab6e](https://github.com/gurobokum/liman/commit/f3bab6efe00e709bcd70c63080636a70c8a592e2))
+
+
+### 🛠 Code Refactoring
+
+* **liman_core, liman_openapi:** drop dishka di ([6be80ab](https://github.com/gurobokum/liman/commit/6be80ab6cda1bd55d64ae17019334cb05b4daee1))
+* **liman_core, liman_openapi:** move nodes into separated folder ([cdcdb9a](https://github.com/gurobokum/liman/commit/cdcdb9ae1e4a32ccbfd5152ae547a252ee452471))
+* **liman_core:** change state to status in NodeActor ([dc2e5f2](https://github.com/gurobokum/liman/commit/dc2e5f273e835d4568093082388109ed315b940a))
+* **liman_core:** create NodeOutput and Result types ([58022eb](https://github.com/gurobokum/liman/commit/58022ebe401537bf8473971b417e503accd40c7a))
+* **liman_core:** drop sync methods ([9026a7d](https://github.com/gurobokum/liman/commit/9026a7d74101ca41113c5d672d396199beb42396))
+* **liman_core:** extract Component from BaseNode ([5480cd9](https://github.com/gurobokum/liman/commit/5480cd92d1bea54542c649589762d0c36c52e998))
+* **liman_core:** merge AsyncNodeActor with NodeActor into single class ([5d92555](https://github.com/gurobokum/liman/commit/5d92555fca813ec3ebecbde21002932961798380))
+* **liman_core:** move auth to plugins ([f13a9c0](https://github.com/gurobokum/liman/commit/f13a9c02f58cadc987d45f3863594812b9554d80))
+* **liman_core:** raise InvalidSpecError on loading failed yaml structure ([35fa897](https://github.com/gurobokum/liman/commit/35fa8972dd9a25824ac3e1957c36fd5f6151cea6))
+* **liman_core:** remove executor ([d9fa66f](https://github.com/gurobokum/liman/commit/d9fa66f0e3e36460f7182a45d297aeec5e25df3a))
+* **liman_core:** rework NodeActor ([770bb27](https://github.com/gurobokum/liman/commit/770bb27e6ce5156cf38fd5f79cd28e8602a016c4))
+* **liman_core:** split node actors ([9f8a8da](https://github.com/gurobokum/liman/commit/9f8a8da3e75a036e1bced225343432dd68643926))
+
+
+### 📚 Documentation
+
+* add codecov badges for python code ([e2da9c4](https://github.com/gurobokum/liman/commit/e2da9c412bf58f6821cd5f1a0533a27f45e98f2f))
+* **liman_core:** update README.md ([0add60b](https://github.com/gurobokum/liman/commit/0add60b5fd68404c85149d075c9099ea402a3e93))
+
+
+### ♻️ Tests
+
+* **liman_core:** fix tests ([3f1cc14](https://github.com/gurobokum/liman/commit/3f1cc148a42fb66f18dba895dcaacd5dac4b094b))
+
 ## [0.1.0-a1](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a0...liman_core_py-v0.1.0-a1) (2025-08-03)
 
 
