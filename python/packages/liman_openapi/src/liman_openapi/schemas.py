@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal, NamedTuple, TypeAlias
+from typing import Annotated, Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -34,17 +34,26 @@ class Parameter(BaseModel):
         }
 
 
+ContentType = Literal["application/json", "text/plain", "text/html"]
+
+
 class RequestBodySchema(BaseModel):
-    content_type: str
+    content_type: ContentType
     type_: Annotated[ParameterType | None, Field(alias="type", default=None)]
-    ref: Annotated[str | None, Field(alias="$ref", default=None)]
+    ref: Annotated[str, Field(alias="$ref")]
     items: dict[str, str] | None = None
+
+
+class ParameterBodySchema(ParameterSchema):
+    content_type: ContentType
 
 
 class RequestBody(BaseModel):
     name: str
     required: bool = False
-    content: dict[str, dict[Literal["schema"], RequestBodySchema]]
+    content: dict[
+        ContentType, dict[Literal["schema"], RequestBodySchema | ParameterBodySchema]
+    ]
 
     @model_validator(mode="before")
     @classmethod
@@ -56,15 +65,14 @@ class RequestBody(BaseModel):
             if schema:
                 content[key] = {**value, "schema": {**schema, "content_type": key}}
                 component = schema.get("$ref")
-                if not component:
-                    raise ValueError(
-                        f"Only $ref is supported in request body schema, but got: {schema}"
-                    )
-                name = component.split("/")[-1]
+                if component:
+                    name = component.split("/")[-1]
+                    values["name"] = name
             else:
                 content[key] = {**value}
         values["content"] = content
-        values["name"] = name or values.get("name", "__request_body")
+        if not values.get("name"):
+            values["name"] = "__request_body__"
         return values
 
 
@@ -127,19 +135,18 @@ class Endpoint(BaseModel):
 
         if self.has_json_request_body and refs:
             ref_obj = self._get_request_body_ref_object(refs)
-            if ref_obj:
-                assert self.request_body is not None
-                arguments.append(
-                    {
-                        "name": ref_obj.name,
-                        "type": "object",
-                        "optional": self.request_body.required,
-                        "properties": [
-                            property_.get_tool_parameter_spec()
-                            for property_ in ref_obj.properties.values()
-                        ],
-                    }
-                )
+            assert self.request_body is not None
+            arguments.append(
+                {
+                    "name": ref_obj.name,
+                    "type": "object",
+                    "optional": self.request_body.required,
+                    "properties": [
+                        property_.get_tool_parameter_spec()
+                        for property_ in ref_obj.properties.values()
+                    ],
+                }
+            )
 
         return arguments if arguments else None
 
@@ -152,20 +159,20 @@ class Endpoint(BaseModel):
             and self.request_body.content["application/json"].get("schema") is not None
         )
 
-    def _get_request_body_ref_object(self, refs: dict[str, Ref]) -> Ref | None:
+    def _get_request_body_ref_object(self, refs: dict[str, Ref]) -> Ref:
         if not self.request_body or not self.request_body.content:
             raise ValueError("Request body is not defined or does not contain content.")
 
         json_content = self.request_body.content.get("application/json")
         if not json_content or not json_content.get("schema"):
-            return None
+            raise ValueError("Request body does not contain JSON schema.")
 
         schema = json_content["schema"]
-        if not schema.ref:
-            return None
+        if not isinstance(schema, RequestBodySchema):
+            raise ValueError("Request body schema doesnt have $ref")
 
         ref_name = schema.ref.split("/")[-1]
-        return refs.get(ref_name)
+        return refs[ref_name]
 
 
 class Property(BaseModel):

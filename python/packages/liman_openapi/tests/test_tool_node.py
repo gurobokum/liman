@@ -21,6 +21,7 @@ def test_create_tool_nodes_empty_spec(registry: Registry) -> None:
         "openapi": "3.0.0",
         "info": {"title": "Empty API", "version": "1.0.0"},
         "paths": {},
+        "servers": [{"url": "https://api.example.com"}],
     }
 
     with (
@@ -81,7 +82,9 @@ def test_create_tool_nodes_single_endpoint(
         mock_openapi = Mock()
         mock_openapi.spec.content.return_value = simple_openapi_schema
 
-        nodes = create_tool_nodes(mock_openapi, registry)
+        nodes = create_tool_nodes(
+            mock_openapi, registry, base_url="https://api.example.com"
+        )
 
         assert len(nodes) == 1
         assert nodes[0] == mock_node
@@ -140,7 +143,12 @@ def test_create_tool_nodes_custom_prefix(
         mock_openapi = Mock()
         mock_openapi.spec.content.return_value = simple_openapi_schema
 
-        nodes = create_tool_nodes(mock_openapi, registry, prefix="CustomAPI")
+        nodes = create_tool_nodes(
+            mock_openapi,
+            registry,
+            prefix="CustomAPI",
+            base_url="https://api.example.com",
+        )
 
         mock_from_dict.assert_called_once_with(
             {
@@ -300,7 +308,9 @@ def test_create_tool_nodes_no_parameters(registry: Registry) -> None:
         mock_openapi = Mock()
         mock_openapi.spec.content.return_value = {}
 
-        nodes = create_tool_nodes(mock_openapi, registry)
+        nodes = create_tool_nodes(
+            mock_openapi, registry, base_url="https://api.example.com"
+        )
 
         mock_from_dict.assert_called_once_with(
             {

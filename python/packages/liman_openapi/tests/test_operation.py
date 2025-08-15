@@ -90,6 +90,14 @@ def endpoint_with_request_body() -> Endpoint:
     )
 
 
+@pytest.fixture
+def mock_endpoint() -> Endpoint:
+    mock = Mock(spec=Endpoint)
+    mock.parameters = []
+    mock.request_body = None
+    return mock
+
+
 def test_operation_init(simple_endpoint: Endpoint) -> None:
     operation = OpenAPIOperation(simple_endpoint)
     assert operation.endpoint == simple_endpoint
@@ -150,7 +158,7 @@ def test_build_url_and_params_with_request_body(
     body_data = {"name": "John", "email": "john@example.com"}
 
     url, query_params, headers, json_data = operation._build_url_and_params(
-        body=body_data
+        __request_body__=body_data
     )
 
     assert url == "/users"
@@ -164,7 +172,9 @@ def test_build_url_and_params_missing_required_body(
 ) -> None:
     operation = OpenAPIOperation(endpoint_with_request_body)
 
-    with pytest.raises(ValueError, match="Required request body is missing: 'body'"):
+    with pytest.raises(
+        ValueError, match="Required request body is missing: '__request_body__'"
+    ):
         operation._build_url_and_params()
 
 
@@ -204,77 +214,78 @@ def test_build_url_and_params_header_parameter() -> None:
     assert json_data is None
 
 
-def test_parse_response_json() -> None:
+def test_parse_response_json(mock_endpoint: Endpoint) -> None:
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {"content-type": "application/json"}
     mock_response.json.return_value = {"id": "123", "name": "John"}
+    mock_response.parameters = []
 
-    operation = OpenAPIOperation(Mock())
+    operation = OpenAPIOperation(mock_endpoint)
     result = operation._parse_response(mock_response)
 
     assert result == {"id": "123", "name": "John"}
     mock_response.json.assert_called_once()
 
 
-def test_parse_response_text() -> None:
+def test_parse_response_text(mock_endpoint: Endpoint) -> None:
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {"content-type": "text/plain"}
     mock_response.text = "Hello World"
 
-    operation = OpenAPIOperation(Mock())
+    operation = OpenAPIOperation(mock_endpoint)
     result = operation._parse_response(mock_response)
 
     assert result == "Hello World"
 
 
-def test_parse_response_image() -> None:
+def test_parse_response_image(mock_endpoint: Endpoint) -> None:
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {"content-type": "image/png"}
     mock_response.content = b"fake_image_data"
 
-    operation = OpenAPIOperation(Mock())
+    operation = OpenAPIOperation(mock_endpoint)
     result = operation._parse_response(mock_response)
 
     assert result == b"fake_image_data"
 
 
-def test_parse_response_octet_stream() -> None:
+def test_parse_response_octet_stream(mock_endpoint: Endpoint) -> None:
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {"content-type": "application/octet-stream"}
     mock_response.content = b"binary_data"
 
-    operation = OpenAPIOperation(Mock())
+    operation = OpenAPIOperation(mock_endpoint)
     result = operation._parse_response(mock_response)
 
     assert result == b"binary_data"
 
 
-def test_parse_response_unsupported_content_type() -> None:
+def test_parse_response_unsupported_content_type(mock_endpoint: Endpoint) -> None:
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {"content-type": "application/xml"}
 
-    operation = OpenAPIOperation(Mock())
+    operation = OpenAPIOperation(mock_endpoint)
 
     with pytest.raises(ValueError, match="Unsupported content type: application/xml"):
         operation._parse_response(mock_response)
 
 
-def test_parse_response_missing_content_type() -> None:
+def test_parse_response_missing_content_type(mock_endpoint: Endpoint) -> None:
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {}
 
-    operation = OpenAPIOperation(Mock())
+    operation = OpenAPIOperation(mock_endpoint)
 
     with pytest.raises(ValueError, match="Unsupported content type: "):
         operation._parse_response(mock_response)
 
 
-@patch("liman_openapi.operation.httpx.Client")
-def test_sync_request_success(
-    mock_client_class: Mock, simple_endpoint: Endpoint
+@patch("liman_openapi.operation.httpx.AsyncClient")
+async def test_request_success(
+    mock_client_class: AsyncMock, simple_endpoint: Endpoint
 ) -> None:
-    mock_client = Mock()
-    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client = AsyncMock()
+    mock_client_class.return_value.__aenter__.return_value = mock_client
 
     mock_response = Mock(spec=httpx.Response)
     mock_response.headers = {"content-type": "application/json"}
@@ -282,7 +293,7 @@ def test_sync_request_success(
     mock_client.request.return_value = mock_response
 
     operation = OpenAPIOperation(simple_endpoint, base_url="https://api.example.com")
-    result = operation._sync_request(user_id="123")
+    result = await operation._request(user_id="123")
 
     assert result == {"id": "123"}
     mock_client.request.assert_called_once_with(
@@ -290,14 +301,15 @@ def test_sync_request_success(
     )
 
 
-@patch("liman_openapi.operation.httpx.Client")
-def test_sync_request_http_error(
-    mock_client_class: Mock, simple_endpoint: Endpoint
+@patch("liman_openapi.operation.httpx.AsyncClient")
+async def test_request_http_error(
+    mock_client_class: AsyncMock, simple_endpoint: Endpoint
 ) -> None:
-    mock_client = Mock()
-    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client = AsyncMock()
+    mock_client_class.return_value.__aenter__.return_value = mock_client
 
     mock_response = Mock(spec=httpx.Response)
+    mock_response.headers = {"content-type": "application/json"}
     mock_response.status_code = 404
     mock_response.text = "Not found"
 
@@ -309,15 +321,26 @@ def test_sync_request_http_error(
     operation = OpenAPIOperation(simple_endpoint)
 
     with pytest.raises(RuntimeError, match="HTTP error occurred: 404 Not found"):
-        operation._sync_request(user_id="123")
+        await operation._request(user_id="123")
 
 
-@patch("liman_openapi.operation.httpx.Client")
-def test_sync_request_request_error(
+async def test_request(simple_endpoint: Endpoint) -> None:
+    operation = OpenAPIOperation(simple_endpoint)
+
+    with patch.object(operation, "_request") as mock_request:
+        mock_request.return_value = {"result": "success"}
+        result = await operation(user_id="123")
+
+        assert result == {"result": "success"}
+        mock_request.assert_called_once_with(user_id="123")
+
+
+@patch("liman_openapi.operation.httpx.AsyncClient")
+async def test_request_error(
     mock_client_class: Mock, simple_endpoint: Endpoint
 ) -> None:
     mock_client = Mock()
-    mock_client_class.return_value.__enter__.return_value = mock_client
+    mock_client_class.return_value.__aenter__.return_value = mock_client
 
     request_error = httpx.RequestError("Connection failed")
     mock_client.request.side_effect = request_error
@@ -325,48 +348,4 @@ def test_sync_request_request_error(
     operation = OpenAPIOperation(simple_endpoint)
 
     with pytest.raises(RuntimeError, match="Request error occurred: Connection failed"):
-        operation._sync_request(user_id="123")
-
-
-@patch("liman_openapi.operation.httpx.AsyncClient")
-@pytest.mark.asyncio
-async def test_async_request_success(
-    mock_client_class: Mock, simple_endpoint: Endpoint
-) -> None:
-    mock_client = AsyncMock()
-    mock_client_class.return_value.__aenter__.return_value = mock_client
-
-    mock_response = Mock(spec=httpx.Response)
-    mock_response.headers = {"content-type": "application/json"}
-    mock_response.json.return_value = {"id": "123"}
-    mock_client.request.return_value = mock_response
-
-    operation = OpenAPIOperation(simple_endpoint, base_url="https://api.example.com")
-    result = await operation._async_request(user_id="123")
-
-    assert result == {"id": "123"}
-    mock_client.request.assert_called_once_with(
-        "GET", "https://api.example.com/users/123", params=None, headers={}, json=None
-    )
-
-
-def test_call_sync(simple_endpoint: Endpoint) -> None:
-    operation = OpenAPIOperation(simple_endpoint)
-
-    with patch.object(operation, "_sync_request") as mock_sync:
-        mock_sync.return_value = {"result": "success"}
-        result = operation(user_id="123", is_async=False)
-
-        assert result == {"result": "success"}
-        mock_sync.assert_called_once_with(user_id="123")
-
-
-async def test_call_async(simple_endpoint: Endpoint) -> None:
-    operation = OpenAPIOperation(simple_endpoint)
-
-    with patch.object(operation, "_async_request") as mock_async:
-        mock_async.return_value = {"result": "success"}
-        result = await operation(user_id="123", is_async=True)
-
-        assert result == {"result": "success"}
-        mock_async.assert_called_once_with(user_id="123")
+        await operation._request(user_id="123")
