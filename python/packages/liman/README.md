@@ -50,7 +50,6 @@ prompts:
 from langchain_openai.chat_models import ChatOpenAI
 from liman import Agent, Registry, load_specs_from_directory
 
-# Load node specifications from YAML files
 llm = ChatOpenAI(model="gpt-4o")
 
 # Create conversational agent
@@ -60,7 +59,7 @@ agent = Agent(
     llm=llm,  # Langchain LLM instance
 )
 
-respones = agent.step("How can I help you?"):
+respones = agent.step("Hello! Can you help me with a math problem?")
 print(response)
 ```
 
