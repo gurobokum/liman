@@ -488,10 +488,16 @@ name = "liman"
 source = { editable = "packages/liman" }
 dependencies = [
     { name = "langchain-core" },
+    { name = "liman-openapi" },
+    { name = "ruamel-yaml" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "langchain-core", specifier = ">=0.3.67" }]
+requires-dist = [
+    { name = "langchain-core", specifier = ">=0.3.67" },
+    { name = "liman-openapi", editable = "packages/liman_openapi" },
+    { name = "ruamel-yaml", specifier = ">=0.18.14" },
+]
 
 [[package]]
 name = "liman-core"
@@ -547,6 +553,7 @@ dependencies = [
     { name = "liman-core" },
     { name = "openapi-core" },
     { name = "openapi-spec-validator" },
+    { name = "ruamel-yaml" },
 ]
 
 [package.metadata]
@@ -555,6 +562,7 @@ requires-dist = [
     { name = "liman-core", editable = "packages/liman_core" },
     { name = "openapi-core", specifier = ">=0.19.5" },
     { name = "openapi-spec-validator", specifier = ">=0.7.2" },
+    { name = "ruamel-yaml", specifier = ">=0.18.14" },
 ]
 
 [[package]]

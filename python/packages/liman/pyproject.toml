@@ -19,6 +19,8 @@ classifiers = [
 ]
 dependencies = [
     "langchain-core>=0.3.67",
+    "liman-openapi",
+    "ruamel-yaml>=0.18.14",
 ]
 
 [tool.hatch.version]
@@ -26,6 +28,7 @@ path = "src/liman/__init__.py"
 
 [tool.uv.sources]
 liman_core = { workspace = true }
+liman-openapi = { workspace = true }
 
 [tool.poe]
 include = "../../shared_poe.toml"
