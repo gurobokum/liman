@@ -2,56 +2,22 @@
 
 [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_core)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_core)
 
-Core library of the Liman framework providing low-level building blocks for declarative YAML-based agent workflows with custom DSL.
+Core library for **Liman** - a declarative YAML-based agent framework with custom DSL for building AI workflows.
 
-## Features
+## What is it?
 
-- **Declarative YAML Configuration**: Define agents using simple YAML manifests
-- **Multi-language Support**: Built-in localization for prompts and descriptions
-- **Node-based Architecture**: Compose workflows from LLM, Tool, and custom nodes
-- **Edge DSL**: Connect nodes with conditional expressions and function references
+Liman Core provides **low-level building blocks** for creating AI agents through YAML manifests.  
+This repo introduces a **Node** and **NodeActor** architecture for defining and executing agent workflows.  
+**Nodes** are stateless specifications that store configuration, while **NodeActors** are stateful instances that execute specific nodes. Use these components to build your own orchestration system or use the built-in one in [liman](../liman).
 
-## Node Types
+## Key Features
 
-### LLMNode
-
-Wraps LLM requests with system prompts and tool integration.
-
-```yaml
-kind: LLMNode
-name: assistant
-prompts:
-  system:
-    en: |
-      You are a helpful assistant.
-    es: |
-      Eres un asistente útil.
-tools:
-  - calculator
-nodes:
-  - target: analyzer
-    when: "result == 'success'"
-  - target: error_handler
-    when: "result != 'success' and retry_count < 3"
-```
-
-### ToolNode
-
-Defines function calls for LLM tool integration.
-
-```yaml
-kind: ToolNode
-name: calculator
-description:
-  en: |
-    Performs mathematical calculations
-func: my_module.calculate
-arguments:
-  - name: expression
-    type: str
-    description:
-      en: Mathematical expression to evaluate
-```
+- **YAML-First**: Define entire agent workflows in declarative YAML
+- **Node Architecture**: LLM, Tool, Function, and custom nodes with automatic composition
+- **Edge DSL**: Smart conditional routing between nodes with custom expressions
+- **Multi-Language**: Built-in localization for prompts and descriptions
+- **Plugin System**: Extensible architecture with authentication, telemetry, and custom plugins
+- **NodeActor**: Async execution engine with state management and error handling
 
 ## Installation
 
@@ -59,64 +25,92 @@ arguments:
 pip install liman_core
 ```
 
-## Quick Start
+Requires Python 3.10+
+
+## Quick Example
 
 ```python
-from liman_core import LLMNode, ToolNode
+from liman_core import LLMNode, ToolNode, NodeActor, Registry
 
-# Load from YAML
-llm_node = LLMNode.from_yaml_path("agent.yaml")
+# Initialize registry
+registry = Registry()
 
-# Create from dict
+# Create tool
 tool_spec = {
     "kind": "ToolNode",
     "name": "calculator",
-    "description": {"en": "Math tool"},
-    "func": "math.sqrt"
+    "func": "math.sqrt",
+    "description": {"en": "Calculate square root"}
 }
-tool_node = ToolNode.from_dict(tool_spec)
+tool = ToolNode.from_dict(tool_spec, registry)
 
-# Compile and invoke
-llm_node.compile()
-result = llm_node.invoke("What is the square root of 16?")
+# Create LLM node with tool
+llm_spec = {
+    "kind": "LLMNode",
+    "name": "assistant",
+    "tools": ["calculator"],
+    "prompts": {"system": {"en": "You are a math assistant"}}
+}
+llm_node = LLMNode.from_dict(llm_spec, registry)
+
+# Execute with NodeActor
+actor = NodeActor.create(llm_node, llm=your_llm_instance)
+result = await actor.execute("What's the square root of 16?", execution_id)
 ```
 
-## Edge DSL
+## Core Components
 
-Connect nodes using the custom DSL for conditional execution:
+### Nodes (Stateless Specifications)
+
+- **LLMNode**: LLM requests with system prompts and tool integration
+- **ToolNode**: Function definitions for LLM tool calling
+- **FunctionNode**: Custom Python functions
+
+Nodes are building blocks that store configuration and behavior but contain no execution state.
+
+### NodeActor (Stateful Execution)
+
+Stateful execution engine that wraps a specific node, handles state management, and executes async operations with error handling and recovery.
+
+### Edge DSL
 
 ```yaml
 nodes:
-  # Simple target reference
-  - analyzer
-
-  # Conditional execution with variables
   - target: success_handler
-    when: "status == 'complete' and errors == 0"
-
-  # Logical operators
-  - target: retry_handler
-    when: "failed and (retry_count < 3 or critical == true)"
-
-  # Function reference for complex logic
-  - target: custom_validator
-    when: "validators.check_output"
+    when: "status == 'complete' and retry_count < 3"
+  - target: error_handler
+    when: "failed and critical == true"
 ```
 
-**Supported DSL features:**
+### Registry & Plugins
 
-- **Constants**: `true`, `false`, numbers, strings
-- **Comparisons**: `==`, `!=`, `>`, `<`
-- **Logical operators**: `and`/`&&`, `or`/`||`, `not`/`!`
-- **Function references**: `module.function` for custom logic
-- **Parentheses**: For expression grouping
+Central component registry with extensible plugin system for auth, telemetry, and custom functionality.
 
-## API Reference
+## Architecture
 
-All nodes inherit from `BaseNode` and provide:
+```
+Registry → Node (stateless) → NodeActor (stateful) → Execution
+    ↓           ↓                    ↓
+ Plugins    Spec Config        State Management
+```
 
-- `.from_dict()` - Create from dictionary
-- `.from_yaml_path()` - Load from YAML file
-- `.compile()` - Prepare node for execution
-- `.invoke()` / `.ainvoke()` - Synchronous/asynchronous execution
-- `.print_spec()` - Display formatted specification
+Use `.print_spec()` on any node to inspect its YAML specification.
+
+## Development
+
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run tests
+poe test
+
+# Type checking
+poe mypy
+
+# Linting
+poe lint
+
+# Formatting
+poe format
+```
