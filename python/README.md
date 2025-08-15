@@ -1,16 +1,10 @@
-# Liman
+# Liman Python
 
-## Development
+Python monorepo with multiple packages for building AI agents.
 
-- Install [protoc](https://protobuf.dev/installation/)
-- ```bash
-  poe protoc
-  ```
+## Packages
 
-```bash
-poe -C package_path format
-
-poe -C package_path lint
-poe -C package_path test
-poe -C package_path mypy
-```
+- [**liman**](packages/liman): Main package with agent orchestration and executor - use as entry point
+- [**liman_core**](packages/liman_core): Core library with nodes and YAML processing
+- [**liman_finops**](packages/liman_finops): OpenTelemetry instrumentation and cost tracking
+- [**liman_openapi**](packages/liman_openapi): OpenAPI to ToolNode generation
