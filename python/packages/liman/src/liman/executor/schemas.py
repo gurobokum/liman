@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Any
 from uuid import UUID
 
+from langchain_core.messages import BaseMessage
 from pydantic import BaseModel
 
 
@@ -34,6 +35,19 @@ class ExecutorOutput(BaseModel):
 
     error: str | None = None
     error_type: str | None = None
+
+    def __str__(self) -> str:
+        if isinstance(self.node_output, str):
+            return self.node_output
+
+        elif isinstance(self.node_output, BaseMessage):
+            content = self.node_output.content
+
+            if isinstance(content, list):
+                return "\n".join([str(item) for item in content])
+            return content
+
+        return str(self.node_output)
 
 
 class ExecutorState(BaseModel):
