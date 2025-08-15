@@ -7,7 +7,7 @@
 
 Declarative framework for building composable AI agents using YAML manifests and node-based architecture.
 
-> ⚠️ **Warning:** This project is in active development and not ready for production use.
+> ⚠️ **Warning:** This project is in early development phase and not ready for production use.
 
 ## Features
 
@@ -17,7 +17,69 @@ Declarative framework for building composable AI agents using YAML manifests and
 - **Edge DSL**: Connect nodes with conditional expressions and function references
 - **OpenAPI Integration**: Auto-generate tools from OpenAPI specifications
 - **Built-in Observability**: OpenTelemetry support with FinOps tracking
-- **Multi-runtime**: Python implementation (Go planned)
+- **Multi-runtime**: Python implementation (TS, Go planned)
+
+## Quick Start (python)
+
+```bash
+pip install liman
+```
+
+Create agent specifications in YAML:
+
+```yaml
+# agents/assistant.yaml
+kind: LLMNode
+name: assistant
+description: A conversational AI assistant
+prompts:
+  system: You are a helpful assistant that can check weather.
+tools:
+  - get_weather
+```
+
+```yaml
+# agents/get_weather_tool.yaml
+kind: ToolNode
+name: get_weather
+description:
+  en: Get current weather information for a city
+func: weather.get_current_weather
+arguments:
+  - name: city
+    type: str
+    description:
+      en: Name of the city to get weather for
+```
+
+Create a Python function for the tool:
+
+```python
+# weather.py
+def get_current_weather(city: str) -> str:
+    """Get weather information for a city."""
+    # Your weather API logic here
+    return f"The weather in {city} is sunny, 22°C"
+```
+
+Run the agent:
+
+```python
+# main.py
+from langchain_openai.chat_models import ChatOpenAI
+from liman import Agent
+
+llm = ChatOpenAI(model="gpt-4o")
+
+agent = Agent(
+    "./agents",  # directory with YAML specs
+    start_node="assistant",
+    llm=llm
+)
+
+response = agent.step("What's the weather like in London?")
+print(response)
+```
 
 ## Architecture
 
@@ -25,39 +87,31 @@ Liman represents AI agents as graphs of interconnected nodes, similar to Kuberne
 
 - **LLMNode**: Wraps LLM requests with system prompts and tool integration
 - **ToolNode**: Defines function calls for LLM tool integration
-- **Node**: Custom logic nodes for complex workflows
+- **FunctionNode**: Custom logic nodes for complex workflows
 - **Edges**: Connect nodes with conditional execution using custom DSL
 
-## Example
+## Edge DSL
+
+Liman includes a custom Domain Specific Language (DSL) that defines the logic of executing agents through conditional expressions in node edges. The DSL supports:
+
+### Examples
 
 ```yaml
-kind: LLMNode
-name: assistant
-prompts:
-  system:
-    en: You are a helpful assistant.
-    es: Eres un asistente útil.
-tools:
-  - calculator
 nodes:
-  - target: analyzer
-    when: result == "success"
----
-kind: ToolNode
-name: calculator
-description:
-  en: Performs mathematical calculations
-func: my_module.calculate
-arguments:
-  - name: expression
-    type: str
-    description:
-      en: Mathematical expression to evaluate
----
-kind: Node
-name: analyzer
-func: my_module.analyze
+  # Simple condition
+  - target: success_handler
+    when: status == 'complete'
+
+  # Complex logical expression
+  - target: retry_handler
+    when: (status == 'failed' && retry_count < 3) || priority == 'high'
+
+  # Function reference
+  - target: custom_handler
+    when: utils.should_process
 ```
+
+The DSL expressions are parsed at runtime and evaluated against the current execution context.
 
 ## Python
 
