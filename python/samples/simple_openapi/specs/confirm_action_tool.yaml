@@ -1,0 +1,19 @@
+kind: ToolNode
+name: confirm_action
+description: |
+  You need to call this function on any destructive action like deleting a user or any updates
+  this function will ask for confirmation from the user before proceeding with the action.
+func: main.confirm_destructive_action
+arguments:
+  - name: user_id
+    type: number
+    description: id of the user to confirm action for
+  - name: action
+    type: string
+    description: The action to confirm, e.g., "delete user"
+  - name: title
+    type: string
+    description: The title of the confirmation dialog with all needful info
+triggers:
+  - please update the user
+  - please delete the user
