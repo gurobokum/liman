@@ -1,4 +1,8 @@
-from typing import Any, TypedDict
+from __future__ import annotations
+
+from typing import Annotated, Any, TypedDict, cast
+
+from pydantic import Field
 
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import (
@@ -7,20 +11,22 @@ from liman_core.languages import (
     flatten_dict,
     get_localized_value,
 )
-from liman_core.nodes.tool_node.schemas import ToolArgument
+from liman_core.nodes.tool_node.schemas import ToolArgument, ToolObjectArgument
 
 
-class ToolArgumentJSONSchema(TypedDict):
+class ToolArgumentJSONSchema(TypedDict, total=False):
     """
     TypedDict for JSON Schema representation of a tool argument.
     """
 
-    type: str
-    description: str
+    type: str | None
+    any_of: Annotated[list[dict[str, Any]], Field(alias="anyOf")] | None
+    description: str | None
+    properties: dict[str, ToolArgumentJSONSchema] | None
 
 
 def tool_arg_to_jsonschema(
-    spec: ToolArgument,
+    spec: ToolArgument | ToolObjectArgument,
     default_lang: LanguageCode,
     fallback_lang: LanguageCode,
 ) -> dict[str, ToolArgumentJSONSchema]:
@@ -28,7 +34,7 @@ def tool_arg_to_jsonschema(
     Convert a tool specification to JSON Schema format.
 
     Args:
-        spec (ToolArgument): The tool specification model.
+        spec (ToolArgument | ToolObjectArgument): The tool specification model.
 
     Returns:
         dict[str, Any]: The JSON Schema representation of the tool specification.
@@ -36,7 +42,10 @@ def tool_arg_to_jsonschema(
     name = spec.name
     try:
         desc_bundle = spec.description
-        desc = get_localized_value(desc_bundle, default_lang, fallback_lang)
+        if desc_bundle:
+            desc = get_localized_value(desc_bundle, default_lang, fallback_lang)
+        else:
+            desc = ""
     except LocalizationError as e:
         raise InvalidSpecError(f"Invalid description in tool specification: {e}") from e
 
@@ -49,7 +58,29 @@ def tool_arg_to_jsonschema(
             f"Invalid description type in tool specification: {type(desc).__name__}"
         )
 
-    type_ = spec.type
+    type_ = get_tool_arg_type(spec.type)
+    params: ToolArgumentJSONSchema = {"description": desc_str}
+
+    if isinstance(type_, list):
+        params["any_of"] = [{"type": t} for t in type_]
+    else:
+        params["type"] = type_
+
+    if isinstance(spec, ToolObjectArgument):
+        properties = {}
+        for property_ in spec.properties or []:
+            properties.update(
+                tool_arg_to_jsonschema(property_, default_lang, fallback_lang)
+            )
+        params["properties"] = properties
+
+    return {name: params}
+
+
+def get_tool_arg_type(type_: str | list[str]) -> str | list[str]:
+    if isinstance(type_, list):
+        return cast(list[str], [get_tool_arg_type(t) for t in type_])
+
     match type_:
         case "string" | "number" | "boolean":
             # For primitive types, we can directly use the type as a string
@@ -65,13 +96,12 @@ def tool_arg_to_jsonschema(
         case "bool":
             type_ = "boolean"
         case "object":
-            raise NotImplementedError("Object type is not supported yet.")
+            type_ = "object"
         case "array":
             raise NotImplementedError("Array type is not supported yet.")
         case _:
             raise InvalidSpecError(f"Unsupported type in tool specification: {type_}")
-
-    return {name: ToolArgumentJSONSchema(description=desc_str, type=type_)}
+    return type_
 
 
 def noop(*args: Any, **kwargs: Any) -> None:

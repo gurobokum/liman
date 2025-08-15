@@ -143,7 +143,11 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         call_args = self._extract_function_args(tool_call.args)
 
         try:
-            if asyncio.iscoroutinefunction(func):
+            if asyncio.iscoroutinefunction(func) or (
+                callable(func)
+                and not inspect.isfunction(func)
+                and asyncio.iscoroutinefunction(getattr(func, "__call__", None))
+            ):
                 result = await func(**call_args)
             else:
                 result = func(**call_args)
@@ -213,6 +217,8 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
             return noop
 
     def get_tool_description(self, lang: LanguageCode) -> str:
+        if not self.spec.description:
+            return ""
         template = self._get_tool_prompt_template(lang)
 
         description = self.spec.description.get(lang) or self.spec.description.get(
@@ -240,15 +246,18 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         if lang is None:
             lang = self.default_lang
 
-        desc = self.spec.description.get(lang)
-        if not desc:
-            # Fallback to the default language if the specified language is not available
-            desc = self.spec.description.get(self.fallback_lang)
+        if self.spec.description:
+            desc = self.spec.description.get(lang)
             if not desc:
-                raise InvalidSpecError("Spec doesn't have a description.")
-        if isinstance(desc, dict):
-            # Flatten the description dictionary if it contains nested structures
-            desc = flatten_dict(desc)
+                # Fallback to the default language if the specified language is not available
+                desc = self.spec.description.get(self.fallback_lang)
+                if not desc:
+                    raise InvalidSpecError("Spec doesn't have a description.")
+            if isinstance(desc, dict):
+                # Flatten the description dictionary if it contains nested structures
+                desc = flatten_dict(desc)
+        else:
+            desc = ""
 
         args = [
             tool_arg_to_jsonschema(arg, self.default_lang, self.fallback_lang)

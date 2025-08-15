@@ -11,18 +11,26 @@ from liman_core.nodes.base.schemas import NodeState
 
 class ToolArgument(BaseModel):
     name: str
-    type: str
-    description: LocalizedValue
+    type: str | list[str]
+    description: LocalizedValue | None = None
     optional: bool = False
+
+
+class ToolObjectArgument(BaseModel):
+    name: str
+    type: str
+    description: LocalizedValue | None = None
+    optional: bool = False
+    properties: list[ToolArgument] | None = None
 
 
 class ToolNodeSpec(BaseSpec):
     kind: Literal["ToolNode"] = "ToolNode"
     name: str
-    description: LocalizedValue
+    description: LocalizedValue | None = None
 
     func: str | None = None
-    arguments: list[ToolArgument] | None = None
+    arguments: list[ToolArgument] | list[ToolObjectArgument] | None = None
     triggers: list[LocalizedValue] | None = None
     tool_prompt_template: LocalizedValue | None = None
     llm_nodes: list[EdgeSpec] = []

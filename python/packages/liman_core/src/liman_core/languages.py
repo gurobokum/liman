@@ -84,6 +84,9 @@ def normalize_dict(
       - Accumulate the full key path to place values in the final structure under the correct lang.
       - Treat non-language values as belonging to a default language (e.g. "en").
     """
+    if not data:
+        return {default_lang: ""}
+
     result: dict[LanguageCode, dict[str, Any] | str] = {}
 
     stack: list[tuple[LanguageCode | None, str, Any, list[str]]]

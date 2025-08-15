@@ -15,6 +15,7 @@ def test_tool_node_minimal(simple_decl: dict[str, Any], registry: Registry) -> N
     node = ToolNode.from_dict(simple_decl, registry)
     assert node.name == "test_tool"
     assert node.spec.kind == "ToolNode"
+    assert node.spec.description
     assert node.spec.description["en"] == "Test tool description."
 
 

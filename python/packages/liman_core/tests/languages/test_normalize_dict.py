@@ -61,4 +61,4 @@ def test_normalize_dict_multiple_levels() -> None:
 
 
 def test_normalize_dict_empty() -> None:
-    assert dict() == normalize_dict({})
+    assert normalize_dict({}) == {"en": ""}
