@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +7,8 @@ from liman_core.errors import InvalidSpecError, LimanError
 from liman_core.nodes.supported_types import get_node_cls
 from liman_core.registry import Registry
 from ruamel.yaml import YAML
+
+logger = logging.getLogger(__name__)
 
 
 class YamlLoaderError(LimanError):
@@ -65,9 +68,9 @@ def load_specs_from_directory(
             errors.append(error_msg)
 
     if errors and not strict:
-        print(f"Warning: {len(errors)} files failed to load:")
+        logger.warning(f"Warning: {len(errors)} files failed to load:")
         for error in errors:
-            print(f"  - {error}")
+            logger.warning(f"  - {error}")
 
     return nodes
 
@@ -124,9 +127,9 @@ def _load_nodes_from_yaml(
             errors.append(error_msg)
 
     if errors and not strict:
-        print(f"Warning: {len(errors)} documents failed to load from {yaml_file}:")
+        logger.warning(f"{len(errors)} documents failed to load from {yaml_file}:")
         for error in errors:
-            print(f"  - {error}")
+            logger.warning(f"  - {error}")
 
     return nodes
 
