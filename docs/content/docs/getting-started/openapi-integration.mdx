@@ -1,0 +1,221 @@
+---
+title: 3. OpenAPI Integration
+description: Automatically generate tools from OpenAPI specifications
+---
+
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+## Overview
+
+Liman can automatically generate tools from OpenAPI specifications. This means your existing REST APIs become agent tools without writing custom code.
+
+This builds on the [Adding Custom Tools](/docs/getting-started/adding-tools) guide.
+
+<Steps>
+  <Step>
+    ## Step 1: Create a Test API
+    First, install **FastAPI**:
+
+    ```bash tab="uv"
+    uv add "fastapi[standard]"
+    ```
+
+    Create `server.py` with a simple user management API:
+
+    ```python title="server.py"
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+
+    app = FastAPI(title="User Management API", version="1.0.0")
+
+    class User(BaseModel):
+        id: str
+        name: str
+        email: str
+
+    # Mock data
+    users = {
+        "1": {"id": "1", "name": "Alice", "email": "alice@example.com"},
+        "2": {"id": "2", "name": "Bob", "email": "bob@example.com"},
+    }
+
+    @app.get("/users/{user_name}", response_model=User, operation_id="get_user")
+    def get_user(user_name: str):
+        """Get a user by their name"""
+        for user in users.values():
+            if user["name"].lower() == user_name.lower():
+                return User.model_validate(user)
+
+        raise HTTPException(status_code=404, detail=f"User {user_name} not found")
+
+    ```
+
+  </Step>
+  <Step>
+    ## Step 2: Start Your API
+
+    Start the server:
+
+    ```bash
+    fastapi run server.py
+    ```
+
+    Visit [http://localhost:8000/docs](http://localhost:8000/docs) to see the auto-generated OpenAPI spec.
+
+  </Step>
+  <Step>
+    ## Step 3: Install `liman-openapi` Package
+
+    ```bash tab="uv"
+    uv add liman-openapi
+    ```
+
+    ```bash tab="poetry"
+    poetry add liman-openapi
+    ```
+
+    ```bash tab="pip"
+    pip install liman-openapi
+    ```
+
+  </Step>
+  <Step>
+    ## Step 4: Create ToolNodes from OpenAPI
+
+    Update your `main.py`:
+
+    ```python title="main.py"
+    from liman.agent import Agent
+    from liman_openapi import create_tool_nodes, load_openapi
+    ...
+
+    async def main():
+        agent = Agent("./specs", start_node="LLMNode/chat", llm=get_llm())
+        openapi = load_openapi("http://localhost:8000/openapi.json")  # [!code ++]
+        create_tool_nodes(openapi, agent.registry, base_url="http://localhost:8000")  # [!code ++]
+
+        ...
+
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+
+  </Step>
+  <Step>
+    ## Step 5: Add Tool to LLMNode
+
+    Update `specs/chat.yaml`:
+
+    ```yaml title="specs/chat.yaml"
+    kind: LLMNode
+    name: chat
+    prompts:
+      system:
+        en: |
+          You are a helpful assistant.
+          Always be polite and provide clear answers.
+    tools:
+      - get_user_by_name  # [!code --]
+      - OpenAPI__get_user # [!code ++]
+    ```
+    <Accordions type="single">
+      <Accordion title="Behind the scene">
+        <div>
+          Liman automatically generates a tool for each OpenAPI endpoint.
+          The tool name is prefixed with `OpenAPI__` to avoid conflicts with custom tools, but you can change it with the `prefix` argument of `create_tool_nodes`.
+          ```python
+          create_tool_nodes(
+            openapi,
+            agent.registry,
+            base_url="http://localhost:8000",
+            prefix="MyAPI"  # [!code ++]
+          )
+          ```
+          The full tool name is generated as `{prefix}__{operationId}`.
+
+          If you print the spec of your generated ToolNode:
+          ```python
+          from liman_core import ToolNode
+          ...
+          def main():
+              ...
+              node = agent.registry.lookup(ToolNode, "OpenAPI__get_user")
+              node.compile()
+              node.print_spec()
+          ```
+          You will see the Liman-generated spec:
+          ```yaml
+          kind: ToolNode
+          name: OpenAPI__get_user
+          description:
+            en: Get a user by their name
+          func: liman_openapi.gen.id_4483413152.get_user  # [!code highlight]
+          arguments:
+            - name: user_name
+              type: string
+              optional: false
+          ```
+          <Callout className="border-0 shadow-none">
+            You can also print all specs in the registry
+            ```python
+            agent.registry.print_specs()
+            ```
+          </Callout>
+
+          `liman_openapi.gen.id_4445663936.get_user` is the auto-generated function that Liman creates to make HTTP requests to your API.
+        </div>
+      </Accordion>
+    </Accordions>
+
+  </Step>
+
+  <Step>
+    ## Step 6: Test the Integration
+
+    1. Start the API server: `fastapi run server.py` (we already did this above)
+    2. Run the agent:
+       ```bash title="bash"
+       python main.py
+
+       # for detailed output, you can enable debug mode:
+       # LIMAN_DEBUG=1 python main.py
+       ```
+
+    Try these examples:
+
+    ```
+    You: Who is Alice?
+    Agent: Alice is a user with the email address alice@example.com.
+
+    You: What emails do Bob and Pavel have?
+    Agent: Bob's email is bob@example.com. However, it seems there is no user named Pavel found in the system.
+    ```
+
+    It's the same as in the previous example, but now we're calling your server!
+
+  </Step>
+</Steps>
+
+## How Auto-Generation Works
+
+When you call:
+
+```python title="main.py"
+openapi = load_openapi("http://localhost:8000/openapi.json")
+create_tool_nodes(openapi, agent.registry, base_url="http://localhost:8000")
+```
+
+Liman:
+
+1. **Fetches OpenAPI spec** from your running server
+2. **Generates ToolNode definitions** for each endpoint
+3. **Creates HTTP request functions** automatically
+4. **Registers tools** with names like `OpenAPI__get_user`
+
+Your OpenAPI endpoint becomes a callable tool without any manual work!
+
+## Next Steps
+
+Try the [python/samples/simple_openapi](https://github.com/gurobokum/liman/tree/main/python/samples/simple_openapi) sample to see this integration in action with more complex scenarios.

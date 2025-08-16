@@ -97,6 +97,26 @@ This guide walks you through creating a Liman AI agent from scratch. You'll star
     - **kind**: Specifies this is an LLM node
     - **name**: Unique identifier for the node
     - **prompts.system.en**: System prompt in English
+    <Accordions type="single">
+      <Accordion title="Behind the scene">
+        In fact Liman traverses recursively the pointed dict, parses yaml to json and create specific Node.
+        You can do the same manually
+
+        ```python
+        from liman_core import LLMNode
+
+        node = LLMNode(
+            name="chat",
+            prompts={
+                "system": {
+                    "en": "You are a helpful assistant.\nAlways be polite and provide clear answers."
+                }
+            }
+        )
+        node.compile()
+        ```
+      </Accordion>
+    </Accordions>
 
   </Step>
   <Step>
@@ -189,7 +209,7 @@ This guide walks you through creating a Liman AI agent from scratch. You'll star
       - `start_node="LLMNode/chat"`: Tells the agent to start with the `chat` LLM node
       - `llm=get_llm()`: Provides the language model to use, you can use any **LangChain**-compatible model
 
-### Agent Execution [!toc]
+      ### Agent Execution [!toc]
 
       ```python
       response = await agent.step(user_input)
@@ -206,8 +226,8 @@ This guide walks you through creating a Liman AI agent from scratch. You'll star
         Liman uses a layered architecture design. The `Agent` class is a high-level
         API that encapsulates lower-level components and handles common use cases. For
         advanced scenarios requiring fine-grained control, you can work directly with
-        the underlying components like `Node` and `NodeActor`. See the **Execution
-        Model** section for more details on the architecture.
+        the underlying components like `Node` and `NodeActor`. See the [**Execution
+        Model**](/docs/poc#execution-model) section for more details on the architecture.
       </Callout>
     </div>
 
