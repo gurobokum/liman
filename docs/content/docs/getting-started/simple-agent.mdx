@@ -1,11 +1,18 @@
 ---
-title: 1. Getting Started
+title: 1. Simple Agent
 description: Build your first Liman AI agent step by step
 ---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+### Hello World
 
 ## Overview
 
 This guide walks you through creating a Liman AI agent from scratch. You'll start with a simple LLM node and gradually add more features.
+
+<Steps>
+<Step>
 
 ## Step 1: Environment Setup
 
@@ -56,6 +63,10 @@ poetry add liman langchain-openai
 pip install liman langchain-openai
 ```
 
+</Step>
+
+<Step>
+
 ## Step 2: Create Your First LLM Node
 
 ### Create Specs Directory
@@ -86,6 +97,8 @@ This is the simplest possible LLM node:
 - **name**: Unique identifier for the node
 - **prompts.system.en**: System prompt in English
 
+</Step>
+<Step>
 ## Step 3: Create the Agent Application
 
 Create your main application file `main.py`:
@@ -128,6 +141,9 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+</Step>
+<Step>
+
 ## Step 4: Run Your Agent
 
 Run your first agent:
@@ -154,6 +170,9 @@ You: What's 2+2?
 Agent: 2 + 2 is 4.
 ```
 
+</Step>
+</Steps>
+
 ## Understanding the Code
 
 Let's break down what happened:
@@ -179,7 +198,15 @@ The `step()` method:
 1. Takes your input
 2. Passes it to the LLM with the system prompt
 3. Returns the response
-4. Underneath it's smart enough and can pass through multiple nodes, parallelize execution, and handle complex workflows
+4. Under the hood, it's smart enough to traverse multiple nodes, parallelize execution, and orchestrate complex workflows
+
+<Callout>
+  Liman uses a layered architecture design. The `Agent` class is a high-level
+  API that encapsulates lower-level components and handles common use cases. For
+  advanced scenarios requiring fine-grained control, you can work directly with
+  the underlying components like `Node` and `NodeActor`. See the **Execution
+  Model** section for more details on the architecture.
+</Callout>
 
 ## Next Steps
 
@@ -193,7 +220,7 @@ import { File, Folder, Files } from "fumadocs-ui/components/files";
       <File name="chat.yaml" />
     </Folder>
     <File name="main.py" />
-    <File name="pyproject.toml (optional)" />
+    <File name="pyproject.toml (optional)" className="opacity-50" />
   </Folder>
 </Files>
 
