@@ -5,8 +5,8 @@
 **Clone the repository**
 
 ```bash
-git clone https://github.com/limanprojects/liman.git
-cd liman/repo/python/samples/simple_openapi
+git clone https://github.com/gurobokum/liman.git
+cd liman/python/samples/simple_openapi
 ```
 
 **Install dependencies**
@@ -35,4 +35,18 @@ Then run the agent:
 
 ```bash
 python main.py
+```
+
+Try ask to ask the agent
+
+```bash
+what can you do?
+```
+
+```bash
+change email of Alice to x@example.com
+```
+
+```bash
+disable all admins in EU region
 ```
