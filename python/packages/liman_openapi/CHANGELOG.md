@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-a1](https://github.com/gurobokum/liman/compare/liman_openapi_py-v0.1.0-a0...liman_openapi_py-v0.1.0-a1) (2025-08-16)
+
+
+### ✨ Features
+
+* **liman_openapi:** use endpoint.description in favor of endpoint.summary ([ff62c47](https://github.com/gurobokum/liman/commit/ff62c472904d1b502cdfa3b7f096af8ab551fec4))
+
 ## 0.1.0-a0 (2025-08-15)
 
 
