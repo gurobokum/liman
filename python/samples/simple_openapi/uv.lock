@@ -236,7 +236,7 @@ name = "exceptiongroup"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions", marker = "python_full_version < '3.11'" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749, upload-time = "2025-05-10T17:42:51.123Z" }
 wheels = [
@@ -802,7 +802,7 @@ wheels = [
 
 [[package]]
 name = "liman-openapi"
-version = "0.1.0a0"
+version = "0.1.0a1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -811,9 +811,9 @@ dependencies = [
     { name = "openapi-spec-validator" },
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/98/f6/3b243c2e3b63fdad06ac510d00d6d0972c7895181c347968d2f8f75e0f7d/liman_openapi-0.1.0a0.tar.gz", hash = "sha256:08f5c1aa1d701d7a30765949064759d5fcbaa4a8937a86fd2903e59a2d8cad78", size = 12658, upload-time = "2025-08-15T08:52:42.092Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2b/e3/338c4ef0b05470d2acbd2053e4f46fe7558491b91c8f6fddfd2d3ce58ce0/liman_openapi-0.1.0a1.tar.gz", hash = "sha256:85b42702151f72ad6764f09e21481fe188eab15ddfd3a5657ae92c24fd2097eb", size = 12763, upload-time = "2025-08-16T11:14:48.5Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e9/1c/15fb64a09408d295eedd223b0732508dca8f814aefc0f01e06394a885156/liman_openapi-0.1.0a0-py3-none-any.whl", hash = "sha256:a800084d7ee03520b2d55e7c765751072a006d407e27be2a376e6f0490a85769", size = 7778, upload-time = "2025-08-15T08:52:41.151Z" },
+    { url = "https://files.pythonhosted.org/packages/08/eb/22ded84d1bbcaf44c4c5be44fac4947c90f10795c84bd5b32a5d22fb9ded/liman_openapi-0.1.0a1-py3-none-any.whl", hash = "sha256:a2c3a8c7d478be62f44402f7ff9ca3ef53191a6a3d185c5521afffa367d50d27", size = 7787, upload-time = "2025-08-16T11:14:47.046Z" },
 ]
 
 [[package]]
