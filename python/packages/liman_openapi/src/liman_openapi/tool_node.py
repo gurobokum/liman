@@ -48,7 +48,7 @@ def create_tool_nodes(
         decl = {
             "kind": "ToolNode",
             "name": name,
-            "description": endpoint.summary,
+            "description": endpoint.description or endpoint.summary,
             "arguments": endpoint.get_tool_arguments_spec(refs),
         }
 

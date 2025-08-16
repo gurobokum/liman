@@ -109,6 +109,7 @@ class Endpoint(BaseModel):
     operation_id: Annotated[str, Field(alias="operationId")]
     path: str
     summary: str
+    description: str | None = None
     method: str
     parameters: list[Parameter] = []
     request_body: Annotated[
