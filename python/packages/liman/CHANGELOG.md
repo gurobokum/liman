@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a3...liman_py-v0.1.0-a3) (2025-08-16)
+
+
+### 📚 Documentation
+
+* add 2 step in GettingStarted tutorial ([fc9dc1f](https://github.com/gurobokum/liman/commit/fc9dc1ffd9b82740d7e3c71c8d8754c0fc96f434))
+
 ## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a2...liman_py-v0.1.0-a3) (2025-08-15)
 
 
