@@ -13,6 +13,7 @@ cd liman/python/samples/simple_openapi
 
 ```bash
 uv sync
+source .venv/bin/activate
 ```
 
 **Run FastAPI server**
@@ -21,7 +22,7 @@ uv sync
 fastapi run server.py
 ```
 
-expects the OpenAPI spec to be at `http://localhost:8000/openapi.json`.
+expects the OpenAPI spec to be at `http://localhost:8000/docs`.
 
 **Run the agent**
 
