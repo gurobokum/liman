@@ -3,210 +3,216 @@ title: 1. Simple Agent
 description: Build your first Liman AI agent step by step
 ---
 
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 import { Step, Steps } from "fumadocs-ui/components/steps";
-
-### Hello World
 
 ## Overview
 
 This guide walks you through creating a Liman AI agent from scratch. You'll start with a simple LLM node and gradually add more features.
 
 <Steps>
-<Step>
+  <Step>
+    ## Step 1: Environment Setup
 
-## Step 1: Environment Setup
+    ### Prerequisites
 
-### Prerequisites
+    - Python 3.10 or higher
+    - uv, poetry or pip
 
-- Python 3.10 or higher
-- uv, poetry or pip
+    ### Create Your Project
 
-### Create Your Project
+    Initialize a Python project
 
-Initialize a Python project
+    ```bash tab="uv"
+    uv init my-liman-agent
+    ```
 
-```bash tab="uv"
-uv init my-liman-agent
-```
+    ```bash tab="poetry"
+    mkdir my-liman-agent
+    cd my-liman-agent
+    poetry init
 
-```bash tab="poetry"
-mkdir my-liman-agent
-cd my-liman-agent
-poetry init
-# or poetry new, but expect that directory structure will be different
-# poetry new my-liman-agent
-```
+    # or poetry new, but expect that directory structure will be different
 
-```bash tab="pip"
-mkdir my-liman-agent
-```
+    # poetry new my-liman-agent
 
-Go the project directory:
+    ```
 
-```bash
-cd my-liman-agent
-```
+    ```bash tab="pip"
+    mkdir my-liman-agent
+    ```
 
-### Install Dependencies
+    Go the project directory:
 
-Add Liman dependencies to your project:
+    ```bash
+    cd my-liman-agent
+    ```
 
-```bash tab="uv"
-uv add liman langchain-openai
-```
+    ### Install Dependencies
 
-```bash tab="poetry"
-poetry add liman langchain-openai
-```
+    Add Liman dependencies to your project:
 
-```bash tab="pip"
-pip install liman langchain-openai
-```
+    ```bash tab="uv"
+    uv add liman langchain-openai
+    ```
 
-</Step>
+    ```bash tab="poetry"
+    poetry add liman langchain-openai
+    ```
 
-<Step>
+    ```bash tab="pip"
+    pip install liman langchain-openai
+    ```
 
-## Step 2: Create Your First LLM Node
+  </Step>
 
-### Create Specs Directory
+  <Step>
 
-Create a directory for your agent specifications:
+    ## Step 2: Create Your First LLM Node
 
-```bash title=" "
-mkdir specs
-```
+    ### Create Specs Directory
 
-### Define Your LLM Node
+    Create a directory for your agent specifications:
 
-Create `specs/chat.yaml`:
+    ```bash title="bash"
+    mkdir specs
+    ```
 
-```yaml title="specs/chat.yaml"
-kind: LLMNode
-name: chat
-prompts:
-  system:
-    en: |
-      You are a helpful assistant.
-      Always be polite and provide clear answers.
-```
+    ### Define Your LLM Node
 
-This is the simplest possible LLM node:
+    Create `specs/chat.yaml`:
 
-- **kind**: Specifies this is an LLM node
-- **name**: Unique identifier for the node
-- **prompts.system.en**: System prompt in English
+    ```yaml title="specs/chat.yaml" lineNumbers
+    kind: LLMNode
+    name: chat
+    prompts:
+      system:
+        en: |
+          You are a helpful assistant.
+          Always be polite and provide clear answers.
+    ```
 
-</Step>
-<Step>
-## Step 3: Create the Agent Application
+    This is the simplest possible LLM node:
 
-Create your main application file `main.py`:
+    - **kind**: Specifies this is an LLM node
+    - **name**: Unique identifier for the node
+    - **prompts.system.en**: System prompt in English
 
-```python title="main.py"
-import asyncio
+  </Step>
+  <Step>
+    ## Step 3: Create the Agent Application
 
-from langchain_openai.chat_models import ChatOpenAI
-from liman.agent import Agent
+    Create your main application file `main.py`:
 
-OPENAI_API_KEY = ""  # Replace with your OpenAI API key // [!code highlight]
+    ```python title="main.py" lineNumbers
+    import asyncio
 
+    from langchain_openai.chat_models import ChatOpenAI
+    from liman.agent import Agent
 
-async def main():
-    # Create LangChain LLM model
-    llm = ChatOpenAI(
-        api_key=OPENAI_API_KEY,
-        model="gpt-4o",
-    )
-
-    # Define agent
-    # args:
-    #   - specs directory
-    #   - start_node: the node to start with
-    #   - llm: LangChain LLM model
-    agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
-    print("Agent ready! Type 'exit' to quit.")
-
-    # Simulate chat
-    while True:
-        user_input = input("\nYou: ")
-        if user_input.lower() == "exit":
-            break
-
-        response = await agent.step(user_input)
-        print(f"Agent: {response}")
+    OPENAI_API_KEY = ""  # Replace with your OpenAI API key // [!code highlight]
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
-```
+    async def main():
+        # Create LangChain LLM model
+        llm = ChatOpenAI(
+            api_key=OPENAI_API_KEY,
+            model="gpt-4o",
+        )
 
-</Step>
-<Step>
+        # Define agent
+        # args:
+        #   - specs directory
+        #   - start_node: the node to start with
+        #   - llm: LangChain LLM model
+        agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
+        print("Agent ready! Type 'exit' to quit.")
 
-## Step 4: Run Your Agent
+        # Simulate chat
+        while True:
+            user_input = input("\nYou: ")
+            if user_input.lower() == "exit":
+                break
 
-Run your first agent:
+            response = await agent.step(user_input)
+            print(f"Agent: {response}")
 
-```bash title=" "
-python main.py
-```
 
-You should see:
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
 
-```
-Agent ready! Type 'exit' to quit.
+  </Step>
+  <Step>
+    ## Step 4: Run Your Agent
 
-You:
-```
+    Run your first agent:
 
-Try it out:
+    ```bash title="bash"
+    python main.py
 
-```
-You: Hello, how are you?
-Agent: Hello! I'm just a computer program, so I don't have feelings, but I'm here and ready to help you. How can I assist you today?
+    # for detailed output, you can enable debug mode:
+    # LIMAN_DEBUG=1 python main.py
+    ```
 
-You: What's 2+2?
-Agent: 2 + 2 is 4.
-```
+    You should see:
 
-</Step>
+    ```
+    Agent ready! Type 'exit' to quit.
+
+    You:
+    ```
+
+    Try it out:
+
+    ```
+    You: Hello, how are you?
+    Agent: Hello! I'm just a computer program, so I don't have feelings, but I'm here and ready to help you. How can I assist you today?
+
+    You: What's 2+2?
+    Agent: 2 + 2 is 4.
+    ```
+
+  </Step>
 </Steps>
 
-## Understanding the Code
+<Accordions type="single">
+  <Accordion title="Let's break down what happened">
+    <div>
+      ### Agent Initialization [!toc]
 
-Let's break down what happened:
+      ```python
+      agent = Agent("./specs", start_node="LLMNode/chat", llm=get_llm())
+      ```
 
-### Agent Initialization
+      - `"./specs"`: Directory containing your YAML specifications
+      - `start_node="LLMNode/chat"`: Tells the agent to start with the `chat` LLM node
+      - `llm=get_llm()`: Provides the language model to use, you can use any **LangChain**-compatible model
 
-```python
-agent = Agent("./specs", start_node="LLMNode/chat", llm=get_llm())
-```
+### Agent Execution [!toc]
 
-- `"./specs"`: Directory containing your YAML specifications
-- `start_node="LLMNode/chat"`: Tells the agent to start with the `chat` LLM node
-- `llm=get_llm()`: Provides the language model to use, you can use any **LangChain**-compatible model
+      ```python
+      response = await agent.step(user_input)
+      ```
 
-### Agent Execution
+      The `step()` method:
 
-```python
-response = await agent.step(user_input)
-```
+      1. Takes your input
+      2. Passes it to the LLM with the system prompt
+      3. Returns the response
+      4. Under the hood, it's smart enough to traverse multiple nodes, parallelize execution, and orchestrate complex workflows
 
-The `step()` method:
+      <Callout className="border-0 shadow-none">
+        Liman uses a layered architecture design. The `Agent` class is a high-level
+        API that encapsulates lower-level components and handles common use cases. For
+        advanced scenarios requiring fine-grained control, you can work directly with
+        the underlying components like `Node` and `NodeActor`. See the **Execution
+        Model** section for more details on the architecture.
+      </Callout>
+    </div>
 
-1. Takes your input
-2. Passes it to the LLM with the system prompt
-3. Returns the response
-4. Under the hood, it's smart enough to traverse multiple nodes, parallelize execution, and orchestrate complex workflows
-
-<Callout>
-  Liman uses a layered architecture design. The `Agent` class is a high-level
-  API that encapsulates lower-level components and handles common use cases. For
-  advanced scenarios requiring fine-grained control, you can work directly with
-  the underlying components like `Node` and `NodeActor`. See the **Execution
-  Model** section for more details on the architecture.
-</Callout>
+  </Accordion>
+</Accordions>
 
 ## Next Steps
 

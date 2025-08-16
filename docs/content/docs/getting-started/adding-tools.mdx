@@ -1,0 +1,149 @@
+---
+title: 2. Adding Tools
+description: Create your first custom tool that provides user data to the LLM
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
+
+## Overview
+
+Tools allow your agent to perform actions beyond chatting. This guide shows how to create a tool that returns registered users from a service, providing context for the LLM.
+
+This builds on the [Getting Started](/docs/user_guide/getting-started) guide.
+
+<Steps>
+  <Step>
+    ## Step 1: Create the Tool Specification
+
+    Create `specs/get_user_tool.yaml`:
+
+    ```yaml title="specs/get_user_tool.yaml"
+    kind: ToolNode
+    name: get_user_by_name
+    description: Find a specific user by their name
+    func: main.get_user_by_name
+    arguments:
+      - name: user_name
+        type: string
+        description: The name of the user to find
+    ```
+
+  </Step>
+  <Step>
+    ## Step 2: Implement the Function
+
+    Add `get_user_by_name` function in your `main.py`:
+
+    ```python title="main.py"
+    def get_user_by_name(user_name: str) -> str:
+        users = [
+            {"id": "1", "name": "Alice", "email": "alice@example.com"},
+            {"id": "2", "name": "Bob", "email": "bob@example.com"}
+        ]
+
+        for user in users:
+            if user["name"].lower() == user_name.lower():
+                return f"Found user: {user['name']} (ID: {user['id']}, Email: {user['email']})"
+
+        return f"User '{user_name}' not found. Available users: Alice, Bob"
+    ```
+
+  </Step>
+  <Step>
+
+    ## Step 3: Update Your LLM Node
+
+    Add tool name to your LLM spec:
+
+    ```yaml title="specs/chat.yaml"
+    kind: LLMNode
+    name: chat
+    prompts:
+      system:
+        en: |
+          You are a helpful assistant.
+          Always be polite and provide clear answers.
+    tools: # [!code ++]
+      - get_user_by_name # [!code ++]
+    ```
+
+    <Accordions type="single">
+      <Accordion title="Behind the scene">
+        <div>
+          It changes the LLM node system prompt to include the tool automatically for improving function calling accuracy.
+          So if you add into your code `print_spec()`
+          ```python title="main.py"
+          from liman_core import LLMNode # [!code ++]
+          ...
+
+              agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
+              node = agent.registry.lookup(LLMNode, "chat")  # [!code ++]
+              node.compile()  # [!code ++]
+              node.print_spec()  # [!code ++]
+          ```
+
+          You will see the real composed spec:
+          ```yaml
+          kind: LLMNode
+          name: chat
+          prompts:
+            fallback_lang: en
+            en:
+              system: |-
+                You are a helpful assistant.
+                Always be polite and provide clear answers.
+
+                # [!code ++]
+                get_user_by_name - Find a specific user by their name
+          tools:
+            - get_user_by_name
+          ```
+          Now the **LLMNode** can define the next step as this tool call, so the **Executor** can send data back and forth
+
+        </div>
+
+      </Accordion>
+    </Accordions>
+
+  </Step>
+  <Step>
+
+    ## Step 4: Test the Tool
+
+    Run your agent:
+
+    ```bash title="bash"
+    python main.py
+
+    # for detailed output, you can enable debug mode:
+    # LIMAN_DEBUG=1 python main.py
+    ```
+
+    Try these examples:
+
+    ```
+    You: Who is Alice?
+    Agent: Alice is a user with the email address alice@example.com and an ID of 1.
+
+    You: What emails Bob and Pavel have?
+    Agent: I found the details for Bob: his email is bob@example.com. Unfortunately, I couldn't find any user named Pavel. The available users are Alice and Bob.
+    ```
+
+  </Step>
+</Steps>
+
+## How It Works
+
+1. **User asks** about a specific user by name
+2. **LLM extracts** the name from the user's request (e.g., "Alice" from "Who is Alice?")
+3. **Tool is called** with the extracted name as parameter
+4. **Function searches** the user database and returns result or "not found"
+5. **LLM formats** the response naturally for the user
+
+This demonstrates how tools can accept parameters and how LLMs can extract relevant information from natural language to call functions properly.
+
+## Next Steps
+
+Now you have a custom tool that provides data to your LLM! But creating multiple tools can be tedious.  
+In the next guide, we will explore how to automatically generate tools from OpenAPI specifications.

@@ -22,7 +22,7 @@ pip install liman
 # with uv
 uv pip install liman
 # with poetry
-poetry install liman
+poetry add liman
 ```
 
 ## Quick Start
