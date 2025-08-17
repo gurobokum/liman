@@ -69,7 +69,7 @@ export default function Hero() {
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button asChild size="lg" className="glow-effect group">
-              <Link href="/docs/poc" external={true}>
+              <Link href="/docs/getting-started/simple-agent" external={true}>
                 Get Started
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Link>

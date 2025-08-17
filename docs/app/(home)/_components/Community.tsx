@@ -11,6 +11,15 @@ import * as links from "@/src/links";
 
 const communityLinks = [
   {
+    icon: BookOpen,
+    title: "Documentation",
+    url: "/docs/getting-started/simple-agent",
+    description: "Explore documentation and usage examples",
+    buttonText: "Read Docs",
+    color:
+      "bg-emerald-100 hover:bg-emerald-200 group-hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 dark:group-hover:bg-emerald-800",
+  },
+  {
     icon: Github,
     title: links.Github.title,
     url: links.Github.url,
@@ -29,15 +38,6 @@ const communityLinks = [
     buttonText: "Join Discord",
     color:
       "bg-indigo-100 hover:bg-indigo-200 group-hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:group-hover:bg-indigo-800",
-  },
-  {
-    icon: BookOpen,
-    title: "Documentation",
-    url: "/docs/poc",
-    description: "Explore comprehensive API documentation and usage examples",
-    buttonText: "Read Docs",
-    color:
-      "bg-emerald-100 hover:bg-emerald-200 group-hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 dark:group-hover:bg-emerald-800",
   },
 ];
 
