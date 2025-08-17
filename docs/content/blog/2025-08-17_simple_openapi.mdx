@@ -1,0 +1,934 @@
+---
+title: Auto-generate AI agent from OpenAPI specs
+description: A look at how Liman automatically generates AI agent from existing API specifications, with a practical example.
+
+author: Guro Bokum
+authorTwitterUrl: https://x.com/gurobokum
+authorGithubUrl: https://github.com/gurobokum
+authorGravatarUrl: https://www.gravatar.com/avatar/68c8c4b26df92def3625206cd301c308618a27bd73e23bc2058bd00e9994ccdb
+authorLinkedInUrl: https://www.linkedin.com/in/gurobokum
+
+date: 2025-08-17
+---
+
+import { Step, Steps } from "fumadocs-ui/components/steps";
+
+When building AI agents, you often need to connect them to existing APIs. This usually means writing custom functions for each endpoint.
+
+What if you could skip that work entirely?
+
+With Liman's OpenAPI integration, you can generate agent tools automatically from the API specification.
+
+Picture this: your business has a CMS with dozens of endpoints. Instead of building admin panels, your team just talks to it: _"Make mike@example.com an admin"_, _"Archive all drafts from last month"_, _"Show me Alice's orders"_.  
+You can integrate it in a few clicks.
+
+Here's how it works.
+
+## How Liman Generates Tools
+
+Liman works with [declarative yaml approach](/blog/2025-07-30_intro). It reads your OpenAPI specification and creates tools for each endpoint automatically.
+
+### 1. Specification Analysis
+
+When you call `load_openapi(OPENAPI_SPEC_URL)`, Liman:
+
+- Fetches and parses the OpenAPI document
+- Extracts endpoint paths and HTTP methods
+- Maps parameter definitions (path, query, body parameters)
+- Converts operation descriptions into tool
+
+### 2. Function Creation
+
+Liman generates python functions that make HTTP requests. These functions handle:
+
+- URL construction with path parameters
+- Request formatting for different content types
+- Error handling and response parsing
+
+The generated functions are stored in a dynamically created module.
+
+## Real Example: User Management API
+
+I built a user management API to demonstrate this. Watch how it works:
+
+<div className="flex mt-4 justify-center">
+  <ASCIinema src="/asciinema/simple_openapi.cast" />
+</div>
+
+<Callout className="shadow-none">
+  **Try it yourself:** Clone [the example
+  repo](https://github.com/gurobokum/liman/tree/main/python/samples/simple_openapi)
+  and follow the README instructions.
+</Callout>
+
+### Liman Auto-Generated Agent Architecture
+
+Here's the complete agent that Liman generated from the OpenAPI specification:
+
+<Mermaid
+  chart="
+graph TD;
+    LLM[LLMNode/chat]
+
+    LLM --> T1[ToolNode/OpenAPI__get_user]
+    LLM --> T2[ToolNode/OpenAPI__search_user]
+    LLM --> T3[ToolNode/OpenAPI__list_users]
+    LLM --> T4[ToolNode/OpenAPI__search_by_region]
+    LLM --> T5[ToolNode/OpenAPI__update_user]
+    LLM --> T6[ToolNode/OpenAPI__delete_user]
+    LLM --> CONFIRM[ToolNode/confirm_action]
+
+    T1 --> API[FastAPI Server]
+    T2 --> API
+    T3 --> API
+    T4 --> API
+    T5 --> API
+    T6 --> API
+
+    CONFIRM --> USER[User Input]
+    USER -.-> LLM
+
+    style LLM fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+    style API fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    style T1 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    style T2 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    style T3 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    style T4 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    style T5 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    style T6 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+    style CONFIRM fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    style USER fill:#fce4ec,stroke:#e91e63,stroke-width:2px,color:#000
+
+    classDef darkLLM fill:#1a237e,stroke:#3f51b5,stroke-width:2px,color:#fff
+    classDef darkAPI fill:#4a148c,stroke:#9c27b0,stroke-width:2px,color:#fff
+    classDef darkTool fill:#1b5e20,stroke:#4caf50,stroke-width:2px,color:#fff
+    classDef darkConfirm fill:#e65100,stroke:#ff9800,stroke-width:2px,color:#fff
+    classDef darkUser fill:#880e4f,stroke:#e91e63,stroke-width:2px,color:#fff"
+
+/>
+
+**What Liman created:**
+
+- 1 LLMNode that orchestrates conversations
+- 6 OpenAPI tools auto-generated from API endpoints
+- 1 custom tool for user confirmations
+- Automatic connections between all components
+
+## Step-by-Step Implementation
+
+Want to build this yourself? Here's how to create an AI agent for OpenAPI-compliant service, or just clone [the sample repo](https://github.com/gurobokum/liman/tree/main/python/samples/simple_openapi).
+
+<Steps>
+  <Step>
+    ### Step 1. Project Setup
+
+    Create a new directory for your project and navigate into it:
+
+    ```bash tab="uv"
+    uv init liman-openapi-agent
+    cd liman-openapi-agent
+    uv venv
+    source .venv/bin/activate
+    ```
+
+    ```bash tab="poetry"
+    mkdir liman-openapi-agent
+    cd liman-openapi-agent
+    poetry init
+    ```
+
+    ```bash tab="pip"
+    mkdir liman-openapi-agent
+    cd liman-openapi-agent
+    ```
+
+  </Step>
+
+  <Step>
+    ### Step 2. Create the API Server
+
+    First, install FastAPI:
+
+    ```bash tab="uv"
+    uv add "fastapi[standard]"
+    ```
+
+    ```bash tab="poetry"
+    poetry add "fastapi[standard]"
+    ```
+
+    ```bash tab="pip"
+    pip install "fastapi[standard]"
+    ```
+
+    Create a simple user management API (copy-paste this code):
+
+    ```python title="server.py"
+    from typing import Any
+
+    from fastapi import FastAPI, HTTPException
+    from fastapi.routing import APIRoute
+    from pydantic import BaseModel
+
+    app = FastAPI(
+        title="User Management API Liman Demo",
+        description="FastAPI implementation based of Liman Simple OpenAPI samle",
+        version="1.0.0",
+    )
+
+
+    class User(BaseModel):
+        id: str
+        name: str
+        email: str
+        region: str
+        is_admin: bool
+
+
+    class UpdateUserRequest(BaseModel):
+        name: str | None = None
+        email: str | None = None
+        is_admin: bool | None = None
+
+
+    users = {
+        "12345": {
+            "id": "12345",
+            "name": "John",
+            "email": "john@example.com",
+            "region": "US",
+            "is_admin": True,
+        },
+        "67890": {
+            "id": "67890",
+            "name": "Max",
+            "email": "max@example.com",
+            "region": "EU",
+            "is_admin": True,
+        },
+        "54321": {
+            "id": "54321",
+            "name": "Alice",
+            "email": "alice@example.com",
+            "region": "US",
+            "is_admin": False,
+        },
+        "17821": {
+            "id": "17821",
+            "name": "Sofia",
+            "email": "sofia@example.com",
+            "region": "EU",
+            "is_admin": False,
+        },
+        "99821": {
+            "id": "99821",
+            "name": "Bob",
+            "email": "bob@example.com",
+            "region": "EU",
+            "is_admin": False,
+        },
+    }
+
+
+    @app.get("/users/{user_id}", response_model=User)
+    def get_user(user_id: str) -> User:
+        """Get a user by their ID"""
+        user = users.get(user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
+        return User.model_validate(user)
+
+
+    @app.get("/users", response_model=list[User])
+    def list_users() -> list[User]:
+        """List all users in the system"""
+        return [User.model_validate(user) for user in users.values()]
+
+
+    @app.get("/users/search/name/{name}", response_model=User)
+    def search_user(name: str) -> User:
+        """Search a user by name"""
+        for user in users.values():
+            if user["name"].lower() == name.lower():
+                return User.model_validate(user)
+        raise HTTPException(status_code=404, detail=f"No user found with name {name}")
+
+    @app.put("/users/{user_id}", response_model=dict[str, Any])
+    def update_user(user_id: str, request: UpdateUserRequest) -> dict[str, Any]:
+    	"""Update a user by ID"""
+    	if user_id not in users:
+    		raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
+
+    	user = users[user_id]
+    	changed = False
+
+    	for field in ["name", "email", "is_admin"]:
+    		value = getattr(request, field, None)
+    		if value is not None and value != user.get(field):
+    			user[field] = value
+    			changed = True
+
+    	return {"was_changed": changed, "user": user}
+
+
+    @app.get("/users/search/region/{region}", response_model=list[str])
+    def search_by_region(region: str) -> list[str]:
+        """Find user IDs by region"""
+        user_ids = [
+            user["id"]
+            for user in users.values()
+            if user["region"].lower() == region.lower()
+        ]
+        if not user_ids:
+            raise HTTPException(
+                status_code=404, detail=f"No users found in region {region}"
+            )
+        return user_ids
+
+
+    @app.delete("/users/{user_id}")
+    def delete_user(user_id: str) -> dict[str, str]:
+        """Delete a user by ID"""
+        if user_id in users:
+            del users[user_id]
+        else:
+            raise HTTPException(status_code=404, detail=f"User with ID {user_id} not found")
+
+        return {"message": f"User with ID {user_id} has been deleted"}
+
+
+    def use_route_names_as_operation_ids(app: FastAPI) -> None:
+        """
+        Simplify operation IDs so that generated API clients have simpler function
+        names.
+
+        Should be called only after all routes have been added.
+        """
+        for route in app.routes:
+            if isinstance(route, APIRoute):
+                route.operation_id = route.name
+
+
+    use_route_names_as_operation_ids(app)
+    ```
+
+    Start the server:
+
+    ```bash title="bash"
+    fastapi run server.py
+    ```
+
+    Check the auto-generated OpenAPI docs at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+  </Step>
+  <Step>
+      ### Step 3. Agent Configuration
+
+      Liman uses declarative yaml specifications. Create an LLMNode configuration in `specs/chat.yaml`:
+
+      ```yaml title="specs/chat.yaml"
+      kind: LLMNode
+      name: chat
+      prompts:
+        system:
+          en: |
+            You are a helpful assistant that works through chat.
+            You can execute tools in parallel or sequentially as needed.
+            Always reconsider your approach if the initial solution doesn't work.
+      ```
+
+      Add the auto-generated tools. They follow the pattern `{prefix}__{operationId}` where prefix defaults to "OpenAPI":
+
+      ```yaml title="specs/chat.yaml"
+      kind: LLMNode
+      name: chat
+      prompts:
+        system:
+          en: |
+            You are a helpful assistant that works through chat.
+            You can execute tools in parallel or sequentially as needed.
+            Always reconsider your approach if the initial solution doesn't work.
+      tools:  # [!code ++]
+        - OpenAPI__get_user #  [!code ++]
+        - OpenAPI__search_user #  [!code ++]
+        - OpenAPI__search_by_region #  [!code ++]
+        - OpenAPI__list_users #  [!code ++]
+      ```
+      The tools with `OpenAPI__` prefix are automatically generated from the API specification.
+      With this declaration you will get such node graph:
+
+      <Mermaid
+        chart="
+      graph TD;
+          LLM[LLMNode/chat]
+          LLM --> T1[OpenAPI__get_user]
+          LLM --> T2[OpenAPI__search_user]
+          LLM --> T3[OpenAPI__list_users]
+          LLM --> T4[OpenAPI__search_by_region]
+
+          T1 --> API[FastAPI Server]
+          T2 --> API
+          T3 --> API
+          T4 --> API
+
+          style LLM fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+          style API fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+          style T1 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+          style T2 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+          style T3 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+          style T4 fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000"
+
+      />
+
+    <Accordions type="single" className="mt-4">
+      <Accordion title="🔍 Behind the scene">
+        When you add tools to the `LLMNode`, Liman updates the system prompt to include tool descriptions based on `tool_prompt_template` for better function calling accuracy. The compiled yaml looks like this:
+
+        ```yaml
+        kind: LLMNode
+        name: chat
+        prompts:
+          fallback_lang: en
+          en:
+            system: |-
+              You are a helpful assistant that works through chat.
+              You can execute tools in parallel or sequentially as needed.
+              Always reconsider your approach if the initial solution doesn't work.
+
+              # [!code ++]
+              OpenAPI__get_user - Get a user by their ID
+              # [!code ++]
+              OpenAPI__search_user - Search a user by name
+              # [!code ++]
+              OpenAPI__search_by_region - Find user IDs by region
+              # [!code ++]
+              OpenAPI__list_users - List all users in the system
+        tools:
+          - OpenAPI__get_user
+          - OpenAPI__search_user
+          - OpenAPI__search_by_region
+          - OpenAPI__list_users
+        ```
+      </Accordion>
+    </Accordions>
+
+  </Step>
+  <Step>
+    ### Step 4. Install Dependencies
+
+    Install Liman and LangChain:
+
+    ```bash tab="uv"
+    uv add liman liman-openapi langchain langchain-openai langchain-google-genai
+    ```
+
+    ```bash tab="poetry"
+    poetry add liman liman-openapi langchain langchain-openai langchain-google-genai
+    ```
+
+    ```bash tab="pip"
+    pip install liman liman-openapi langchain langchain-openai langchain-google-genai
+    ```
+
+    Create the agent (minimal code required):
+
+    ```python tab="main.py (OpenAI)"
+    import asyncio
+    from liman.agent import Agent
+    from liman_openapi import create_tool_nodes, load_openapi
+    from langchain_openai import ChatOpenAI
+
+    async def main():
+        llm = ChatOpenAI(
+            api_key="",  # Replace with your OpenAI API key  [!code highlight]
+            model="gpt-4o"
+        )
+
+        agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
+
+        # Generate tools from OpenAPI
+        openapi = load_openapi("http://localhost:8000/openapi.json")
+        create_tool_nodes(openapi, agent.registry, base_url="http://localhost:8000")
+
+        # Agent is ready to use API endpoints as tools
+        while True:
+            user_input = input("Input: ")
+            response = await agent.step(user_input)
+            print(f"Agent: {response}")
+            print("-" * 20)
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+
+    ```python tab="main.py (Gemini)"
+    import asyncio
+    from liman.agent import Agent
+    from liman_openapi import create_tool_nodes, load_openapi
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
+    async def main():
+        return ChatGoogleGenerativeAI(
+            api_key="",  # Replace with your Google Studio API key  [!code highlight]
+            model="gemini-2.5-flash"
+        )
+
+        agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
+
+        # Generate tools from OpenAPI
+        openapi = load_openapi("http://localhost:8000/openapi.json")
+        create_tool_nodes(openapi, agent.registry, base_url="http://localhost:8000")
+
+        # Agent is ready to use API endpoints as tools
+        while True:
+            user_input = input("Input: ")
+            response = await agent.step(user_input)
+            print(f"Agent: {response}")
+            print("-" * 20)
+
+    if __name__ == "__main__":
+        asyncio.run(main())
+    ```
+
+
+    The `create_tool_nodes` function generates and registers all tools from the OpenAPI specification.
+
+    <Accordions type="single">
+      <Accordion title="💅 Optional: Add prettier output">
+        Install `rich` for better formatting:
+
+        ```bash tab="uv"
+        uv add rich
+        ```
+
+        ```bash tab="poetry"
+        poetry add rich
+        ```
+
+        ```bash tab="pip"
+        pip install rich
+        ```
+
+        Update `main.py` for styled output:
+
+        ```python title="main.py"
+        import asyncio
+        from liman.agent import Agent
+        from liman_openapi import create_tool_nodes, load_openapi
+        from langchain_openai import ChatOpenAI
+        from rich.console import Console  # [!code ++]
+        from rich.panel import Panel  # [!code ++]
+
+        console = Console()  # [!code ++]
+
+        async def main():
+            llm = ChatOpenAI(
+                api_key="OPENAI_API_KEY",
+                model="gpt-4o"
+            )
+
+            agent = Agent("./specs", start_node="LLMNode/chat", llm=llm)
+
+            # Generate tools from OpenAPI
+            openapi = load_openapi("http://localhost:8000/openapi.json")
+            create_tool_nodes(openapi, agent.registry, base_url="http://localhost:8000")
+
+            while True:
+                user_input = input("Input: ")
+                print_panel(input_)  # [!code ++]
+                response = await agent.step(user_input)
+                print(f"Agent: {response}")  # [!code --]
+                print("-" * 20)  # [!code --]
+                print_panel(str(output), is_output=True)  # [!code ++]
+
+        def print_panel(text: str, is_output: bool = False) -> None:   # [!code ++]
+            if is_output:  # [!code ++]
+                title = "[bold blue]Agent[/bold blue]"  # [!code ++]
+                border_style = "bold blue"  # [!code ++]
+            else:  # [!code ++]
+                title = "[bold cyan]User[/bold cyan]"  # [!code ++]
+                border_style = "bold cyan"  # [!code ++]
+            console.print(  # [!code ++]
+                Panel(text, title=title, title_align="left", border_style=border_style)  # [!code ++]
+            )  # [!code ++]
+
+        if __name__ == "__main__":
+            asyncio.run(main())
+        ```
+      </Accordion>
+    </Accordions>
+
+  </Step>
+  <Step>
+    ### Step 5. Test Your Agent
+
+    Start the agent:
+
+    ```bash title="bash"
+    python main.py
+    ```
+
+    ```bash
+    Input: What can you do?
+    Agent: I can interact with various tools to help you manage user data. Here are some of the things I can do:
+
+    1. **Get a User by ID**: Retrieve detailed information about a user by their unique ID.
+    2. **Search Users by Name**: Find users based on their name.
+    3. **Find User IDs by Region**: Search for user IDs in a specific region.
+    4. **List All Users**: Provide a list of all users in the system.
+
+    Let me know if you need help with any of these tasks!
+    --------------------
+    Input: Find the users Alice and Pavel
+    Agent: I found the user Alice in the system:
+
+    - **Alice**
+      - ID: 54321
+      - Email: alice@example.com
+      - Region: US
+      - Is Admin: No
+
+    However, I couldn't find any user with the name Pavel in the system. If you have more details or another query, let me know!
+    --------------------
+    Input:
+    ```
+    <Accordions type="single">
+      <Accordion title="⚙️ Behind the scene">
+        Liman uses a layered execution model:
+        - **Agent**: User-facing interface (stateless)
+        - **Executor**: Top-level controller managing execution flow (stateful)
+        - **NodeActor**: Manages individual node execution (stateful)
+        - **Node**: Callable tools like API endpoints (stateless)
+
+        For "find Alice and Pavel", the Executor forks into 2 child Executors running `search_user` calls in parallel. The parent waits for both to complete, then combines results.
+
+        Here's how the execution flow works when user asks to find Alice and Pavel:
+
+        <Mermaid
+          chart="
+        sequenceDiagram
+            participant User
+            participant Executor
+            participant LLM as LLMNode/chat
+            participant ChildExec as Child Executor
+            participant T1 as ToolNode/search_user(Alice)
+            participant T2 as ToolNode/search_user(Pavel)
+            participant API as FastAPI Server
+
+            User->>Executor: find users Alice and Pavel
+            Executor->>LLM: process request
+            LLM->>ChildExec: parallel tool calls
+
+            par Alice search
+                ChildExec->>T1: search_user(Alice)
+                T1->>API: GET /users/search/name/Alice
+                API-->>T1: 200 OK {id: 54321, name: Alice, ...}
+                T1-->>ChildExec: User found: Alice
+            and Pavel search
+                ChildExec->>T2: search_user(Pavel)
+                T2->>API: GET /users/search/name/Pavel
+                API-->>T2: 404 Not Found
+                T2-->>ChildExec: User Pavel not found
+            end
+
+            ChildExec-->>LLM: Alice: found, Pavel: not found
+            LLM-->>Executor: Final response
+            Executor-->>User: Found Alice (ID: 54321). Pavel not found."
+        />
+
+      </Accordion>
+    </Accordions>
+
+  </Step>
+
+  <Step>
+    ### Step 6. Add POST/PUT/DELETE requests
+
+    Liman parses all HTTP methods including POST/PUT with request bodies and DELETE operations. It also handles OpenAPI `$ref` schema definitions for complex input validation.
+
+    Add the new tools to your agent:
+    ```yaml title="specs/chat.yaml"
+    kind: LLMNode
+    name: chat
+    prompts:
+      system:
+        en: |
+          You are a helpful assistant that works through chat.
+          You can execute tools in parallel or sequentially as needed.
+          Always reconsider your approach if the initial solution doesn't work.
+    tools:
+      - OpenAPI__get_user
+      - OpenAPI__search_user
+      - OpenAPI__search_by_region
+      - OpenAPI__list_users
+      - OpenAPI__update_user # [!code ++]
+      - OpenAPI__delete_user # [!code ++]
+    ```
+
+    <Accordions type="single">
+      <Accordion title="🔧 Behind the scene">
+        Run `agent.registry.print_specs()` to see the generated tool.
+
+        Notice how Liman automatically parsed the `UpdateUserRequest` schema from OpenAPI `$ref` definitions:
+
+        Our `OpenAPI__update_user` tool looks like this:
+
+        ```yaml
+        kind: ToolNode
+        name: OpenAPI__update_user
+        description:
+          en: Update a user by ID
+        func: liman_openapi.gen.id_4575467552.update_user
+        arguments:
+          - name: user_id
+            type: string
+            optional: false
+          - name: UpdateUserRequest
+            type: object
+            optional: true
+            properties:
+              - name: name
+                type:
+                  - string
+                optional: false
+              - name: email
+                type:
+                  - string
+                optional: false
+              - name: is_admin
+                type:
+                  - boolean
+                optional: false
+        ```
+      </Accordion>
+    </Accordions>
+
+  </Step>
+
+  <Step>
+    ### Step 7. Add confirmation for safety
+
+    For destructive operations like deleting or updating users, add a confirmation step.
+    Create a custom ToolNode in `specs/confirm_tool.yaml`:
+
+    ```yaml title="specs/confirm_tool.yaml"
+    kind: ToolNode
+    name: confirm_action
+    description: |
+      You need to call this function on any destructive action like deleting a user or any updates
+      this function will ask for confirmation from the user before proceeding with the action.
+    func: main.confirm_action  # [!code highlight]
+    arguments:
+      - name: user_id
+        type: number
+        description: id of the user to confirm action for
+      - name: action
+        type: string
+        description: The action to confirm, e.g., "delete user"
+      - name: title
+        type: string
+        description: The title of the confirmation dialog with all needful info
+    ```
+    Add the function referenced in `func: main.confirm_action` to your `main.py`:
+    ```python title="main.py"
+    def confirm_action(title: str, action: str, user_id: str) -> str:
+        print(f"{title}? Y/N", end=": ")
+        res = input()
+        if res.lower() == "y":
+            return f"{action} confirmed. User ID: {user_id}"
+        else:
+            return "{action} cancelled."
+    ```
+
+    Now we need to add this tool to the LLMNode configuration:
+
+    ```yaml title="specs/chat.yaml"
+    kind: LLMNode
+    name: chat
+    prompts:
+      system:
+        en: |
+          You are a helpful assistant that works through chat.
+          You can execute tools in parallel or sequentially as needed.
+          Always reconsider your approach if the initial solution doesn't work.
+    tools:
+      - OpenAPI__get_user
+      - OpenAPI__search_user
+      - OpenAPI__search_by_region
+      - OpenAPI__list_users
+      - OpenAPI__update_user
+      - main.confirm_action # [!code ++]
+    ```
+
+    With this setup, the agent will now ask for confirmation before updating users:
+
+    <Mermaid
+      chart="
+    graph TD;
+        LLM[LLMNode/chat]
+        LLM --> CONFIRM[ToolNode/confirm_action]
+        LLM --> UPDATE[ToolNode/OpenAPI__update_user]
+
+        CONFIRM --> USER[User Input]
+        UPDATE --> API[FastAPI Server]
+
+        USER -.-> LLM
+
+        style LLM fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+        style API fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+        style CONFIRM fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+        style UPDATE fill:#e8f5e8,stroke:#388e3c,stroke-width:2px,color:#000
+        style USER fill:#fce4ec,stroke:#e91e63,stroke-width:2px,color:#000"
+    />
+
+    The flow now includes a confirmation step where the LLM first calls the confirm tool, waits for user input, and only then proceeds with the update operation if confirmed.
+
+  </Step>
+
+  <Step>
+    ### Step 8. Run the Agent
+
+    Let's try something more complex
+
+    ```bash title="bash"
+    python main.py
+    ```
+
+    ```bash
+    Input: Revoke all admins rights for users in EU region, and explain the decision steps you did 1 by 1.
+    Revoke admin rights for Max (User ID: 67890) in the EU region? Y/N: y
+    Agent: The admin rights for Max (User ID: 67890) have been successfully revoked. Here's a summary of the action taken:
+
+    1. **Identified Users in EU Region:** Retrieved users with IDs 67890, 17821, and 99821 in the EU region.
+    2. **Checked Admin Status:** Confirmed that only Max had admin rights.
+    3. **Confirmed Action:** Secured confirmation to proceed with revoking admin rights for Max.
+    4. **Updated User:** Successfully revoked admin rights for Max, changing his admin status to `false`.
+
+    If you need further actions or assistance, feel free to ask!
+    --------------------
+    Input: Delete all users that name starts from A
+    Delete user Alice (User ID: 54321)? Y/N: y
+    Agent: Alice (User ID: 54321) has been successfully deleted from the system. If you need any additional changes or have further queries, feel free to ask!
+    ```
+    <Accordions type="single">
+      <Accordion title="🚀 Behind the scene">
+        Let's analyze how Liman processed "Revoke all admins rights for users in EU region":
+
+        <Mermaid
+          chart="
+        sequenceDiagram
+            participant LLM as LLMNode/chat
+            participant Search as search_by_region
+            participant Get1 as get_user(67890)
+            participant Get2 as get_user(17821)
+            participant Get3 as get_user(99821)
+            participant Confirm as confirm_action
+            participant Update as update_user
+            participant API as FastAPI Server
+
+            Note over LLM: Step 1: Search by region (sequential)
+            LLM->>Search: search_by_region(EU)
+            Search->>API: GET /users/search/region/EU
+            API-->>Search: [67890, 17821, 99821]
+            Search-->>LLM: Found 3 user IDs
+
+            Note over LLM: Step 2: Fetch user details (parallel)
+            par Get user details
+                LLM->>Get1: get_user(67890)
+                Get1->>API: GET /users/67890
+                API-->>Get1: Max (is_admin: true)
+                Get1-->>LLM: Max is admin
+            and
+                LLM->>Get2: get_user(17821)
+                Get2->>API: GET /users/17821
+                API-->>Get2: Sofia (is_admin: false)
+                Get2-->>LLM: Sofia not admin
+            and
+                LLM->>Get3: get_user(99821)
+                Get3->>API: GET /users/99821
+                API-->>Get3: Bob (is_admin: false)
+                Get3-->>LLM: Bob not admin
+            end
+
+            Note over LLM: Step 3: Filter - only Max has admin rights
+            Note over LLM: Step 4: Confirm before update
+            LLM->>Confirm: confirm_action(Max, revoke admin, 67890)
+            Confirm-->>LLM: User confirmed: Y
+
+            Note over LLM: Step 5: Update user (on confirmation)
+            LLM->>Update: update_user(67890, {is_admin: false})
+            Update->>API: PUT /users/67890
+            API-->>Update: Max updated successfully
+            Update-->>LLM: Admin rights revoked"
+        />
+
+        **Liman execution steps:**
+        1. **search_by_region(EU)** - Sequential call to find user IDs in EU region
+        2. **get_user()** calls - Parallel execution for all found user IDs
+        3. **Filter** - LLM identifies only Max has admin rights
+        4. **confirm_action()** - Safety check before destructive operation
+        5. **update_user(is_admin=false)** - Execute update only after confirmation
+
+        You can see debug output with `LIMAN_DEBUG=1`:
+        ```bash title="bash"
+        LIMAN_DEBUG=1 python main.py
+        ```
+        </Accordion>
+    </Accordions>
+
+  </Step>
+</Steps>
+
+## Multiple APIs?
+
+You can connect multiple APIs to the same agent:
+
+```python
+# User management API
+user_api = load_openapi("http://localhost:8000/openapi.json")
+create_tool_nodes(user_api, agent.registry, base_url="http://localhost:8000", prefix="Users")
+
+# Payment API
+payment_api = load_openapi("http://localhost:8001/openapi.json")
+create_tool_nodes(payment_api, agent.registry, base_url="http://localhost:8001", prefix="Payments")
+```
+
+## Why This Matters?
+
+#### Less Boilerplate
+
+Instead of writing custom wrapper functions for each API endpoint, you get them automatically. No more `requests.get()` with manual error handling for every single endpoint.
+
+#### No More API Documentation Drift
+
+Your agent tools stay in sync with your API automatically. When you update an endpoint, the tool updates too.
+
+#### Skip the UI Development
+
+Building admin panels takes weeks. Building forms for every endpoint is tedious. With Liman, your team gets a chat interface that understands all your APIs instantly.
+
+#### Reduce Onboarding Time
+
+New team members don't need to learn your internal UI. They just ask: "Show me all users from last month" or "Archive inactive projects". The learning curve decreases.
+
+#### Eliminate Integration Maintenance
+
+API changes? No problem. Schema updates? Handled automatically. You restart the agent and everything just works. No more hunting down broken integration code across multiple repositories.
+
+## What's Next?
+
+You may ask about authentication and state management - they are coming in future articles. For now, check out:
+
+- [Proof of Concept](/docs/poc)
+- [Getting Started Guide](/docs/getting-started/simple-agent)
+- [Authentication PoC](/docs/poc#authientication--authorization)
+- [ServiceAccount spec](/docs/specification/auth/service_account)
+
+---
+
+import { ThumbsUp } from "lucide-react";
+
+<Callout type="info" title="Do you like what you see?" icon={<MemeIcon src="/memes/billy.webp"/>}>
+Give a ⭐ on [GitHub](https://github.com/gurobokum/liman).
+
+</Callout>

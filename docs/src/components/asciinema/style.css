@@ -1,0 +1,25 @@
+@import "asciinema-player/dist/bundle/asciinema-player.css";
+
+.ap-player .ap-overlay-start .ap-play-button div span svg {
+  display: inline;
+}
+
+.asciinema-player-theme-light {
+  --term-color-foreground: var(--foreground);
+  --term-color-background: var(--background);
+
+  --term-color-0: var(--muted-foreground);
+  --term-color-1: var(--destructive);
+  --term-color-2: var(--chart-1);
+  --term-color-3: var(--chart-5);
+  --term-color-4: var(--chart-3);
+  --term-color-5: var(--chart-4);
+  --term-color-6: var(--chart-2);
+  --term-color-7: var(--muted-foreground);
+}
+
+.ap-player {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
