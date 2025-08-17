@@ -130,11 +130,17 @@ export async function generateMetadata(props: {
 
   if (!page) notFound();
 
-  return createMetadata({
-    title: page.data.title,
-    description:
-      page.data.description ?? "Liman AI Agents Blog - Insights and Updates",
-  });
+  const image = ["/blog", params.slug, "image.png"].join("/");
+  return {
+    ...createMetadata({
+      title: page.data.title,
+      description:
+        page.data.description ?? "Liman AI Agents Blog - Insights and Updates",
+      openGraph: {
+        images: image,
+      },
+    }),
+  };
 }
 
 export function generateStaticParams(): { slug: string }[] {
