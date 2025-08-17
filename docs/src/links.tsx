@@ -20,5 +20,5 @@ export const RuTelegram = {
 
 export const Liman = {
   title: "Liman AI",
-  url: "https://liman-ai.vercel.app",
+  url: "https://liman-ai.dev",
 };
