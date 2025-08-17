@@ -8,6 +8,7 @@ import {
 import { notFound } from "next/navigation";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { getMDXComponents } from "@/src/mdx-components";
+import { createMetadata } from "@/src/lib/metadata";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -50,8 +51,8 @@ export async function generateMetadata(props: {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  return {
+  return createMetadata({
     title: page.data.title,
     description: page.data.description,
-  };
+  });
 }
