@@ -1,7 +1,6 @@
 import Link from "fumadocs-core/link";
 import { ArrowRight, Github, Newspaper } from "lucide-react";
 
-import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
 import * as links from "@/src/links";
 
@@ -29,11 +28,6 @@ export default function Hero() {
       <div className="container mx-auto px-4 text-center relative z-10">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="flex flex-col items-center gap-2 mt-4 mb-8 md:mt-0 md:mb-10">
-            {/*
-            <Badge variant="destructive" className="animate-pulse mb-5">
-              ⚠️ In Early Development Phase
-            </Badge>
-            */}
             <HeroBadge url="/blog/2025-08-17_simple_openapi">
               New blog post: OpenAPI integration
             </HeroBadge>
