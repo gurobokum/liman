@@ -1,5 +1,5 @@
 import Link from "fumadocs-core/link";
-import { ArrowRight, Github, NotebookPen } from "lucide-react";
+import { ArrowRight, Github, Newspaper } from "lucide-react";
 
 import { Badge } from "@/src/components/ui/badge";
 import { Button } from "@/src/components/ui/button";
@@ -28,11 +28,15 @@ export default function Hero() {
 
       <div className="container mx-auto px-4 text-center relative z-10">
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="flex flex-col items-center gap-2 my-4 md:mt-0 md:mb-8">
-            <Badge variant="destructive" className="animate-pulse">
-              ⚠️ In Development - Not Ready for Production
+          <div className="flex flex-col items-center gap-2 mt-4 mb-8 md:mt-0 md:mb-10">
+            {/*
+            <Badge variant="destructive" className="animate-pulse mb-5">
+              ⚠️ In Early Development Phase
             </Badge>
-            <HeroBadge url="/docs/poc">Checkout the POC</HeroBadge>
+            */}
+            <HeroBadge url="/blog/2025-08-17_simple_openapi">
+              New blog post: OpenAPI integration
+            </HeroBadge>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight text-foreground">
             Build Reliable{" "}
@@ -111,14 +115,14 @@ function HeroBadge({
   url: string;
 }) {
   return (
-    <Badge
-      variant="secondary"
-      className="border-animated glow-effect cursor-pointer"
-    >
-      <Link href={url} className="flex items-center gap-2" target="_blank">
-        <NotebookPen className="w-3 h-3" />
-        {children}
-      </Link>
-    </Badge>
+    <span className="relative inline-block overflow-hidden rounded-full p-[1px]">
+      <span className="news-badge-glow"></span>
+      <div className="inline-flex h-full w-full cursor-pointer justify-center rounded-full bg-white px-3 py-1 text-xs font-medium leading-5 text-slate-600 backdrop-blur-xl dark:bg-black dark:text-slate-200">
+        <Link href={url} className="flex items-center gap-2" target="_blank">
+          <Newspaper className="w-3 h-3" />
+          {children}
+        </Link>
+      </div>
+    </span>
   );
 }

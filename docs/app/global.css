@@ -145,3 +145,33 @@
     rgba(255, 255, 255, 0.1) 100%
   );
 }
+
+@keyframes rotate-glow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.news-badge-glow {
+  position: absolute;
+  inset: -1000%;
+  animation: spin 3s linear infinite;
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #f3f4f6 0%,
+    #d1d5db 50%,
+    #f3f4f6 100%
+  );
+}
+
+.dark .news-badge-glow {
+  background: conic-gradient(
+    from 90deg at 50% 50%,
+    #171717 0%,
+    #737373 50%,
+    #171717 100%
+  );
+}
