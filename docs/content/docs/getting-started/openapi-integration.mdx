@@ -21,6 +21,14 @@ This builds on the [Adding Custom Tools](/docs/getting-started/adding-tools) gui
     uv add "fastapi[standard]"
     ```
 
+    ```bash tab="poetry"
+    poetry add "fastapi[standard]"
+    ```
+
+    ```bash tab="pip"
+    pip install "fastapi[standard]"
+    ```
+
     Create `server.py` with a simple user management API:
 
     ```python title="server.py"
@@ -87,7 +95,7 @@ This builds on the [Adding Custom Tools](/docs/getting-started/adding-tools) gui
 
     ```python title="main.py"
     from liman.agent import Agent
-    from liman_openapi import create_tool_nodes, load_openapi
+    from liman_openapi import create_tool_nodes, load_openapi  #[!code ++]
     ...
 
     async def main():
