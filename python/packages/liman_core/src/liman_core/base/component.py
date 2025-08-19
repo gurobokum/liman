@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from abc import ABC
+from collections.abc import Sequence
 from io import StringIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Generic, TypeAlias, TypeVar
@@ -145,7 +146,7 @@ class Component(Generic[S], ABC):
 
     @classmethod
     def create_extended_spec(
-        cls, base_spec_class: type[S], plugins: list[Plugin], data: dict[str, Any]
+        cls, base_spec_class: type[S], plugins: Sequence[Plugin], data: dict[str, Any]
     ) -> type[S]:
         """
         Create extended spec class with plugin fields and validate data.
