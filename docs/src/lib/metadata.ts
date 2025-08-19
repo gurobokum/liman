@@ -6,9 +6,7 @@ const defaultTitle = "Liman AI";
 const defaultDescription = "Declarative YAML framework for AI agents";
 
 export const baseUrl =
-  process.env.NODE_ENV === "development" || !process.env.VERCEL_URL
-    ? new URL("http://localhost:3000").origin
-    : new URL(`https://${process.env.VERCEL_URL}`).origin;
+  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export function createMetadata(metdata: Metadata): Metadata {
   return {
