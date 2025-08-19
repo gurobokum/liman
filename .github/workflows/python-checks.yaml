@@ -107,6 +107,7 @@ jobs:
     strategy:
       matrix:
         package:
+          - liman
           - liman_core
           - liman_finops
           - liman_openapi
