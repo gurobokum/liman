@@ -254,21 +254,20 @@ class Executor:
         """
         self.status = ExecutorStatus.SUSPENDED
 
-        child_tasks = []
-        async with asyncio.TaskGroup() as task_group:
-            for next_node, node_input in next_nodes:
-                child_executor = await self._fork_executor(next_node)
-                child_input = ExecutorInput(
-                    execution_id=child_executor.execution_id,
-                    node_actor_id=child_executor.node_actor.id,
-                    node_input=node_input,
-                    node_full_name=next_node.full_name,
-                )
+        async def _handle_next_node(next_node_tuple: NextNode) -> ExecutorOutput:
+            next_node, node_input = next_node_tuple
+            child_executor = await self._fork_executor(next_node)
+            child_input = ExecutorInput(
+                execution_id=child_executor.execution_id,
+                node_actor_id=child_executor.node_actor.id,
+                node_input=node_input,
+                node_full_name=next_node.full_name,
+            )
+            return await child_executor.step(child_input)
 
-                task = task_group.create_task(child_executor.step(child_input))
-                child_tasks.append(task)
-
-        child_outputs = [child_task.result() for child_task in child_tasks]
+        child_outputs = await asyncio.gather(
+            *[_handle_next_node(next_node) for next_node in next_nodes]
+        )
 
         self.status = ExecutorStatus.RUNNING
         if child_outputs:
