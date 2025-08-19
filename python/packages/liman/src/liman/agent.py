@@ -80,7 +80,7 @@ class Agent:
         self._executor: Executor | None = None
         self._last_node_actor_cfg: NodeAgentConfig | None = None
 
-        load_specs_from_directory("./specs", self.registry)
+        load_specs_from_directory(self.specs_dir, self.registry)
 
     async def step(self, input_: str | ExecutorInput) -> ExecutorOutput:
         self.logger.debug(f"Agent '{self.name}' received input: {repr(input_)}")
