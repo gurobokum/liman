@@ -26,13 +26,11 @@
     "python/packages/liman": {
       "component": "liman_py",
       "release-type": "python",
-      "release-as": "0.1.0-a4",
       "extra-label": "python"
     },
     "python/packages/liman_core": {
       "component": "liman_core_py",
       "release-type": "python",
-      "release-as": "0.1.0-a4",
       "extra-label": "python"
     },
     "python/packages/liman_finops": {
@@ -44,7 +42,6 @@
     "python/packages/liman_openapi": {
       "component": "liman_openapi_py",
       "release-type": "python",
-      "release-as": "0.1.0-a2",
       "extra-label": "python"
     },
     "typescript/packages/liman_core": {
