@@ -11,6 +11,7 @@ export function GET() {
     title: "LimanAI Blog",
     id: `${baseUrl}/blog`,
     link: `${baseUrl}/blog`,
+    description: "Declarative YAML framework for building AI agents",
     language: "en",
 
     image: `${baseUrl}/og.png`,
