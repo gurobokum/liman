@@ -5,6 +5,11 @@ import * as links from "@/src/links";
 const defaultTitle = "Liman AI";
 const defaultDescription = "Declarative YAML framework for AI agents";
 
+export const baseUrl =
+  process.env.NODE_ENV === "development" || !process.env.VERCEL_URL
+    ? new URL("http://localhost:3000").origin
+    : new URL(`https://${process.env.VERCEL_URL}`).origin;
+
 export function createMetadata(metdata: Metadata): Metadata {
   return {
     ...metdata,
@@ -23,10 +28,16 @@ export function createMetadata(metdata: Metadata): Metadata {
       description: metdata.description ?? defaultDescription,
       ...metdata.twitter,
     },
+
+    alternates: {
+      types: {
+        "application/rss+xml": [
+          {
+            title: "LimanAI Blog",
+            url: `${baseUrl}/rss.xml`,
+          },
+        ],
+      },
+    },
   };
 }
-
-export const baseUrl =
-  process.env.NODE_ENV === "development" || !process.env.VERCEL_URL
-    ? new URL("http://localhost:3000")
-    : new URL(`https://${process.env.VERCEL_URL}`);
