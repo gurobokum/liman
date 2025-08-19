@@ -117,10 +117,10 @@ The DSL expressions are parsed at runtime and evaluated against the current exec
 
 ### Packages
 
-- [**liman**](python/packages/liman): Main package with executor and agent functionality, should be used as an entry point
-- [**liman_core**](python/packages/liman_core): Core library with node types and YAML processing, [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_core)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_core)
+- [**liman**](python/packages/liman): Main package with executor and agent functionality, should be used as an entry point [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman)
+- [**liman_core**](python/packages/liman_core): Core library with node types and YAML processing [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_core)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_core)
 - [**liman_finops**](python/packages/liman_finops): OpenTelemetry instrumentation and cost tracking.
-- [**liman_openapi**](python/packages/liman_openapi): OpenAPI to ToolNode generation, [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_openapi)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_openapi)
+- [**liman_openapi**](python/packages/liman_openapi): OpenAPI to ToolNode generation [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_openapi)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_openapi)
 
 ## Resources
 
