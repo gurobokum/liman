@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.0-a4](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a3...liman_py-v0.1.0-a4) (2025-08-19)
+
+
+### ✨ Features
+
+* **liman:** parse base_exception ([3e6786b](https://github.com/gurobokum/liman/commit/3e6786b13b4ba4ce6e5705f0eeca38db0737450d))
+
+
+### 🐛 Bug Fixes
+
+* issue with hardcoded dir for specs ([60f22ee](https://github.com/gurobokum/liman/commit/60f22ee72a3155bade9fb565f17ecf8cbdc93a11))
+* **liman:** use asyncio.gather for python-3.10 support ([2989f97](https://github.com/gurobokum/liman/commit/2989f977bb7c5fe8c29f7062076f41d2f656d636))
+
+
+### 📚 Documentation
+
+* add 2 step in GettingStarted tutorial ([fc9dc1f](https://github.com/gurobokum/liman/commit/fc9dc1ffd9b82740d7e3c71c8d8754c0fc96f434))
+
 ## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a2...liman_py-v0.1.0-a3) (2025-08-15)
 
 
