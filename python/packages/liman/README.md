@@ -1,5 +1,7 @@
 # Liman
 
+[![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman)
+
 High-level AgentOps package for building and running conversational AI agents using YAML manifests and node-based workflows.
 
 ## Purpose
