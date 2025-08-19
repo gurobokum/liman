@@ -265,8 +265,14 @@ class Executor:
             )
             return await child_executor.step(child_input)
 
+        def _get_node_output(output: ExecutorOutput | BaseException) -> Any:
+            if isinstance(output, BaseException):
+                return str(output)
+            return output.node_output
+
         child_outputs = await asyncio.gather(
-            *[_handle_next_node(next_node) for next_node in next_nodes]
+            *[_handle_next_node(next_node) for next_node in next_nodes],
+            return_exceptions=True,
         )
 
         self.status = ExecutorStatus.RUNNING
@@ -274,7 +280,7 @@ class Executor:
             combined_input = ExecutorInput(
                 execution_id=self.execution_id,
                 node_actor_id=self.node_actor.id,
-                node_input=[output.node_output for output in child_outputs],
+                node_input=[_get_node_output(output) for output in child_outputs],
                 node_full_name=self.node_actor.node.full_name,
             )
             await self._input_queue.put(combined_input)
