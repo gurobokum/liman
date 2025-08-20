@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0-a5](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a4...liman_py-v0.1.0-a5) (2025-08-20)
+
+
+### 📚 Documentation
+
+* **liman:** add codecov badge ([6a0a561](https://github.com/gurobokum/liman/commit/6a0a561942cf711d4b9c68d69c19c2ade8747154))
+
+
+### ♻️ Tests
+
+* **liman:** add tests for Agent ([11df3dc](https://github.com/gurobokum/liman/commit/11df3dc38a4d895604fe12ec389bfcad00ee41ea))
+* **liman:** add tests for storage ([7fabc26](https://github.com/gurobokum/liman/commit/7fabc26f4ddfd85bcc99047deeb3229979e3235b))
+
 ## [0.1.0-a4](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a3...liman_py-v0.1.0-a4) (2025-08-19)
 
 
