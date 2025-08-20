@@ -1,0 +1,84 @@
+---
+title: Glossary
+description: A glossary of terms used in Liman
+---
+
+## A - E
+
+#### Agent
+
+High-level entity that orchestrates workflow execution, wraps [Executor](#executor), stateless.
+
+#### CE DSL
+
+Custom Conditional Expression DSL used to define conditions and expressions in the system. It allows complex logic to be expressed in a declarative manner in [Spec](#spec).
+
+#### Component
+
+Every [Spec](#spec) is parsed to a [Component](#component), which is a basic building block of the system - [Nodes](#node), [ServiceAccount](#serviceaccount), etc.
+
+#### Context
+
+A set of variables that can be injected into components from external state, providing additional information needed for execution.
+
+#### CredentialsProvider
+
+A phantom specification that provides authentication credentials to [ServiceAccount](#serviceaccount) at runtime. Not declared in YAML but registered in the Registry.
+
+#### Edge
+
+Connection between nodes that defines routing logic and conditional flow control using [CE DSL](#ce-dsl).
+
+#### Executor
+
+An instance that executes the workflow, orchestrating execution flow and managing workflow state, stateful.
+
+## F - N
+
+#### FunctionNode
+
+A specific type of [Node](#node) that represents custom user-defined logic.
+
+#### LanguageBundle
+
+A specification for multi-language text content, allowing localization and templating support.
+
+#### LLMNode
+
+A specific type of [Node](#node) that represents a Large Language Model (LLM) and is used to process natural language inputs and generate outputs.
+
+#### Node
+
+A specific type of [Component](#component) that represents a single unit of work or functionality within the system - [LLMNode](#llmnode), [FunctionNode](#functionnode), [ToolNode](#toolnode).
+
+#### NodeActor
+
+Component that manages role assumption, state, and node wrapping during execution, serving as an intermediary between the executor and individual nodes.
+
+## O - U
+
+#### Overlay
+
+Specific [Spec](#spec) that applies to another basic [Spec](#spec) to extend or modify it.
+
+#### Plugin
+
+Extensible component that adds custom functionality to node specifications without hardcoding logic. Plugins follow a standard interface and can extend multiple spec types (e.g., AuthPlugin for authentication).
+
+#### Registry
+
+Central repository for managing and storing component definitions, credentials providers, plugins, and other runtime resources.
+
+#### ServiceAccount
+
+An identity used by NodeActor to execute nodes, providing authentication and authorization context for external service access.
+
+#### Spec
+
+YAML declaration, basic block of the system, which is parsed to a [Component](#component).
+
+#### ToolNode
+
+A specific type of [Node](#node) that enables function calling capabilities for LLMs.
+
+## V - Z
