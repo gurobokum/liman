@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-a4](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a3...liman_core_py-v0.1.0-a4) (2025-08-20)
+
+
+### ♻️ Tests
+
+* **liman_core:** add plugins and registry basic tests ([7c45bf0](https://github.com/gurobokum/liman/commit/7c45bf0aeb1a259e83f551307b8347381f4430ca))
+* **liman_core:** add tests for errors ([759edc7](https://github.com/gurobokum/liman/commit/759edc753c8a06eb7bd19d1210f6c124beef662b))
+* **liman_core:** cover edge CE DSL with tests ([eeba4a7](https://github.com/gurobokum/liman/commit/eeba4a78258b4c9b00e0c63d9b47299d6f866426))
+* **liman_core:** cover utils ([333fb4b](https://github.com/gurobokum/liman/commit/333fb4bb947d54cfa41c8a11e430be58e0982e7d))
+* **liman_core:** improve coverage ([0079a81](https://github.com/gurobokum/liman/commit/0079a81ae769c4fcbd2671f608b05261cbc9a61f))
+* rework tests/nodes ([3e9d36c](https://github.com/gurobokum/liman/commit/3e9d36c0d77c5a3fb5d91d07592d9775b7eac3d8))
+
 ## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a1...liman_core_py-v0.1.0-a3) (2025-08-15)
 
 
