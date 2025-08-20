@@ -1,21 +1,16 @@
 # Liman
 
-### [Proof of Concept](https://www.liman-ai.dev/docs/poc)
-
-[![Docs](https://img.shields.io/badge/docs-read-brightgreen?logo=nextdotjs)](https://liman-ai.vercel.app/docs/poc)
-[![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/rmucxEzSyY?compact=true&style=flat)](https://discord.gg/rmucxEzSyY) [![X Follow](https://img.shields.io/twitter/follow/liman_ai?style=social)](https://x.com/liman_ai)
-
-Declarative framework for building composable AI agents using YAML manifests and node-based architecture.
+Code-first declarative framework for building composable AI agents using YAML manifests
 
 > ⚠️ **Warning:** This project is in early development phase.
 
 ## Features
 
 - **Declarative YAML Configuration**: Define agents using simple YAML manifests
-- **Multi-language Support**: Built-in localization for prompts and descriptions
 - **Node-based Architecture**: Compose workflows from LLM, Tool, and custom nodes
 - **Edge DSL**: Connect nodes with conditional expressions and function references
 - **OpenAPI Integration**: Auto-generate tools from OpenAPI specifications
+- **Multi-language Support**: Built-in localization for prompts and descriptions
 - **Built-in Observability**: OpenTelemetry support with FinOps tracking
 - **Multi-runtime**: Python implementation (TS, Go planned)
 
@@ -126,3 +121,6 @@ The DSL expressions are parsed at runtime and evaluated against the current exec
 
 - [📖 Documentation](https://liman-ai.vercel.app/docs/poc)
 - [🔧 Specification](https://liman-ai.vercel.app/docs/specification/node)
+
+[![Docs](https://img.shields.io/badge/docs-read-brightgreen?logo=nextdotjs)](https://liman-ai.vercel.app/docs/poc)
+[![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/rmucxEzSyY?compact=true&style=flat)](https://discord.gg/rmucxEzSyY) [![X Follow](https://img.shields.io/twitter/follow/liman_ai?style=social)](https://x.com/liman_ai)
