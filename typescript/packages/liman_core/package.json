@@ -18,16 +18,21 @@
     "@eslint/js": "^9.32.0",
     "@eslint/json": "^0.13.1",
     "@eslint/markdown": "^7.1.0",
+    "@types/node": "^24.3.0",
     "base": "link:packages/liman_core/base",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.3.0",
     "jiti": "^2.5.1",
     "prettier": "^3.6.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript-eslint": "^8.38.0",
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "cli-highlight": "^2.1.11",
+    "es-toolkit": "^1.39.10",
+    "yaml": "^2.8.1",
     "zod": "^4.0.14"
   }
 }
