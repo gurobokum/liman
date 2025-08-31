@@ -19,6 +19,7 @@ from liman_core.node_actor.schemas import (
     NodeActorStatus,
     Result,
 )
+from liman_core.nodes.base.execution_context import ExecutionContext
 from liman_core.nodes.base.node import BaseNode
 from liman_core.nodes.base.schemas import (
     NS,
@@ -62,6 +63,9 @@ class NodeActor(Generic[T]):
     """
     Unified NodeActor supporting both sync and async execution
     """
+
+    id: UUID
+    node: T
 
     def __init__(
         self,
@@ -249,7 +253,7 @@ class NodeActor(Generic[T]):
             execution_context = self._prepare_execution_context(context, execution_id)
 
             if isinstance(self.node, LLMNode):
-                node_output = await self._execute_llm_node(input_, execution_context)
+                node_output = await self._execute_llm_node(input_)
             elif isinstance(self.node, ToolNode):
                 node_output = await self._execute_tool_node(input_, execution_context)
             elif isinstance(self.node, FunctionNode):
@@ -280,9 +284,7 @@ class NodeActor(Generic[T]):
             )
             raise self.error from e
 
-    async def _execute_llm_node(
-        self, input_: Any, context: dict[str, Any]
-    ) -> LangChainMessage:
+    async def _execute_llm_node(self, input_: Any) -> LangChainMessage:
         if not self.llm:
             raise create_error(
                 "LLM required for LLMNode execution but not provided", self
@@ -310,16 +312,14 @@ class NodeActor(Generic[T]):
                 f"Unsupported input type {type(input_)} for LLMNode", self
             )
 
-        node_output = await self.node.invoke(
-            self.llm, [*node_state.messages, *inputs], **context
-        )
+        node_output = await self.node.invoke(self.llm, [*node_state.messages, *inputs])
 
         node_state.messages.extend(inputs)
         node_state.messages.append(node_output)
         return node_output
 
     async def _execute_tool_node(
-        self, input_: Any, context: dict[str, Any] | None = None
+        self, input_: Any, execution_context: ExecutionContext[ToolNodeState]
     ) -> ToolMessage:
         # it's needed for proper typing
         if not isinstance(self.node, ToolNode):
@@ -330,18 +330,20 @@ class NodeActor(Generic[T]):
             )
 
         tool_call = ToolCall.model_validate(input_)
-        node_output = await self.node.invoke(tool_call, state=context)
+        node_output = await self.node.invoke(
+            tool_call, execution_context=execution_context
+        )
         self.node_state.input_ = tool_call
         self.node_state.output = node_output
         return node_output
 
     async def _execute_function_node(
-        self, input_: Any, context: dict[str, Any] | None = None
+        self, input_: Any, execution_context: ExecutionContext[NS]
     ) -> Any:
         if not isinstance(self.node, FunctionNode):
             raise create_error(f"Expected FunctionNode, got {type(self.node)}", self)
 
-        return await self.node.invoke(input_, state=context or {})
+        return await self.node.invoke(input_, execution_context=execution_context)
 
     # State synchronization privatemethods
 
@@ -439,19 +441,20 @@ class NodeActor(Generic[T]):
 
     def _prepare_execution_context(
         self, context: dict[str, Any], execution_id: UUID
-    ) -> dict[str, Any]:
+    ) -> ExecutionContext[Any]:
         """
         Prepare execution context with actor metadata
         """
-        execution_context = {
-            **context,
-            "actor_id": self.id,
-            "execution_id": execution_id,
-            "node_name": self.node.name,
-            "node_type": self.node.spec.kind,
-        }
-
-        return execution_context
+        return ExecutionContext(
+            self.node_state,
+            **{
+                **context,
+                "actor_id": self.id,
+                "execution_id": execution_id,
+                "node_name": self.node.name,
+                "node_type": self.node.spec.kind,
+            },
+        )
 
     def _restore_state(self, state: dict[str, Any]) -> None:
         """

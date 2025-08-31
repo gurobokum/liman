@@ -3,12 +3,14 @@ import inspect
 from collections.abc import Callable
 from functools import reduce
 from importlib import import_module
-from typing import Any, cast
+from typing import Any, cast, get_type_hints
 
 from langchain_core.messages import ToolMessage
 
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode, flatten_dict
+from liman_core.nodes.base.execution_context import ExecutionContext
+from liman_core.nodes.base.liman import Liman
 from liman_core.nodes.base.node import BaseNode
 from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeSpec, ToolNodeState
 from liman_core.nodes.tool_node.utils import (
@@ -122,7 +124,9 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         self.spec.func = str(func)
 
     async def invoke(
-        self, tool_call: ToolCall, state: dict[str, Any] | None = None
+        self,
+        tool_call: ToolCall,
+        execution_context: ExecutionContext[ToolNodeState] | None = None,
     ) -> ToolMessage:
         """
         Asynchronously invoke the tool function with the provided arguments.
@@ -140,7 +144,9 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         func = self.func
         tool_call_id = tool_call.id_
         tool_call_name = tool_call.name
-        call_args = self._extract_function_args(tool_call.args)
+        call_args = self._extract_function_args(
+            tool_call.args, execution_context=execution_context
+        )
 
         try:
             if asyncio.iscoroutinefunction(func) or (
@@ -165,12 +171,18 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
             )
         return response
 
-    def _extract_function_args(self, args_dict: dict[str, Any]) -> dict[str, Any]:
+    def _extract_function_args(
+        self,
+        args_dict: dict[str, Any],
+        execution_context: ExecutionContext[ToolNodeState] | None = None,
+    ) -> dict[str, Any]:
         """
         Extract function arguments based on function signature from provided args dict.
+        Automatically inject Liman dependency if function parameter is typed as Liman.
 
         Args:
             args_dict: Dictionary containing all available arguments
+            execution_context: Optional ExecutionContext
 
         Returns:
             Dictionary with only the arguments that match function signature
@@ -179,10 +191,21 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
             return args_dict
 
         sig = inspect.signature(self.func)
+        type_hints = get_type_hints(self.func)
         filtered_args = {}
 
         for param_name, param in sig.parameters.items():
-            if param_name in args_dict:
+            param_type = type_hints.get(param_name, param.annotation)
+
+            # Check if parameter is typed as Liman OR named 'liman' (for untyped code)
+            if param_type is Liman or param_name == "liman":
+                if not execution_context:
+                    raise ValueError(
+                        f"Cannot inject Liman instance for parameter '{param_name}' because no execution context was provided."
+                    )
+                liman = Liman(execution_context=execution_context)
+                filtered_args[param_name] = liman
+            elif param_name in args_dict:
                 filtered_args[param_name] = args_dict[param_name]
             elif param.default is not inspect.Parameter.empty:
                 continue

@@ -50,7 +50,7 @@ class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
         self.func = func
         self.spec.func = str(func)
 
-    async def invoke(self, input_: Any, state: dict[str, Any], **kwargs: Any) -> Any:
+    async def invoke(self, input_: Any, **kwargs: Any) -> Any:
         """
         Asynchronous invoke method for the FunctionNode.
         """
