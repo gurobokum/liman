@@ -23,6 +23,7 @@ class ExecutorInput(BaseModel):
     node_actor_id: UUID
     node_input: Any
     node_full_name: str
+    context: dict[str, Any] | None = None
 
 
 class ExecutorOutput(BaseModel):

@@ -190,7 +190,7 @@ class Executor:
 
         node_input = input_.node_input
         result = await self.node_actor.execute(
-            node_input, execution_id=self.execution_id
+            node_input, execution_id=self.execution_id, context=input_.context
         )
 
         # Save state after execution
@@ -212,11 +212,15 @@ class Executor:
         next_nodes = result.next_nodes
 
         if len(next_nodes) == 1:
-            await self._handle_sequential_execution(next_nodes[0])
+            await self._handle_sequential_execution(
+                next_nodes[0], context=input_.context
+            )
         else:
-            await self._handle_parallel_execution(next_nodes)
+            await self._handle_parallel_execution(next_nodes, context=input_.context)
 
-    async def _handle_sequential_execution(self, next_node_tuple: NextNode) -> None:
+    async def _handle_sequential_execution(
+        self, next_node_tuple: NextNode, context: dict[str, Any] | None = None
+    ) -> None:
         """
         Handle sequential execution of the next node
         """
@@ -231,6 +235,7 @@ class Executor:
             node_actor_id=child_executor.node_actor.id,
             node_input=node_input,
             node_full_name=next_node.full_name,
+            context=context,
         )
 
         # Execute child and get result
@@ -241,6 +246,7 @@ class Executor:
             node_actor_id=self.node_actor.id,
             node_input=child_output.node_output,
             node_full_name=self.node_actor.node.full_name,
+            context=context,
         )
 
         await self._input_queue.put(continue_input)
@@ -248,6 +254,7 @@ class Executor:
     async def _handle_parallel_execution(
         self,
         next_nodes: list[NextNode],
+        context: dict[str, Any] | None = None,
     ) -> None:
         """
         Handle parallel execution of multiple nodes
@@ -262,6 +269,7 @@ class Executor:
                 node_actor_id=child_executor.node_actor.id,
                 node_input=node_input,
                 node_full_name=next_node.full_name,
+                context=context,
             )
             return await child_executor.step(child_input)
 
@@ -282,6 +290,7 @@ class Executor:
                 node_actor_id=self.node_actor.id,
                 node_input=[_get_node_output(output) for output in child_outputs],
                 node_full_name=self.node_actor.node.full_name,
+                context=context,
             )
             await self._input_queue.put(combined_input)
 

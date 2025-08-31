@@ -364,7 +364,9 @@ async def test_execute_node_basic(
         mock_execute.return_value = Result(output="test result", next_nodes=[])
         result = await executor._execute_node(input_)
 
-        mock_execute.assert_called_once_with("test input", execution_id=execution_id)
+        mock_execute.assert_called_once_with(
+            "test input", execution_id=execution_id, context=None
+        )
         mock_storage_asave.assert_called_once_with(
             execution_id,
             node_actor.id,

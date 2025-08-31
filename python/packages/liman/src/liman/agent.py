@@ -49,10 +49,10 @@ class Agent:
     def __init__(
         self,
         specs_dir: str,
-        *,
         start_node: str,
-        llm: BaseChatModel,
+        *,
         name: str = "Agent",
+        llm: BaseChatModel,
         registry: Registry | None = None,
         state_storage: StateStorage | None = None,
         max_iterations: int = 50,
@@ -82,7 +82,9 @@ class Agent:
 
         load_specs_from_directory(self.specs_dir, self.registry)
 
-    async def step(self, input_: str | ExecutorInput) -> ExecutorOutput:
+    async def step(
+        self, input_: str | ExecutorInput, context: dict[str, Any] | None = None
+    ) -> ExecutorOutput:
         self.logger.debug(f"Agent '{self.name}' received input: {repr(input_)}")
 
         if not self._executor:
@@ -92,9 +94,16 @@ class Agent:
             )
 
         if isinstance(input_, ExecutorInput):
+            if context:
+                intersection = set(input_.context or {}) & set(context)
+                if intersection:
+                    self.logger.warning(f"Overwriting keys in context: {intersection}")
+                input_.context = (
+                    {**input_.context, **context} if input_.context else context
+                )
             await self._input_queue.put(input_)
         else:
-            input_ = self._create_executor_input(input_)
+            input_ = self._create_executor_input(input_, context)
             await self._input_queue.put(input_)
 
         if not self._processing_task:
@@ -193,13 +202,16 @@ class Agent:
             max_iterations=self.max_iterations,
         )
 
-    def _create_executor_input(self, input_: str) -> ExecutorInput:
+    def _create_executor_input(
+        self, input_: str, context: dict[str, Any] | None = None
+    ) -> ExecutorInput:
         if cfg := self._last_node_actor_cfg:
             return ExecutorInput(
                 execution_id=cfg["execution_id"],
                 node_actor_id=cfg["node_actor_id"],
                 node_input=input_,
                 node_full_name=cfg["node_full_name"],
+                context=context,
             )
         else:
             if not self._executor:
@@ -209,4 +221,5 @@ class Agent:
                 node_actor_id=self._executor.node_actor.id,
                 node_input=input_,
                 node_full_name=self._executor.node_actor.node.full_name,
+                context=context,
             )

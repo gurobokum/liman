@@ -8,6 +8,7 @@ if os.getenv("LIMAN_DEBUG") == "1":
 
 from liman_core.registry import Registry
 
+from liman.agent import Agent
 from liman.executor.base import Executor
 from liman.loader import load_specs_from_directory
 from liman.state import InMemoryStateStorage, StateStorage
@@ -16,6 +17,7 @@ from liman.state import InMemoryStateStorage, StateStorage
 __version__ = "0.1.0-a4"
 
 __all__ = [
+    "Agent",
     "enable_debug",
     "Executor",
     "StateStorage",
