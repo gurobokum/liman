@@ -38,6 +38,9 @@ importers:
       fumadocs-mdx:
         specifier: 11.7.1
         version: 11.7.1(@fumadocs/mdx-remote@1.4.0(@types/react@19.1.8)(acorn@8.15.0)(fumadocs-core@15.6.6(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0))(acorn@8.15.0)(fumadocs-core@15.6.6(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react@19.1.0)
+      fumadocs-python:
+        specifier: ^0.0.3
+        version: 0.0.3(@types/react@19.1.8)(fumadocs-core@15.6.6(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(fumadocs-ui@15.6.6(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.11))
       fumadocs-ui:
         specifier: 15.6.6
         version: 15.6.6(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.11)
@@ -2225,6 +2228,16 @@ packages:
       react:
         optional: true
       vite:
+        optional: true
+
+  fumadocs-python@0.0.3:
+    resolution: {integrity: sha512-1GBkcC3v4NofbyILcEL68MQNKaAm/V84EsmU8x4eMTrFOmSSpSwBEI/wSaJgf4jmGxQHLasGP6eOCqbd4cyDjQ==}
+    peerDependencies:
+      '@types/react': '*'
+      fumadocs-core: 15.x.x
+      fumadocs-ui: 15.x.x
+    peerDependenciesMeta:
+      '@types/react':
         optional: true
 
   fumadocs-ui@15.6.6:
@@ -5964,6 +5977,15 @@ snapshots:
     transitivePeerDependencies:
       - acorn
       - supports-color
+
+  fumadocs-python@0.0.3(@types/react@19.1.8)(fumadocs-core@15.6.6(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(fumadocs-ui@15.6.6(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.11)):
+    dependencies:
+      class-variance-authority: 0.7.1
+      fumadocs-core: 15.6.6(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      fumadocs-ui: 15.6.6(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.11)
+      js-yaml: 4.1.0
+    optionalDependencies:
+      '@types/react': 19.1.8
 
   fumadocs-ui@15.6.6(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(next@15.3.4(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.11):
     dependencies:
