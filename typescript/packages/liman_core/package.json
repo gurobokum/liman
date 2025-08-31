@@ -31,6 +31,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.72",
     "cli-highlight": "^2.1.11",
     "es-toolkit": "^1.39.10",
     "nearley": "^2.20.1",

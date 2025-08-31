@@ -1,10 +1,10 @@
+import { Component, ComponentConstructorOptions } from "@/base/component";
+import { TBaseSpec } from "@/base/schemas";
 import { LimanError } from "@/errors";
 import { isValidLanguageCode, LanguageCode } from "@/languages";
-import { TNodeState } from "@/nodes/base/schemas";
 import { Registry } from "@/registry";
 
-import { Component, ComponentConstructorOptions } from "./component";
-import { TBaseSpec } from "./schemas";
+import { TNodeState } from "./schemas";
 
 export type NodeConstructorOptions = ComponentConstructorOptions & {
   readonly defaultLang?: LanguageCode;

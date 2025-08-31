@@ -2,11 +2,12 @@
 import js from "@eslint/js";
 import json from "@eslint/json";
 import markdown from "@eslint/markdown";
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
+  globalIgnores([".scripts/**"]),
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     plugins: { js },
@@ -20,10 +21,10 @@ export default defineConfig([
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_",
-          "caughtErrorsIgnorePattern": "^_"
-        }
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
     },
   },
