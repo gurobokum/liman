@@ -62,11 +62,6 @@ def greeting_tool_decl() -> dict[str, Any]:
     }
 
 
-@pytest.fixture
-def registry() -> Registry:
-    return Registry()
-
-
 def test_invoke_with_valid_tool_call(
     tool_node_decl: dict[str, Any], registry: Registry
 ) -> None:

@@ -29,11 +29,6 @@ INVALID_YAML = {
 }
 
 
-@pytest.fixture
-def registry() -> Registry:
-    return Registry()
-
-
 def test_node_parses_style_1(registry: Registry) -> None:
     node = Node.from_dict(YAML_STYLE_1, registry)
     node.compile()

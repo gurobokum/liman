@@ -25,11 +25,6 @@ INVALID_YAML = {
 }
 
 
-@pytest.fixture
-def registry() -> Registry:
-    return Registry()
-
-
 def test_llmnode_parses_style_1(registry: Registry) -> None:
     node = LLMNode.from_dict(YAML_STYLE_1, registry)
     node.compile()

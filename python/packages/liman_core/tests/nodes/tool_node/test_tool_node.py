@@ -1,14 +1,7 @@
 from typing import Any
 
-import pytest
-
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
-
-
-@pytest.fixture
-def registry() -> Registry:
-    return Registry()
 
 
 def test_tool_node_minimal(simple_decl: dict[str, Any], registry: Registry) -> None:

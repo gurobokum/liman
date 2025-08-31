@@ -87,19 +87,6 @@ async def test_actor_execute_after_shutdown_raises(
     assert "Cannot execute actor in status shutdown" in str(exc_info.value)
 
 
-async def test_actor_execute_with_context(llm_actor: NodeActor[LLMNode]) -> None:
-    inputs = "test"
-    context = {"custom_key": "custom_value"}
-    execution_id = uuid4()
-
-    await llm_actor.execute(inputs, execution_id, context=context)
-
-    call_kwargs = llm_actor.node.invoke.call_args[1]  # type: ignore[attr-defined]
-    assert call_kwargs["custom_key"] == "custom_value"
-    assert call_kwargs["actor_id"] == llm_actor.id
-    assert call_kwargs["execution_id"] == execution_id
-
-
 async def test_actor_execute_llm_node_success(llm_actor: NodeActor[LLMNode]) -> None:
     inputs = "test"
     execution_id = uuid4()

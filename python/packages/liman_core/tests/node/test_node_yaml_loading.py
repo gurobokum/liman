@@ -11,11 +11,6 @@ from liman_core.registry import Registry
 TEST_DATA_PATH = Path(__file__).parent / "data"
 
 
-@pytest.fixture
-def registry() -> Registry:
-    return Registry()
-
-
 def test_from_yaml_path_valid_file(registry: Registry) -> None:
     yaml_path = TEST_DATA_PATH / "valid_node.yaml"
     node = Node.from_yaml_path(str(yaml_path), registry)
