@@ -15,6 +15,7 @@
     "go:lint": "cd go && bazel run //:lint",
     "python:lint": "cd python && uv run poe lint",
     "python:typing": "cd python && uv run poe mypy",
+    "python:docs": "cd python && python scripts/griffe_libraries.py && cd .. && pnpm -F @liman/docs python:docs && pnpm -F @liman/python format",
     "commitlint:type": "commitlint --print-config json | jq '.rules.\"type-enum\"[2]'",
     "commitlint:scope": "commitlint --print-config json | jq '.rules.\"scope-enum\"[2]'",
     "scripts:list": "cat package.json | jq -r '\"package_name: \\(.name)\\n\\n\\(.scripts | to_entries[] | \"- \\(.key)\")\"'",

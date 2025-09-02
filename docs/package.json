@@ -9,7 +9,8 @@
     "postinstall": "fumadocs-mdx",
     "format": "prettier --write '**/*.{ts,tsx,js,jsx,json,md,mdx}'",
     "format:check": "prettier --check '**/*.{ts,tsx,js,jsx,json,md,mdx}'",
-    "lint": "eslint --max-warnings=0 && pnpm tsc --noEmit"
+    "lint": "eslint --max-warnings=0 && pnpm tsc --noEmit",
+    "python:docs": "node scripts/generate-python.mjs"
   },
   "dependencies": {
     "@fumadocs/mdx-remote": "^1.4.0",
