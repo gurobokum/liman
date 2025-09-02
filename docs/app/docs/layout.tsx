@@ -3,17 +3,13 @@ import type { ReactNode } from "react";
 import { baseOptions } from "@/app/layout.config";
 import { source } from "@/src/lib/source";
 import { GithubInfo } from "fumadocs-ui/components/github-info";
-import { Anchor } from "lucide-react";
+import { Anchor, LibraryBig } from "lucide-react";
+import { SiPython } from "react-icons/si";
 
 const docsOptions: DocsLayoutProps = {
   ...baseOptions,
   tree: source.pageTree,
-  links: [
-    {
-      type: "custom",
-      children: <GithubInfo owner="gurobokum" repo="liman" />,
-    },
-  ],
+  links: [],
   nav: {
     title: (
       <>
@@ -21,6 +17,35 @@ const docsOptions: DocsLayoutProps = {
         Liman
       </>
     ),
+  },
+  sidebar: {
+    tabs: [
+      {
+        title: "Liman AI",
+        description: "Declarative AI Agent Framework",
+        url: "/docs/poc",
+        icon: <LibraryBig className="size-9 md:size-5 shrink-0" />,
+        urls: new Set([
+          "/docs/poc",
+          "/docs/getting-started/simple-agent",
+          "/docs/getting-started/adding-tools",
+          "/docs/getting-started/openapi-integration",
+          "/docs/specification/auth/service_account",
+          "/docs/specification/internal_types",
+          "/docs/specification/llm_node",
+          "/docs/specification/node",
+          "/docs/specification/overlay",
+          "/docs/specification/tool_node",
+          "/docs/glossary",
+        ]),
+      },
+      {
+        title: "Python SDK",
+        description: "Python Reference for Liman",
+        url: "/docs/python/liman_core",
+        icon: <SiPython className="size-9 md:size-5 shrink-0" />,
+      },
+    ],
   },
 };
 
