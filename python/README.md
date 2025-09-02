@@ -8,3 +8,9 @@ Python monorepo with multiple packages for building AI agents.
 - [**liman_core**](packages/liman_core): Core library with nodes and YAML processing
 - [**liman_finops**](packages/liman_finops): OpenTelemetry instrumentation and cost tracking
 - [**liman_openapi**](packages/liman_openapi): OpenAPI to ToolNode generation
+
+## How to generate code references
+
+```bash
+python ./scripts/griffe_libraries.py
+```

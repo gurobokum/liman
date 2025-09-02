@@ -6,8 +6,10 @@ from pydantic import BaseModel, Field
 
 class NodeState(BaseModel):
     """
-    State for Node.
-    This class can be extended to add custom state attributes.
+    Base state model for all nodes in the Liman framework.
+
+    Provides common state attributes that all nodes require.
+    Can be extended by specific node types to add custom state data.
     """
 
     kind: str
