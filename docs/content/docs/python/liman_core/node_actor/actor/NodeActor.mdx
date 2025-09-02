@@ -1,0 +1,841 @@
+---
+title: NodeActor
+---
+
+Unified NodeActor supporting both sync and async execution
+
+## Attributes
+
+<PyAttribute name={"id"} type={"UUID"} value={"actor_id or uuid4()"} />
+
+<PyAttribute name={"node"} type={"T"} value={"node"} />
+
+<PyAttribute name={"llm"} type={null} value={"llm"} />
+
+<PyAttribute name={"node_state"} type={null} value={"node.get_new_state()"} />
+
+<PyAttribute name={"status"} type={null} value={"NodeActorStatus.IDLE"} />
+
+<PyAttribute name={"error"} type={"NodeActorError | None"} value={"None"} />
+
+<PyAttribute
+  name={"logger"}
+  type={null}
+  value={"logging.LoggerAdapter(logger, {'actor_id': str(self.id)})"}
+/>
+
+<PyAttribute name={"composite_id"} type={"str"} value={null} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, node, actor_id=None, llm=None)"}>
+
+<PySourceCode >
+
+```python
+def __init__(
+    self,
+    node: T,
+    actor_id: UUID | None = None,
+    llm: BaseChatModel | None = None,
+):
+    self.id = actor_id or uuid4()
+    self.llm = llm
+    self.node = node
+    self.node_state = node.get_new_state()
+
+    self.status = NodeActorStatus.IDLE
+    self.error: NodeActorError | None = None
+
+    self._execution_lock = asyncio.Lock()
+
+    self.logger = logging.LoggerAdapter(logger, {"actor_id": str(self.id)})
+
+    self._initialize()
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"node"} type={"T"} value={null} />
+<PyParameter name={"actor_id"} type={"UUID | None"} value={"None"} />
+<PyParameter name={"llm"} type={"BaseChatModel | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={null} />
+
+</PyFunction>
+
+<PyFunction name={"__repr__"} type={"__repr__(self) -> str"}>
+
+<PySourceCode >
+
+```python
+def __repr__(self) -> str:
+    return f"{self.__class__.__name__}(id={self.id}, node={self.node.name}, status={self.status.value})"
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"str"} />
+
+</PyFunction>
+
+<PyFunction name={"can_restore"} type={"can_restore(cls, /, node, saved_state) -> bool"}>
+
+Check if NodeActor can be restored based on node type and status
+
+<PySourceCode >
+
+```python
+@classmethod
+def can_restore(cls, node: BaseNode[S, NS], saved_state: dict[str, Any]) -> bool:
+    """
+    Check if NodeActor can be restored based on node type and status
+    """
+    status = saved_state.get("status")
+
+    if node.is_tool_node:
+        return status == NodeActorStatus.READY
+    elif isinstance(node, LLMNode):
+        return status in [
+            NodeActorStatus.READY,
+            NodeActorStatus.EXECUTING,
+            NodeActorStatus.COMPLETED,
+        ]
+    return False
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"node"} type={"BaseNode[S, NS]"} value={null} />
+<PyParameter name={"saved_state"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"create"} type={"create(cls, /, node, actor_id=None, llm=None) -> Self"}>
+
+Create a NodeActor instance from a node.
+
+Args:
+node: The node to wrap in this actor
+actor_id: Optional custom actor ID
+llm: Optional LLM instance for LLMNodes
+
+Returns:
+Configured NodeActor instance
+
+<PySourceCode >
+
+```python
+@classmethod
+def create(
+    cls,
+    node: T,
+    actor_id: UUID | None = None,
+    llm: BaseChatModel | None = None,
+) -> Self:
+    """
+    Create a NodeActor instance from a node.
+
+    Args:
+        node: The node to wrap in this actor
+        actor_id: Optional custom actor ID
+        llm: Optional LLM instance for LLMNodes
+
+    Returns:
+        Configured NodeActor instance
+    """
+    actor = cls(node=node, actor_id=actor_id, llm=llm)
+    return actor
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"node"} type={"T"} value={null} />
+<PyParameter name={"actor_id"} type={"UUID | None"} value={"None"} />
+<PyParameter name={"llm"} type={"BaseChatModel | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"Self"} />
+
+</PyFunction>
+
+<PyFunction name={"create_or_restore"} type={"create_or_restore(cls, /, node, state, llm=None) -> Self"}>
+
+Create a new NodeActor or restore from saved state
+
+Args:
+node: The node to wrap in this actor
+state: Saved state to restore
+llm: Optional LLM instance for LLMNodes
+
+Returns:
+NodeActor instance (new or restored)
+
+<PySourceCode >
+
+```python
+@classmethod
+async def create_or_restore(
+    cls,
+    node: T,
+    state: dict[str, Any] | None,
+    llm: BaseChatModel | None = None,
+) -> Self:
+    """
+    Create a new NodeActor or restore from saved state
+
+    Args:
+        node: The node to wrap in this actor
+        state: Saved state to restore
+        llm: Optional LLM instance for LLMNodes
+
+    Returns:
+        NodeActor instance (new or restored)
+    """
+    if state and cls.can_restore(node, state):
+        actor_id = UUID(state["actor_id"])
+        actor = cls(node=node, actor_id=actor_id, llm=llm)
+        actor._restore_state(state)
+        return actor
+    else:
+        return cls.create(node=node, llm=llm)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"node"} type={"T"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any] | None"} value={null} />
+<PyParameter name={"llm"} type={"BaseChatModel | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"Self"} />
+
+</PyFunction>
+
+<PyFunction name={"execute"} type={"execute(self, /, input_, execution_id, context=None) -> Result"}>
+
+Execute the wrapped node with the provided inputs (async version).
+
+Args:
+input\_: Input for the node
+context: Additional execution context
+execution_id: Execution tracking ID
+
+Returns:
+Result from node execution
+
+Raises:
+NodeActorError: If execution fails or actor is in invalid state
+
+<PySourceCode >
+
+```python
+async def execute(
+    self,
+    input_: Any,
+    execution_id: UUID,
+    context: dict[str, Any] | None = None,
+) -> Result:
+    """
+    Execute the wrapped node with the provided inputs (async version).
+
+    Args:
+        input_: Input for the node
+        context: Additional execution context
+        execution_id: Execution tracking ID
+
+    Returns:
+        Result from node execution
+
+    Raises:
+        NodeActorError: If execution fails or actor is in invalid state
+    """
+    if self.status in (NodeActorStatus.IDLE, NodeActorStatus.SHUTDOWN):
+        raise create_error(
+            f"Cannot execute actor in status {self.status.value}", self
+        )
+
+    context = context or {}
+    async with self._execution_lock:
+        return await self._execute_internal(input_, context, execution_id)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"Any"} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any] | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"Result"} />
+
+</PyFunction>
+
+<PyFunction name={"serialize_state"} type={"serialize_state(self) -> dict[str, Any]"}>
+
+Serialize NodeActor state for persistence
+
+<PySourceCode >
+
+```python
+def serialize_state(self) -> dict[str, Any]:
+    """
+    Serialize NodeActor state for persistence
+    """
+    return {
+        "actor_id": str(self.id),
+        "node_id": str(self.node.id),
+        "status": self.status.value,
+        "node_state": self.node_state.model_dump(),
+    }
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>
+
+<PyFunction name={"_initialize"} type={"_initialize(self) -> None"}>
+
+Initialize the actor and prepare for execution (async version)
+
+<PySourceCode >
+
+```python
+def _initialize(self) -> None:
+    """
+    Initialize the actor and prepare for execution (async version)
+    """
+    if self.status != NodeActorStatus.IDLE:
+        raise create_error(f"Cannot initialize actor in status {self.status}", self)
+
+    self.status = NodeActorStatus.INITIALIZING
+    self.has_error = False
+
+    try:
+        if not self.node._compiled:
+            self.node.compile()
+
+        self.status = NodeActorStatus.READY
+
+    except Exception as e:
+        self.error = create_error(f"Failed to initialize actor: {e}", self)
+        self.has_error = True
+        raise self.error from e
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_execute_internal"} type={"_execute_internal(self, /, input_, context, execution_id) -> Result"}>
+
+<PySourceCode >
+
+```python
+async def _execute_internal(
+    self, input_: Any, context: dict[str, Any], execution_id: UUID
+) -> Result:
+    self.status = NodeActorStatus.EXECUTING
+
+    registry = self.node.registry
+    plugins = [
+        plugin
+        for plugin in registry.get_plugins(self.node.spec.kind)
+        if isinstance(plugin, ExecutionStateProvider)
+    ]
+    state = {
+        k: v
+        for d in [
+            plugin.get_execution_state(self.node, context, registry)
+            for plugin in plugins
+        ]
+        for k, v in d.items()
+    }
+
+    self.logger.debug(
+        f"NodeActor executes {self.node.full_name} with input: {input_}, state: {state}"
+    )
+
+    try:
+        execution_context = self._prepare_execution_context(context, execution_id)
+
+        if isinstance(self.node, LLMNode):
+            node_output = await self._execute_llm_node(input_)
+        elif isinstance(self.node, ToolNode):
+            node_output = await self._execute_tool_node(input_, execution_context)
+        elif isinstance(self.node, FunctionNode):
+            node_output = await self._execute_function_node(
+                input_, execution_context
+            )
+        else:
+            raise create_error(
+                f"Unsupported node type {self.node.spec.kind} for execution", self
+            )
+
+        self.logger.debug(
+            f"NodeActor completed {self.node.full_name} with output: {node_output}"
+        )
+
+        next_nodes = self._get_next_nodes(node_output)
+        self.logger.debug(f"Next nodes to execute: {next_nodes}")
+
+        self.status = NodeActorStatus.COMPLETED
+        return Result(
+            output=node_output,
+            next_nodes=next_nodes,
+        )
+
+    except Exception as e:
+        self.error = create_error(
+            f"Node execution failed: {e}", self, execution_id=execution_id
+        )
+        raise self.error from e
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"Any"} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Result"} />
+
+</PyFunction>
+
+<PyFunction name={"_execute_llm_node"} type={"_execute_llm_node(self, /, input_) -> LangChainMessage"}>
+
+<PySourceCode >
+
+```python
+async def _execute_llm_node(self, input_: Any) -> LangChainMessage:
+    if not self.llm:
+        raise create_error(
+            "LLM required for LLMNode execution but not provided", self
+        )
+
+    node_state = self.node_state
+
+    # it's needed for proper typing
+    if not isinstance(self.node, LLMNode):
+        raise create_error(f"Expected LLMNode, got {type(self.node)}", self)
+    if not isinstance(node_state, LLMNodeState):
+        raise create_error(
+            "NodeActor state has improper node_state for LLMNode", self
+        )
+
+    inputs: list[LangChainMessage] = []
+    if isinstance(input_, str):
+        inputs.append(HumanMessage(content=input_))
+    elif isinstance(input_, HumanMessage | ToolMessage):
+        inputs.append(input_)
+    elif isinstance(input_, list):
+        inputs.extend(input_)
+    else:
+        raise create_error(
+            f"Unsupported input type {type(input_)} for LLMNode", self
+        )
+
+    node_output = await self.node.invoke(self.llm, [*node_state.messages, *inputs])
+
+    node_state.messages.extend(inputs)
+    node_state.messages.append(node_output)
+    return node_output
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"Any"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"LangChainMessage"} />
+
+</PyFunction>
+
+<PyFunction name={"_execute_tool_node"} type={"_execute_tool_node(self, /, input_, execution_context) -> ToolMessage"}>
+
+<PySourceCode >
+
+```python
+async def _execute_tool_node(
+    self, input_: Any, execution_context: ExecutionContext[ToolNodeState]
+) -> ToolMessage:
+    # it's needed for proper typing
+    if not isinstance(self.node, ToolNode):
+        raise create_error(f"Expected ToolNode, got {type(self.node)}", self)
+    if not isinstance(self.node_state, ToolNodeState):
+        raise create_error(
+            f"Expected ToolNodeState, got {type(self.node_state)}", self
+        )
+
+    tool_call = ToolCall.model_validate(input_)
+    node_output = await self.node.invoke(
+        tool_call, execution_context=execution_context
+    )
+    self.node_state.input_ = tool_call
+    self.node_state.output = node_output
+    return node_output
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"Any"} value={null} />
+<PyParameter
+  name={"execution_context"}
+  type={"ExecutionContext[ToolNodeState]"}
+  value={null}
+/>
+
+</div>
+
+<PyFunctionReturn type={"ToolMessage"} />
+
+</PyFunction>
+
+<PyFunction name={"_execute_function_node"} type={"_execute_function_node(self, /, input_, execution_context) -> Any"}>
+
+<PySourceCode >
+
+```python
+async def _execute_function_node(
+    self, input_: Any, execution_context: ExecutionContext[NS]
+) -> Any:
+    if not isinstance(self.node, FunctionNode):
+        raise create_error(f"Expected FunctionNode, got {type(self.node)}", self)
+
+    return await self.node.invoke(input_, execution_context=execution_context)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"Any"} value={null} />
+<PyParameter
+  name={"execution_context"}
+  type={"ExecutionContext[NS]"}
+  value={null}
+/>
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
+
+<PyFunction name={"_get_next_nodes"} type={"_get_next_nodes(self, /, output) -> list[NextNode]"}>
+
+Get the next nodes to execute based on the output
+
+<PySourceCode >
+
+```python
+def _get_next_nodes(
+    self, output: LangChainMessage | ToolMessage | dict[str, Any] | None
+) -> list[NextNode]:
+    """
+    Get the next nodes to execute based on the output
+    """
+    registry = self.node.registry
+
+    # LLMNode supports only ToolNode edges
+    if isinstance(self.node, LLMNode):
+        next_nodes = []
+        if tool_calls := getattr(output, "tool_calls", []):
+            for tool_call in tool_calls:
+                if isinstance(tool_call, dict) and "name" in tool_call:
+                    tool_name: str = tool_call["name"]
+                    tool = registry.lookup(ToolNode, tool_name)
+                    next_nodes.append(NextNode(tool, tool_call))
+
+        return next_nodes
+
+    edges = self._get_node_edges()
+    if not edges:
+        return []
+
+    context, state_context = self._build_evaluation_context(output)
+    transformer = WhenTransformer()
+
+    # ToolNode supports FunctionNode and LLMNode edges
+    if isinstance(self.node, ToolNode) and edges:
+        next_nodes = []
+        for node_type, edge in edges:
+            if self._should_follow_edge(edge, context, state_context, transformer):
+                target_node = registry.lookup(node_type, edge.target)
+                next_nodes.append(NextNode(target_node, output))
+        return next_nodes
+
+    return []
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter
+  name={"output"}
+  type={"LangChainMessage | ToolMessage | dict[str, Any] | None"}
+  value={null}
+/>
+
+</div>
+
+<PyFunctionReturn type={"list[NextNode]"} />
+
+</PyFunction>
+
+<PyFunction name={"_get_node_edges"} type={"_get_node_edges(self) -> list[tuple[type[Node | LLMNode], EdgeSpec]]"}>
+
+<PySourceCode >
+
+```python
+def _get_node_edges(self) -> list[tuple[type[Node | LLMNode], EdgeSpec]]:
+    edges: list[tuple[type[Node | LLMNode], EdgeSpec]] = []
+
+    if nodes := getattr(self.node.spec, "nodes", []):
+        for node_ref in nodes:
+            if isinstance(node_ref, EdgeSpec):
+                edges.append((Node, node_ref))
+
+    if llm_nodes := getattr(self.node.spec, "llm_nodes", []):
+        for node_ref in llm_nodes:
+            if isinstance(node_ref, EdgeSpec):
+                edges.append((LLMNode, node_ref))
+
+    return edges
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"list[tuple[type[Node | LLMNode], EdgeSpec]]"} />
+
+</PyFunction>
+
+<PyFunction name={"_build_evaluation_context"} type={"_build_evaluation_context(self, /, output) -> tuple[dict[str, Any], dict[str, Any]]"}>
+
+Build context for edge condition evaluation
+Variables with $ prefix: $output, $status, $state
+Variables without $ prefix: taken from $state.context
+
+<PySourceCode >
+
+```python
+def _build_evaluation_context(
+    self, output: Any
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Build context for edge condition evaluation
+    Variables with $ prefix: $output, $status, $state
+    Variables without $ prefix: taken from $state.context
+    """
+    state_data = self.node_state.model_dump()
+
+    context = {
+        "$output": output if isinstance(output, dict) else {},
+        "$status": self.status.value,
+        "$state": state_data,
+    }
+
+    return context, state_data.get("context", {})
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"output"} type={"Any"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"tuple[dict[str, Any], dict[str, Any]]"} />
+
+</PyFunction>
+
+<PyFunction name={"_should_follow_edge"} type={"_should_follow_edge(self, /, edge, context, state_context, transformer) -> bool"}>
+
+Determine if an edge should be followed based on its conditions
+
+<PySourceCode >
+
+```python
+def _should_follow_edge(
+    self,
+    edge: EdgeSpec,
+    context: dict[str, Any],
+    state_context: dict[str, Any],
+    transformer: WhenTransformer,
+) -> bool:
+    """
+    Determine if an edge should be followed based on its conditions
+    """
+    if not edge.when:
+        return True
+
+    try:
+        tree = when_parser.parse(edge.when)
+        ast = transformer.transform(tree)
+        evaluator = ConditionalEvaluator(context, state_context)
+        return evaluator.evaluate(ast)
+    except Exception:
+        return False
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"edge"} type={"EdgeSpec"} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"state_context"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"transformer"} type={"WhenTransformer"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_prepare_execution_context"} type={"_prepare_execution_context(self, /, context, execution_id) -> ExecutionContext[Any]"}>
+
+Prepare execution context with actor metadata
+
+<PySourceCode >
+
+```python
+def _prepare_execution_context(
+    self, context: dict[str, Any], execution_id: UUID
+) -> ExecutionContext[Any]:
+    """
+    Prepare execution context with actor metadata
+    """
+    return ExecutionContext(
+        self.node_state,
+        **{
+            **context,
+            "actor_id": self.id,
+            "execution_id": execution_id,
+            "node_name": self.node.name,
+            "node_type": self.node.spec.kind,
+        },
+    )
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"ExecutionContext[Any]"} />
+
+</PyFunction>
+
+<PyFunction name={"_restore_state"} type={"_restore_state(self, /, state) -> None"}>
+
+Restore NodeActor state from serialized data
+
+<PySourceCode >
+
+```python
+def _restore_state(self, state: dict[str, Any]) -> None:
+    """
+    Restore NodeActor state from serialized data
+    """
+    try:
+        node_cls = get_node_cls(state["node_state"]["kind"])
+        state_cls = node_cls.state_type
+
+        node_state = state_cls.model_validate(state["node_state"])
+
+        self.status = NodeActorStatus(state["status"])
+        self.node_state = node_state
+        self.error = None
+
+    except Exception as e:
+        raise create_error(f"Failed to restore actor state: {e}", self) from e
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>

@@ -1,0 +1,20 @@
+---
+title: LLMNodeSpec
+---
+
+Specification schema for LLM nodes.
+
+Defines the structure and configuration for LLM nodes including
+prompts, tools, and connected nodes.
+
+## Attributes
+
+<PyAttribute name={"kind"} type={"Literal['LLMNode']"} value={"'LLMNode'"} />
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"prompts"} type={"LocalizedValue"} value={null} />
+
+<PyAttribute name={"tools"} type={"list[str]"} value={"[]"} />
+
+<PyAttribute name={"nodes"} type={"list[str | EdgeSpec]"} value={"[]"} />

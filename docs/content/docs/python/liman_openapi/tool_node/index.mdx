@@ -1,0 +1,96 @@
+---
+title: tool_node
+---
+
+<PyAttribute
+  name={"logger"}
+  type={null}
+  value={"logging.getLogger(__name__)"}
+/>
+
+<PyAttribute name={"R"} type={null} value={"TypeVar('R')"} />
+
+<Tabs items={["Functions"]}>
+
+<Tab value={"Functions"}>
+
+<PyFunction name={"create_tool_nodes"} type={"create_tool_nodes(openapi_spec, /, registry, prefix='OpenAPI', base_url=None) -> list[ToolNode]"}>
+
+Generate ToolNode instances based on OpenAPI endpoints.
+
+Args:
+openapi_spec (dict): The OpenAPI specification.
+
+Returns:
+List[ToolNode]: A list of ToolNode instances.
+
+<PySourceCode >
+
+```python
+def create_tool_nodes(
+    openapi_spec: OpenAPI,
+    registry: Registry,
+    prefix: str = "OpenAPI",
+    base_url: str | None = None,
+) -> list[ToolNode]:
+    """
+    Generate ToolNode instances based on OpenAPI endpoints.
+
+    Args:
+        openapi_spec (dict): The OpenAPI specification.
+
+    Returns:
+        List[ToolNode]: A list of ToolNode instances.
+    """
+    nodes = []
+    spec_content = openapi_spec.spec.content()
+    endpoints = parse_endpoints(spec_content)
+    refs = parse_refs(spec_content)
+
+    if not base_url:
+        servers = spec_content.get("servers", [])
+        if servers:
+            base_url = servers[0].get("url")
+
+    if not base_url:
+        raise ValueError(
+            "No base URL found in OpenAPI specification. "
+            "Please ensure the 'servers' section is defined "
+            "or pass a base_url argument."
+        )
+
+    for endpoint in endpoints:
+        name = f"{prefix}__{endpoint.operation_id}"
+        decl = {
+            "kind": "ToolNode",
+            "name": name,
+            "description": endpoint.description or endpoint.summary,
+            "arguments": endpoint.get_tool_arguments_spec(refs),
+        }
+
+        node = ToolNode.from_dict(decl, registry)
+        impl_func = OpenAPIOperation(endpoint, refs, base_url=base_url)
+        node.set_func(impl_func)
+        nodes.append(node)
+
+    return nodes
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"openapi_spec"} type={"OpenAPI"} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+<PyParameter name={"prefix"} type={"str"} value={"'OpenAPI'"} />
+<PyParameter name={"base_url"} type={"str | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"list[ToolNode]"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

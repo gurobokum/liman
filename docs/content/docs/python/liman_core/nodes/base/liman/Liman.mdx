@@ -1,0 +1,114 @@
+---
+title: Liman
+---
+
+Core Liman runtime interface for accessing execution context.
+
+Provides a simplified interface for interacting with the execution
+context during node execution. Acts as a facade over ExecutionContext.
+
+## Attributes
+
+<PyAttribute
+  name={"execution_context"}
+  type={null}
+  value={"execution_context"}
+/>
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, execution_context) -> None"}>
+
+Initialize Liman with execution context.
+
+Args:
+execution_context: The execution context for this runtime
+
+<PySourceCode >
+
+```python
+def __init__(self, execution_context: ExecutionContext[Any]) -> None:
+    """
+    Initialize Liman with execution context.
+
+    Args:
+        execution_context: The execution context for this runtime
+    """
+    self.execution_context = execution_context
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter
+  name={"execution_context"}
+  type={"ExecutionContext[Any]"}
+  value={null}
+/>
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"set"} type={"set(self) -> None"}>
+
+<PySourceCode >
+
+```python
+def set(self) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"get"} type={"get(self, /, key) -> Any"}>
+
+Get attribute from execution context.
+
+Args:
+key: Attribute name to retrieve
+
+Returns:
+Value of the requested attribute
+
+<PySourceCode >
+
+```python
+def get(self, key: str) -> Any:
+    """
+    Get attribute from execution context.
+
+    Args:
+        key: Attribute name to retrieve
+
+    Returns:
+        Value of the requested attribute
+    """
+    return getattr(self.execution_context, key)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"key"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>

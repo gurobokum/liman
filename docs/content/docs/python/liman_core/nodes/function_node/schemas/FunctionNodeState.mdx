@@ -1,0 +1,24 @@
+---
+title: FunctionNodeState
+---
+
+Runtime state for function nodes.
+
+Maintains execution state including input/output data and
+message history for function node execution.
+
+## Attributes
+
+<PyAttribute
+  name={"kind"}
+  type={"Literal['FunctionNode']"}
+  value={"'FunctionNode'"}
+/>
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"messages"} type={"list[BaseMessage]"} value={"[]"} />
+
+<PyAttribute name={"input_"} type={"Any | None"} value={"None"} />
+
+<PyAttribute name={"output"} type={"Any | None"} value={"None"} />

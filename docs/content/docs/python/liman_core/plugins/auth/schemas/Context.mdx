@@ -1,0 +1,37 @@
+---
+title: Context
+---
+
+## Attributes
+
+<PyAttribute name={"strict"} type={"bool"} value={"True"} />
+
+<PyAttribute name={"inject"} type={"list[str]"} value={null} />
+
+## Functions
+
+<PyFunction name={"validate_inject"} type={"validate_inject(cls, /, v) -> list[str]"}>
+
+<PySourceCode >
+
+```python
+@field_validator("inject")
+@classmethod
+def validate_inject(cls, v: list[str]) -> list[str]:
+    if not v:
+        raise InvalidSpecError("inject list cannot be empty")
+    return v
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"v"} type={"list[str]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"list[str]"} />
+
+</PyFunction>

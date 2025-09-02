@@ -1,0 +1,34 @@
+---
+title: FunctionNodeSpec
+---
+
+Specification schema for function nodes.
+
+Defines the configuration for custom function nodes including
+function reference, descriptions, and connected nodes.
+
+## Attributes
+
+<PyAttribute
+  name={"kind"}
+  type={"Literal['FunctionNode']"}
+  value={"'FunctionNode'"}
+/>
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"func"} type={"str | None"} value={"None"} />
+
+<PyAttribute
+  name={"description"}
+  type={"LocalizedValue | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"prompts"} type={"LocalizedValue | None"} value={"None"} />
+
+<PyAttribute name={"nodes"} type={"list[str | EdgeSpec]"} value={"[]"} />
+
+<PyAttribute name={"llm_nodes"} type={"list[str | EdgeSpec]"} value={"[]"} />
+
+<PyAttribute name={"tools"} type={"list[str]"} value={"[]"} />

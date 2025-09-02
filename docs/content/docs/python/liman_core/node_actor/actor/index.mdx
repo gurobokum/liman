@@ -1,0 +1,73 @@
+---
+title: actor
+---
+
+<PyAttribute
+  name={"logger"}
+  type={null}
+  value={"logging.getLogger(__name__)"}
+/>
+
+<PyAttribute
+  name={"handler"}
+  type={null}
+  value={"RichHandler(show_time=True, show_path=True, rich_tracebacks=True)"}
+/>
+
+<PyAttribute
+  name={"T"}
+  type={null}
+  value={"TypeVar('T', bound=(BaseNode[Any, Any]))"}
+/>
+
+<Tabs items={["Class","Functions"]}>
+
+<Tab value={"Class"}>
+
+<Cards >
+
+<Card
+  title={"NodeActor"}
+  href={"/docs/python/liman_core/node_actor/actor/NodeActor"}
+/>
+
+</Cards>
+
+</Tab>
+<Tab value={"Functions"}>
+
+<PyFunction name={"create_error"} type={"create_error(message, /, actor, *, execution_id=None) -> NodeActorError"}>
+
+<PySourceCode >
+
+```python
+def create_error(
+    message: str, actor: NodeActor[T], *, execution_id: UUID | None = None
+) -> NodeActorError:
+    return NodeActorError(
+        message,
+        actor_id=actor.id,
+        actor_composite_id=actor.composite_id,
+        node_kind=actor.node.spec.kind,
+        node_name=actor.node.name,
+        execution_id=execution_id,
+    )
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"message"} type={"str"} value={null} />
+<PyParameter name={"actor"} type={"NodeActor[T]"} value={null} />
+<PyParameter name={"execution_id"} type={"UUID | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"NodeActorError"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

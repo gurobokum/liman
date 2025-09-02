@@ -1,0 +1,23 @@
+---
+title: ToolArgumentJSONSchema
+---
+
+TypedDict for JSON Schema representation of a tool argument.
+
+## Attributes
+
+<PyAttribute name={"type"} type={"str | None"} value={null} />
+
+<PyAttribute
+  name={"any_of"}
+  type={"Annotated[list[dict[str, Any]], Field(alias='anyOf')] | None"}
+  value={null}
+/>
+
+<PyAttribute name={"description"} type={"str | None"} value={null} />
+
+<PyAttribute
+  name={"properties"}
+  type={"dict[str, ToolArgumentJSONSchema] | None"}
+  value={null}
+/>

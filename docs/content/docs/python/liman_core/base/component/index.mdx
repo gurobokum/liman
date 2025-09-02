@@ -1,0 +1,72 @@
+---
+title: component
+---
+
+<PyAttribute
+  name={"ComponentT"}
+  type={null}
+  value={"TypeVar('ComponentT', bound='Component[Any]')"}
+/>
+
+<PyAttribute
+  name={"YamlValue"}
+  type={"TypeAlias"}
+  value={"dict[str, Any] | list['YamlValue'] | str"}
+/>
+
+<Tabs items={["Class","Functions"]}>
+
+<Tab value={"Class"}>
+
+<Cards >
+
+<Card
+  title={"Component"}
+  href={"/docs/python/liman_core/base/component/Component"}
+/>
+
+</Cards>
+
+</Tab>
+<Tab value={"Functions"}>
+
+<PyFunction name={"_preserve_multiline_strings"} type={"_preserve_multiline_strings(data) -> YamlValue | None"}>
+
+Recursively convert multiline strings to PreservedScalarString
+so that YAML dumps them as block scalars (|).
+
+<PySourceCode >
+
+```python
+def _preserve_multiline_strings(data: YamlValue | None) -> YamlValue | None:
+    """
+    Recursively convert multiline strings to PreservedScalarString
+    so that YAML dumps them as block scalars (|).
+    """
+    if data is None:
+        return None
+
+    if isinstance(data, str) and "\n" in data:
+        return PreservedScalarString(data)
+    elif isinstance(data, dict):
+        return {k: _preserve_multiline_strings(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [v for i in data if (v := _preserve_multiline_strings(i)) is not None]
+    return data
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"data"} type={"YamlValue | None"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"YamlValue | None"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

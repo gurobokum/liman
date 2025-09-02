@@ -1,0 +1,26 @@
+---
+title: ToolCall
+---
+
+Represents a function call request from an LLM.
+
+Contains the tool name, arguments, and call ID needed to
+execute a tool function and track the response.
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"args"} type={"dict[str, Any]"} value={null} />
+
+<PyAttribute
+  name={"id_"}
+  type={"Annotated[str | None, Field(alias=id)]"}
+  value={"None"}
+/>
+
+<PyAttribute
+  name={"type_"}
+  type={"Literal['tool_call']"}
+  value={"'tool_call'"}
+/>

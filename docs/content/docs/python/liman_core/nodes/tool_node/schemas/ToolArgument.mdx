@@ -1,0 +1,22 @@
+---
+title: ToolArgument
+---
+
+Specification for a tool function argument.
+
+Defines the name, type, description, and optionality of a single
+argument that can be passed to a tool function.
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"type"} type={"str | list[str]"} value={null} />
+
+<PyAttribute
+  name={"description"}
+  type={"LocalizedValue | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"optional"} type={"bool"} value={"False"} />

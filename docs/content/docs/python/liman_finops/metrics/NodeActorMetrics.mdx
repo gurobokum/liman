@@ -1,0 +1,48 @@
+---
+title: NodeActorMetrics
+---
+
+Metrics and performance data for NodeActor
+
+## Attributes
+
+<PyAttribute name={"execution_count"} type={null} value={"0"} />
+
+<PyAttribute name={"total_execution_time"} type={null} value={"0.0"} />
+
+<PyAttribute
+  name={"last_execution_time"}
+  type={"datetime | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"error_count"} type={null} value={"0"} />
+
+<PyAttribute name={"created_at"} type={null} value={"datetime.now()"} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self) -> None"}>
+
+<PySourceCode >
+
+```python
+def __init__(self) -> None:
+    self.execution_count = 0
+    self.total_execution_time = 0.0
+    self.last_execution_time: datetime | None = None
+    self.error_count = 0
+    self.created_at = datetime.now()
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>

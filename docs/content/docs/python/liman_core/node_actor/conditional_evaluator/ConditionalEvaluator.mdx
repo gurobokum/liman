@@ -1,0 +1,331 @@
+---
+title: ConditionalEvaluator
+---
+
+Evaluates conditional expressions from the edge DSL
+
+## Attributes
+
+<PyAttribute name={"context"} type={null} value={"context"} />
+
+<PyAttribute name={"state_context"} type={null} value={"state_context"} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, context, state_context) -> None"}>
+
+<PySourceCode >
+
+```python
+def __init__(self, context: dict[str, Any], state_context: dict[str, Any]) -> None:
+    self.context = context
+    self.state_context = state_context
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"state_context"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"evaluate"} type={"evaluate(self, /, expr) -> bool"}>
+
+Evaluate a when expression
+
+<PySourceCode >
+
+```python
+def evaluate(self, expr: WhenExprNode) -> bool:
+    """
+    Evaluate a when expression
+    """
+    match expr:
+        case ConditionalExprNode(expr=expr_data):
+            return self._evaluate_conditional(expr_data)
+        case FunctionRefNode(dotted_name=dotted_name):
+            return self._evaluate_function_ref(dotted_name)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"expr"} type={"WhenExprNode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_evaluate_conditional"} type={"_evaluate_conditional(self, /, expr) -> bool"}>
+
+Evaluate a conditional expression using pattern matching
+
+<PySourceCode >
+
+```python
+def _evaluate_conditional(self, expr: ExprNode) -> bool:
+    """
+    Evaluate a conditional expression using pattern matching
+    """
+    match expr:
+        case bool():
+            return expr
+
+        case str() | float():
+            return bool(expr)
+
+        case VarNode():
+            return self._evaluate_variable(expr)
+
+        case NotNode():
+            return not self._evaluate_conditional(expr.expr)
+
+        case ComparisonNode():
+            return self._evaluate_comparison(expr)
+
+        case LogicalNode():
+            return self._evaluate_logical(expr)
+
+        case _:
+            raise ValueError(f"Unknown expression: {expr}")
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"expr"} type={"ExprNode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_evaluate_variable"} type={"_evaluate_variable(self, /, var_node) -> bool"}>
+
+Evaluate a variable reference
+
+<PySourceCode >
+
+```python
+def _evaluate_variable(self, var_node: VarNode) -> bool:
+    """
+    Evaluate a variable reference
+    """
+    resolved_value = self._resolve_variable(var_node.name)
+    return bool(resolved_value)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"var_node"} type={"VarNode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_evaluate_comparison"} type={"_evaluate_comparison(self, /, comp_node) -> bool"}>
+
+Evaluate a comparison expression
+
+<PySourceCode >
+
+```python
+def _evaluate_comparison(self, comp_node: ComparisonNode) -> bool:
+    """
+    Evaluate a comparison expression
+    """
+    left_val = self._resolve_operand(comp_node.left)
+    right_val = self._resolve_operand(comp_node.right)
+
+    match comp_node.type_:
+        case "==":
+            return bool(left_val == right_val)
+        case "!=":
+            return bool(left_val != right_val)
+        case ">":
+            return bool(left_val > right_val)
+        case "<":
+            return bool(left_val < right_val)
+        case _:
+            raise ValueError(f"Unknown comparison operator: {comp_node.type_}")
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"comp_node"} type={"ComparisonNode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_evaluate_logical"} type={"_evaluate_logical(self, /, logical_node) -> bool"}>
+
+Evaluate a logical expression
+
+<PySourceCode >
+
+```python
+def _evaluate_logical(self, logical_node: LogicalNode) -> bool:
+    """
+    Evaluate a logical expression
+    """
+    match logical_node.type_:
+        case "and" | "&&":
+            return self._evaluate_conditional(
+                logical_node.left
+            ) and self._evaluate_conditional(logical_node.right)
+
+        case "or" | "||":
+            return self._evaluate_conditional(
+                logical_node.left
+            ) or self._evaluate_conditional(logical_node.right)
+        case _:
+            raise ValueError(f"Unknown logical operator: {logical_node.type_}")
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"logical_node"} type={"LogicalNode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_resolve_operand"} type={"_resolve_operand(self, /, operand) -> Any"}>
+
+Resolve an operand (variable or literal value)
+
+<PySourceCode >
+
+```python
+def _resolve_operand(self, operand: ValueNode) -> Any:
+    """
+    Resolve an operand (variable or literal value)
+    """
+    match operand:
+        case VarNode(name=var_name):
+            return self._resolve_variable(var_name)
+        case _:
+            return operand
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"operand"} type={"ValueNode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
+
+<PyFunction name={"_evaluate_function_ref"} type={"_evaluate_function_ref(self, /, func_ref) -> bool"}>
+
+Evaluate a function reference by importing and executing it
+
+<PySourceCode >
+
+```python
+def _evaluate_function_ref(self, func_ref: str) -> bool:
+    """
+    Evaluate a function reference by importing and executing it
+    """
+    try:
+        func_path = func_ref.split(".")
+        module = import_module(".".join(func_path[:-1]))
+        func = getattr(module, func_path[-1])
+
+        result = func()
+        return bool(result)
+    except (ImportError, AttributeError) as e:
+        raise InvalidSpecError(
+            f"Failed to import or execute function '{func_ref}': {e}"
+        ) from e
+    except Exception as e:
+        raise ValueError(f"Function execution failed '{func_ref}': {e}") from e
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"func_ref"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+<PyFunction name={"_resolve_variable"} type={"_resolve_variable(self, /, var_name) -> Any"}>
+
+Resolve variable name to value with support for $-prefixed variables
+
+<PySourceCode >
+
+```python
+def _resolve_variable(self, var_name: str) -> Any:
+    """
+    Resolve variable name to value with support for $-prefixed variables
+    """
+    if var_name.startswith("$"):
+        if var_name in self.context:
+            return self.context[var_name]
+        else:
+            raise KeyError(f"Variable '{var_name}' not found in context")
+    else:
+        if var_name in self.state_context:
+            return self.state_context[var_name]
+        elif var_name in self.context:
+            return self.context[var_name]
+        else:
+            raise KeyError(
+                f"Variable '{var_name}' not found in context or state.context"
+            )
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"var_name"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>

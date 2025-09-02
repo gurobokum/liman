@@ -1,0 +1,295 @@
+---
+title: BaseNode
+---
+
+Abstract base class for all nodes in the Liman framework.
+
+BaseNode provides the foundation for LLM, Tool, and custom nodes.
+It handles language configuration, compilation, and execution lifecycle.
+All concrete nodes must inherit from this class and implement the
+abstract methods for their specific functionality.
+
+## Attributes
+
+<PyAttribute
+  name={"__slots__"}
+  type={null}
+  value={"Component.__slots__ + ('default_lang', 'fallback_lang', '_compiled')"}
+/>
+
+<PyAttribute name={"spec"} type={"S"} value={null} />
+
+<PyAttribute
+  name={"default_lang"}
+  type={"LanguageCode"}
+  value={"default_lang"}
+/>
+
+<PyAttribute
+  name={"fallback_lang"}
+  type={"LanguageCode"}
+  value={"fallback_lang"}
+/>
+
+<PyAttribute name={"is_llm_node"} type={"bool"} value={null} />
+
+<PyAttribute name={"is_tool_node"} type={"bool"} value={null} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, spec, registry, *, initial_data=None, yaml_path=None, strict=False, default_lang='en', fallback_lang='en') -> None"}>
+
+Initialize base node with specification and configuration.
+
+Args:
+spec: Node specification defining behavior and properties
+registry: Component registry for dependency resolution
+initial_data: Optional initial data for the component
+yaml_path: Optional path to the YAML file this node was loaded from
+strict: Whether to enforce strict validation
+default_lang: Default language code for localization
+fallback_lang: Fallback language code when default is unavailable
+
+Raises:
+LimanError: If language codes are invalid
+
+<PySourceCode >
+
+```python
+def __init__(
+    self,
+    spec: S,
+    registry: Registry,
+    *,
+    initial_data: dict[str, Any] | None = None,
+    yaml_path: str | None = None,
+    strict: bool = False,
+    default_lang: str = "en",
+    fallback_lang: str = "en",
+) -> None:
+    """
+    Initialize base node with specification and configuration.
+
+    Args:
+        spec: Node specification defining behavior and properties
+        registry: Component registry for dependency resolution
+        initial_data: Optional initial data for the component
+        yaml_path: Optional path to the YAML file this node was loaded from
+        strict: Whether to enforce strict validation
+        default_lang: Default language code for localization
+        fallback_lang: Fallback language code when default is unavailable
+
+    Raises:
+        LimanError: If language codes are invalid
+    """
+    super().__init__(
+        spec,
+        registry,
+        initial_data=initial_data,
+        yaml_path=yaml_path,
+        strict=strict,
+    )
+
+    if not is_valid_language_code(default_lang):
+        raise LimanError(f"Invalid default language code: {default_lang}")
+    self.default_lang: LanguageCode = default_lang
+
+    if not is_valid_language_code(fallback_lang):
+        raise LimanError(f"Invalid fallback language code: {fallback_lang}")
+    self.fallback_lang: LanguageCode = fallback_lang
+
+    self._compiled = False
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"spec"} type={"S"} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+<PyParameter
+  name={"initial_data"}
+  type={"dict[str, Any] | None"}
+  value={"None"}
+/>
+<PyParameter name={"yaml_path"} type={"str | None"} value={"None"} />
+<PyParameter name={"strict"} type={"bool"} value={"False"} />
+<PyParameter name={"default_lang"} type={"str"} value={"'en'"} />
+<PyParameter name={"fallback_lang"} type={"str"} value={"'en'"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"__repr__"} type={"__repr__(self) -> str"}>
+
+<PySourceCode >
+
+```python
+def __repr__(self) -> str:
+    return f"{self.spec.kind}:{self.name}"
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"str"} />
+
+</PyFunction>
+
+<PyFunction name={"generate_id"} type={"generate_id(self) -> UUID"}>
+
+Generate unique identifier for this node instance.
+
+Returns:
+Randomly generated UUID for the node
+
+<PySourceCode >
+
+```python
+def generate_id(self) -> UUID:
+    """
+    Generate unique identifier for this node instance.
+
+    Returns:
+        Randomly generated UUID for the node
+    """
+    return uuid4()
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"UUID"} />
+
+</PyFunction>
+
+<PyFunction name={"compile"} type={"compile(self) -> None"}>
+
+Compile the node for execution.
+
+Prepares the node for execution by validating configuration,
+resolving dependencies, and performing any necessary setup.
+Must be implemented by concrete node classes.
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def compile(self) -> None:
+    """
+    Compile the node for execution.
+
+    Prepares the node for execution by validating configuration,
+    resolving dependencies, and performing any necessary setup.
+    Must be implemented by concrete node classes.
+    """
+    ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"invoke"} type={"invoke(self, *args, **kwargs) -> Any"}>
+
+Execute the node's primary functionality.
+
+Performs the main operation of the node. Implementation varies
+by node type (LLM calls, tool execution, custom logic).
+
+Args:
+\*args: Positional arguments for node execution
+\*\*kwargs: Keyword arguments for node execution
+
+Returns:
+Result of node execution, type varies by implementation
+
+<PySourceCode >
+
+```python
+@abstractmethod
+async def invoke(self, *args: Any, **kwargs: Any) -> Any:
+    """
+    Execute the node's primary functionality.
+
+    Performs the main operation of the node. Implementation varies
+    by node type (LLM calls, tool execution, custom logic).
+
+    Args:
+        *args: Positional arguments for node execution
+        **kwargs: Keyword arguments for node execution
+
+    Returns:
+        Result of node execution, type varies by implementation
+    """
+    ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"args"} type={"Any"} value={"()"} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
+
+<PyFunction name={"get_new_state"} type={"get_new_state(self) -> NS"}>
+
+Create new state instance for this node.
+
+Returns:
+Fresh node state object for execution
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def get_new_state(self) -> NS:
+    """
+    Create new state instance for this node.
+
+    Returns:
+        Fresh node state object for execution
+    """
+    ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"NS"} />
+
+</PyFunction>

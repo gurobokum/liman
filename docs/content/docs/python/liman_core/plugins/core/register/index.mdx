@@ -1,0 +1,44 @@
+---
+title: register
+---
+
+<Tabs items={["Functions"]}>
+
+<Tab value={"Functions"}>
+
+<PyFunction name={"register_plugins"} type={"register_plugins(plugins, /, registry) -> None"}>
+
+Register a list of plugins into the global registry.
+
+Args:
+plugins (list[Plugin]): List of Plugin instances to register.
+
+<PySourceCode >
+
+```python
+def register_plugins(plugins: list[Plugin], registry: Registry) -> None:
+    """
+    Register a list of plugins into the global registry.
+
+    Args:
+        plugins (list[Plugin]): List of Plugin instances to register.
+    """
+    ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"plugins"} type={"list[Plugin]"} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

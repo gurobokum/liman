@@ -1,0 +1,72 @@
+---
+title: Parameter
+---
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"description"} type={"str | None"} value={"None"} />
+
+<PyAttribute
+  name={"in_"}
+  type={"Annotated[str, Field(alias='in')]"}
+  value={null}
+/>
+
+<PyAttribute name={"required"} type={"bool"} value={"False"} />
+
+<PyAttribute
+  name={"schema_"}
+  type={"Annotated[ParameterSchema, Field(alias='schema')]"}
+  value={null}
+/>
+
+## Functions
+
+<PyFunction name={"get_json_schema"} type={"get_json_schema(self) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+def get_json_schema(self) -> dict[str, Any]:
+    return {"name": self.name, "description": self.description}
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>
+
+<PyFunction name={"get_tool_argument_spec"} type={"get_tool_argument_spec(self) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+def get_tool_argument_spec(self) -> dict[str, Any]:
+    return {
+        "name": self.name,
+        "type": self.schema_.type_,
+        "description": self.description,
+        "optional": not self.required,
+    }
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

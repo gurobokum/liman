@@ -1,0 +1,66 @@
+---
+title: Ref
+---
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"properties"} type={"dict[str, Property]"} value={"{}"} />
+
+<PyAttribute name={"required"} type={"list[str]"} value={"[]"} />
+
+## Functions
+
+<PyFunction name={"inject_property_names"} type={"inject_property_names(cls, /, values) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+@model_validator(mode="before")
+@classmethod
+def inject_property_names(cls, values: dict[str, Any]) -> dict[str, Any]:
+    props = values.get("properties", {})
+    values["properties"] = {
+        key: {"name": key, **value} for key, value in props.items()
+    }
+    return values
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"values"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>
+
+<PyFunction name={"get_tool_parameters_object"} type={"get_tool_parameters_object(self) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+def get_tool_parameters_object(self) -> dict[str, Any]:
+    properties = {}
+    for prop_name, prop in self.properties.items():
+        properties[prop_name] = prop.get_tool_parameter_spec()
+
+    return {"type": "object", "properties": properties, "required": self.required}
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

@@ -1,0 +1,39 @@
+---
+title: ExecutionStateProvider
+---
+
+Protocol for plugins that provide execution state management.
+
+## Functions
+
+<PyFunction name={"get_execution_state"} type={"get_execution_state(self, /, component, state, registry) -> dict[str, Any]"}>
+
+Get the execution state based on the provided one
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def get_execution_state(
+    self, component: Component[Any], state: dict[str, Any], registry: Registry
+) -> dict[str, Any]:
+    """
+    Get the execution state based on the provided one
+    """
+    ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"component"} type={"Component[Any]"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

@@ -1,0 +1,28 @@
+---
+title: ToolObjectArgument
+---
+
+Specification for a complex object argument with nested properties.
+
+Extends ToolArgument to support object types with nested properties,
+allowing for complex data structures as tool arguments.
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"type"} type={"str"} value={null} />
+
+<PyAttribute
+  name={"description"}
+  type={"LocalizedValue | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"optional"} type={"bool"} value={"False"} />
+
+<PyAttribute
+  name={"properties"}
+  type={"list[ToolArgument] | None"}
+  value={"None"}
+/>

@@ -1,0 +1,123 @@
+---
+title: Metrics
+---
+
+## Attributes
+
+<PyAttribute name={"meter"} type={null} value={"meter"} />
+
+<PyAttribute
+  name={"node_calls"}
+  type={null}
+  value={
+    "self.meter.create_counter(name='liman.finops.node.calls', description='Count of calls of Liman nodes', unit='{call}')"
+  }
+/>
+
+<PyAttribute
+  name={"input_llm_tokens"}
+  type={null}
+  value={
+    "self.meter.create_counter(name='liman.finops.input_llm_tokens', description='Count of tokens used in Liman nodes', unit='{token}')"
+  }
+/>
+
+<PyAttribute
+  name={"output_llm_tokens"}
+  type={null}
+  value={
+    "self.meter.create_counter(name='liman.finops.output_llm_tokens', description='Count of tokens produced by Liman nodes', unit='{token}')"
+  }
+/>
+
+<PyAttribute
+  name={"llm_tokens_cost"}
+  type={null}
+  value={
+    "self.meter.create_counter(name='liman.finops.llm_tokens_cost', description='Cost of LLM tokens used in Liman nodes', unit='{currency}')"
+  }
+/>
+
+<PyAttribute
+  name={"actor_executions"}
+  type={null}
+  value={
+    "self.meter.create_counter(name='liman.finops.actor.executions', description='Count of NodeActor executions', unit='{execution}')"
+  }
+/>
+
+<PyAttribute
+  name={"actor_execution_time"}
+  type={null}
+  value={
+    "self.meter.create_histogram(name='liman.finops.actor.execution_time', description='Execution time of NodeActor operations', unit='s')"
+  }
+/>
+
+<PyAttribute
+  name={"actor_errors"}
+  type={null}
+  value={
+    "self.meter.create_counter(name='liman.finops.actor.errors', description='Count of NodeActor execution errors', unit='{error}')"
+  }
+/>
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, meter) -> None"}>
+
+<PySourceCode >
+
+```python
+def __init__(self, meter: Meter) -> None:
+    self.meter = meter
+
+    self.node_calls = self.meter.create_counter(
+        name="liman.finops.node.calls",
+        description="Count of calls of Liman nodes",
+        unit="{call}",
+    )
+    self.input_llm_tokens = self.meter.create_counter(
+        name="liman.finops.input_llm_tokens",
+        description="Count of tokens used in Liman nodes",
+        unit="{token}",
+    )
+    self.output_llm_tokens = self.meter.create_counter(
+        name="liman.finops.output_llm_tokens",
+        description="Count of tokens produced by Liman nodes",
+        unit="{token}",
+    )
+    self.llm_tokens_cost = self.meter.create_counter(
+        name="liman.finops.llm_tokens_cost",
+        description="Cost of LLM tokens used in Liman nodes",
+        unit="{currency}",
+    )
+    self.actor_executions = self.meter.create_counter(
+        name="liman.finops.actor.executions",
+        description="Count of NodeActor executions",
+        unit="{execution}",
+    )
+    self.actor_execution_time = self.meter.create_histogram(
+        name="liman.finops.actor.execution_time",
+        description="Execution time of NodeActor operations",
+        unit="s",
+    )
+    self.actor_errors = self.meter.create_counter(
+        name="liman.finops.actor.errors",
+        description="Count of NodeActor execution errors",
+        unit="{error}",
+    )
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"meter"} type={"Meter"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>

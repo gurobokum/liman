@@ -1,0 +1,55 @@
+---
+title: LLMPromptsBundle
+---
+
+Multi-language bundle of LLM prompts with fallback support.
+
+Manages prompts across different languages and provides methods
+to retrieve prompts with automatic fallback to default language.
+
+## Functions
+
+<PyFunction name={"to_system_message"} type={"to_system_message(self, /, lang) -> SystemMessage"}>
+
+Convert prompts for specified language to SystemMessage.
+
+Args:
+lang: Language code to retrieve prompts for
+
+Returns:
+SystemMessage containing the system prompt for the language
+
+<PySourceCode >
+
+```python
+def to_system_message(self, lang: LanguageCode) -> SystemMessage:
+    """
+    Convert prompts for specified language to SystemMessage.
+
+    Args:
+        lang: Language code to retrieve prompts for
+
+    Returns:
+        SystemMessage containing the system prompt for the language
+    """
+    if lang not in self.__class__.model_fields:
+        lang = self.fallback_lang
+
+    prompts = getattr(self, lang, None)
+    if not prompts:
+        prompts = getattr(self, self.fallback_lang, None)
+    return SystemMessage(content=prompts.system if prompts else "")
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"lang"} type={"LanguageCode"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"SystemMessage"} />
+
+</PyFunction>

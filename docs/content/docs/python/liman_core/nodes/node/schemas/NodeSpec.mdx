@@ -1,0 +1,30 @@
+---
+title: NodeSpec
+---
+
+Specification schema for generic custom nodes.
+
+Defines the configuration for custom nodes that implement
+specialized logic not covered by LLM or Tool nodes.
+
+## Attributes
+
+<PyAttribute name={"kind"} type={"Literal['Node']"} value={"'Node'"} />
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"func"} type={"str"} value={null} />
+
+<PyAttribute
+  name={"description"}
+  type={"LocalizedValue | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"prompts"} type={"LocalizedValue | None"} value={"None"} />
+
+<PyAttribute name={"nodes"} type={"list[str | EdgeSpec]"} value={"[]"} />
+
+<PyAttribute name={"llm_nodes"} type={"list[str | EdgeSpec]"} value={"[]"} />
+
+<PyAttribute name={"tools"} type={"list[str]"} value={"[]"} />

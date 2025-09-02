@@ -1,0 +1,34 @@
+---
+title: schemas
+---
+
+<PyAttribute name={"NS"} type={null} value={"TypeVar('NS', bound=NodeState)"} />
+
+<PyAttribute
+  name={"LangChainMessage"}
+  type={null}
+  value={"AIMessage | HumanMessage | ToolMessage"}
+/>
+
+<PyAttribute
+  name={"LangChainMessageT"}
+  type={null}
+  value={"Annotated[LangChainMessage, Field(discriminator='type')]"}
+/>
+
+<Tabs items={["Class"]}>
+
+<Tab value={"Class"}>
+
+<Cards >
+
+<Card
+  title={"NodeState"}
+  href={"/docs/python/liman_core/nodes/base/schemas/NodeState"}
+/>
+
+</Cards>
+
+</Tab>
+
+</Tabs>

@@ -1,0 +1,249 @@
+---
+title: StateStorage
+---
+
+Abstract interface for state persistence - supports both sync and async operations
+
+## Functions
+
+<PyFunction name={"asave_executor_state"} type={"asave_executor_state(self, /, execution_id, state) -> None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+async def asave_executor_state(
+    self, execution_id: UUID, state: dict[str, Any]
+) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"aload_executor_state"} type={"aload_executor_state(self, /, execution_id) -> dict[str, Any] | None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+async def aload_executor_state(
+    self, execution_id: UUID
+) -> dict[str, Any] | None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any] | None"} />
+
+</PyFunction>
+
+<PyFunction name={"asave_actor_state"} type={"asave_actor_state(self, /, execution_id, actor_id, state) -> None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+async def asave_actor_state(
+    self, execution_id: UUID, actor_id: UUID, state: dict[str, Any]
+) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"actor_id"} type={"UUID"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"aload_actor_state"} type={"aload_actor_state(self, /, execution_id, actor_id) -> dict[str, Any] | None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+async def aload_actor_state(
+    self, execution_id: UUID, actor_id: UUID
+) -> dict[str, Any] | None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"actor_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any] | None"} />
+
+</PyFunction>
+
+<PyFunction name={"adelete_execution_state"} type={"adelete_execution_state(self, /, execution_id) -> None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+async def adelete_execution_state(self, execution_id: UUID) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"save_executor_state"} type={"save_executor_state(self, /, execution_id, state) -> None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def save_executor_state(
+    self, execution_id: UUID, state: dict[str, Any]
+) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"load_executor_state"} type={"load_executor_state(self, /, execution_id) -> dict[str, Any] | None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def load_executor_state(self, execution_id: UUID) -> dict[str, Any] | None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any] | None"} />
+
+</PyFunction>
+
+<PyFunction name={"save_actor_state"} type={"save_actor_state(self, /, execution_id, actor_id, state) -> None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def save_actor_state(
+    self, execution_id: UUID, actor_id: UUID, state: dict[str, Any]
+) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"actor_id"} type={"UUID"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"load_actor_state"} type={"load_actor_state(self, /, execution_id, actor_id) -> dict[str, Any] | None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def load_actor_state(
+    self, execution_id: UUID, actor_id: UUID
+) -> dict[str, Any] | None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+<PyParameter name={"actor_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any] | None"} />
+
+</PyFunction>
+
+<PyFunction name={"delete_execution_state"} type={"delete_execution_state(self, /, execution_id) -> None"}>
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def delete_execution_state(self, execution_id: UUID) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"execution_id"} type={"UUID"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>

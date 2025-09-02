@@ -1,0 +1,95 @@
+---
+title: AuthPlugin
+---
+
+AuthPlugin provides authentication and authorization context for node execution.
+
+## Attributes
+
+<PyAttribute name={"name"} type={null} value={"'AuthPlugin'"} />
+
+<PyAttribute
+  name={"applies_to"}
+  type={null}
+  value={"['Node', 'LLMNode', 'ToolNode']"}
+/>
+
+<PyAttribute
+  name={"registered_kinds"}
+  type={null}
+  value={"['ServiceAccount']"}
+/>
+
+<PyAttribute name={"field_name"} type={null} value={"'auth'"} />
+
+<PyAttribute name={"field_type"} type={null} value={"AuthFieldSpec"} />
+
+## Functions
+
+<PyFunction name={"validate"} type={"validate(self, /, spec_data) -> Any"}>
+
+<PySourceCode >
+
+```python
+def validate(self, spec_data: Any) -> Any: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"spec_data"} type={"Any"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
+
+<PyFunction name={"get_execution_state"} type={"get_execution_state(self, /, component, state, registry) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+def get_execution_state(
+    self, component: Component[Any], state: dict[str, Any], registry: Registry
+) -> dict[str, Any]:
+    if component.spec.kind not in self.applies_to:
+        raise LimanError(
+            f"AuthPlugin cannot provide execution state for component of kind '{component.spec.kind}'"
+        )
+
+    auth = getattr(component.spec, self.field_name, None)
+    if not auth:
+        return state
+
+    sa_spec = auth.service_account
+    if isinstance(sa_spec, str):
+        sa = registry.lookup(ServiceAccount, sa_spec)
+    elif isinstance(sa_spec, ServiceAccountSpec):
+        try:
+            sa = registry.lookup(ServiceAccount, sa_spec.name)
+        except ComponentNotFoundError:
+            sa = ServiceAccount(sa_spec, registry=registry)
+            registry.add(sa)
+    else:
+        return {}
+
+    return sa.get_internal_state(state)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"component"} type={"Component[Any]"} value={null} />
+<PyParameter name={"state"} type={"dict[str, Any]"} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

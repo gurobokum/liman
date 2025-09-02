@@ -1,0 +1,100 @@
+---
+title: load
+---
+
+<Tabs items={["Functions"]}>
+
+<Tab value={"Functions"}>
+
+<PyFunction name={"load_openapi"} type={"load_openapi(_) -> OpenAPI"}>
+
+<PySourceCode >
+
+```python
+@singledispatch
+def load_openapi(_: Any) -> OpenAPI:
+    raise NotImplementedError(
+        "load_openapi() is not implemented for this type of input."
+    )
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"_"} type={"Any"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"OpenAPI"} />
+
+</PyFunction>
+<PyFunction name={"_"} type={"_(input_dict) -> OpenAPI"}>
+
+<PySourceCode >
+
+```python
+@load_openapi.register(dict)
+def _(input_dict: dict[str, Any]) -> OpenAPI:
+    schema = cast(Schema, input_dict)
+    validate(schema)
+    return OpenAPI.from_dict(schema)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"input_dict"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"OpenAPI"} />
+
+</PyFunction>
+<PyFunction name={"_read_from_url"} type={"_read_from_url(url) -> Mapping[Hashable, Any]"}>
+
+Read and parse OpenAPI spec from URL.
+
+<PySourceCode >
+
+```python
+def _read_from_url(url: str) -> Mapping[Hashable, Any]:
+    """
+    Read and parse OpenAPI spec from URL.
+    """
+    with urlopen(url) as response:
+        content = response.read().decode("utf-8")
+
+    try:
+        data = json.loads(content)
+        if not isinstance(data, dict):
+            raise ValueError(f"Cannot parse OpenAPI spec as json from URL: {url}")
+        return data
+    except Exception:
+        ...
+
+    yaml = YAML(typ="safe")
+    data = yaml.load(content)
+    if not data:
+        raise ValueError(f"Failed to parse OpenAPI spec from URL: {url}")
+    if not isinstance(data, dict):
+        raise ValueError(f"Failed to parse OpenAPI spec from URL: {url}")
+    return data
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"url"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Mapping[Hashable, Any]"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

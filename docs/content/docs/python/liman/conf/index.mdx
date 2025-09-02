@@ -1,0 +1,43 @@
+---
+title: conf
+---
+
+<PyAttribute name={"settings"} type={null} value={"Settings()"} />
+
+<Tabs items={["Class","Functions"]}>
+
+<Tab value={"Class"}>
+
+<Cards >
+
+<Card title={"Settings"} href={"/docs/python/liman/conf/Settings"} />
+
+</Cards>
+
+</Tab>
+<Tab value={"Functions"}>
+
+<PyFunction name={"enable_debug"} type={"enable_debug() -> None"}>
+
+Enable debug mode for the library.
+
+<PySourceCode >
+
+```python
+def enable_debug() -> None:
+    """
+    Enable debug mode for the library.
+    """
+    global settings
+    settings.DEBUG = True
+```
+
+</PySourceCode>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

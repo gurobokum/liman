@@ -1,0 +1,67 @@
+---
+title: LimanError
+---
+
+Base class for all Liman errors.
+
+## Attributes
+
+<PyAttribute name={"code"} type={null} value={"code"} />
+
+<PyAttribute name={"kwargs"} type={null} value={"kwargs"} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, message, code=None, **kwargs) -> None"}>
+
+<PySourceCode >
+
+```python
+def __init__(
+    self, message: str, code: str | int | None = None, **kwargs: Any
+) -> None:
+    super().__init__(message)
+    if code:
+        self.code = code
+    self.kwargs = kwargs
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"message"} type={"str"} value={null} />
+<PyParameter name={"code"} type={"str | int | None"} value={"None"} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"__getitem__"} type={"__getitem__(self, /, item) -> Any"}>
+
+Get attribute or return None if it doesn't exist.
+
+<PySourceCode >
+
+```python
+def __getitem__(self, item: str) -> Any:
+    """Get attribute or return None if it doesn't exist."""
+    return self.kwargs.get(item, None)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"item"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>

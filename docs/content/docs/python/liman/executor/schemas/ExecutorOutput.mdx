@@ -1,0 +1,52 @@
+---
+title: ExecutorOutput
+---
+
+## Attributes
+
+<PyAttribute name={"execution_id"} type={"UUID"} value={null} />
+
+<PyAttribute name={"node_actor_id"} type={"UUID"} value={null} />
+
+<PyAttribute name={"node_full_name"} type={"str"} value={null} />
+
+<PyAttribute name={"node_output"} type={"Any | None"} value={"None"} />
+
+<PyAttribute name={"exit_"} type={"bool"} value={"False"} />
+
+<PyAttribute name={"error"} type={"str | None"} value={"None"} />
+
+<PyAttribute name={"error_type"} type={"str | None"} value={"None"} />
+
+## Functions
+
+<PyFunction name={"__str__"} type={"__str__(self) -> str"}>
+
+<PySourceCode >
+
+```python
+def __str__(self) -> str:
+    if isinstance(self.node_output, str):
+        return self.node_output
+
+    elif isinstance(self.node_output, BaseMessage):
+        content = self.node_output.content
+
+        if isinstance(content, list):
+            return "\n".join([str(item) for item in content])
+        return content
+
+    return str(self.node_output)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"str"} />
+
+</PyFunction>

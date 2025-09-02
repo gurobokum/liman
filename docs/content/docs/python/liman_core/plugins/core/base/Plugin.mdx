@@ -1,0 +1,47 @@
+---
+title: Plugin
+---
+
+Plugin interface for extending Liman specifications with additional functionality.
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute name={"applies_to"} type={"list[str]"} value={null} />
+
+<PyAttribute name={"registered_kinds"} type={"list[str]"} value={null} />
+
+<PyAttribute name={"field_name"} type={"str"} value={null} />
+
+<PyAttribute name={"field_type"} type={"type"} value={null} />
+
+## Functions
+
+<PyFunction name={"validate"} type={"validate(self, /, spec_data) -> Any"}>
+
+Validate and transform plugin-specific data
+
+<PySourceCode >
+
+```python
+@abstractmethod
+def validate(self, spec_data: Any) -> Any:
+    """
+    Validate and transform plugin-specific data
+    """
+    ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"spec_data"} type={"Any"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>

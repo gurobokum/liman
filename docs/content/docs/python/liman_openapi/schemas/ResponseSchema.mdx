@@ -1,0 +1,21 @@
+---
+title: ResponseSchema
+---
+
+## Attributes
+
+<PyAttribute name={"content_type"} type={"str"} value={null} />
+
+<PyAttribute
+  name={"type_"}
+  type={"Annotated[ParameterType | None, Field(alias='type', default=None)]"}
+  value={null}
+/>
+
+<PyAttribute
+  name={"ref"}
+  type={"Annotated[str | None, Field(alias='$ref', default=None)]"}
+  value={null}
+/>
+
+<PyAttribute name={"items"} type={"dict[str, str] | None"} value={"None"} />

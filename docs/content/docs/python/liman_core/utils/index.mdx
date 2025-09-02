@@ -1,0 +1,37 @@
+---
+title: utils
+---
+
+<Tabs items={["Functions"]}>
+
+<Tab value={"Functions"}>
+
+<PyFunction name={"to_snake_case"} type={"to_snake_case(value) -> str"}>
+
+Convert CamelCase to snake_case
+
+<PySourceCode >
+
+```python
+def to_snake_case(value: str) -> str:
+    """
+    Convert CamelCase to snake_case
+    """
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", value).lower()
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"value"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"str"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

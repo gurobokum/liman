@@ -1,0 +1,314 @@
+---
+title: FunctionNode
+---
+
+Node for executing custom Python functions within workflows.
+
+FunctionNode allows integration of arbitrary Python functions
+into the Liman execution graph. Functions can be sync or async.
+
+## Attributes
+
+<PyAttribute name={"spec_type"} type={null} value={"FunctionNodeSpec"} />
+
+<PyAttribute name={"state_type"} type={null} value={"FunctionNodeState"} />
+
+<PyAttribute name={"registry"} type={null} value={"registry"} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, spec, registry, *, initial_data=None, yaml_path=None, strict=False, default_lang='en', fallback_lang='en') -> None"}>
+
+Initialize function node with specification and registry.
+
+Args:
+spec: Function node specification defining the target function
+registry: Component registry for dependency resolution
+initial_data: Optional initial data for the component
+yaml_path: Optional path to the YAML file this node was loaded from
+strict: Whether to enforce strict validation
+default_lang: Default language code for localization
+fallback_lang: Fallback language code when default is unavailable
+
+<PySourceCode >
+
+```python
+def __init__(
+    self,
+    spec: FunctionNodeSpec,
+    registry: Registry,
+    *,
+    initial_data: dict[str, Any] | None = None,
+    yaml_path: str | None = None,
+    strict: bool = False,
+    default_lang: str = "en",
+    fallback_lang: str = "en",
+) -> None:
+    """
+    Initialize function node with specification and registry.
+
+    Args:
+        spec: Function node specification defining the target function
+        registry: Component registry for dependency resolution
+        initial_data: Optional initial data for the component
+        yaml_path: Optional path to the YAML file this node was loaded from
+        strict: Whether to enforce strict validation
+        default_lang: Default language code for localization
+        fallback_lang: Fallback language code when default is unavailable
+    """
+    super().__init__(
+        spec,
+        registry,
+        initial_data=initial_data,
+        yaml_path=yaml_path,
+        default_lang=default_lang,
+        fallback_lang=fallback_lang,
+        strict=strict,
+    )
+
+    self.registry = registry
+    self.registry.add(self)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"spec"} type={"FunctionNodeSpec"} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+<PyParameter
+  name={"initial_data"}
+  type={"dict[str, Any] | None"}
+  value={"None"}
+/>
+<PyParameter name={"yaml_path"} type={"str | None"} value={"None"} />
+<PyParameter name={"strict"} type={"bool"} value={"False"} />
+<PyParameter name={"default_lang"} type={"str"} value={"'en'"} />
+<PyParameter name={"fallback_lang"} type={"str"} value={"'en'"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"compile"} type={"compile(self) -> None"}>
+
+Compile the function node for execution.
+
+Prepares the node for execution. Currently performs basic
+validation and sets the compiled flag.
+
+Raises:
+LimanError: If the node is already compiled
+
+<PySourceCode >
+
+```python
+def compile(self) -> None:
+    """
+    Compile the function node for execution.
+
+    Prepares the node for execution. Currently performs basic
+    validation and sets the compiled flag.
+
+    Raises:
+        LimanError: If the node is already compiled
+    """
+    if self._compiled:
+        raise LimanError("FunctionNode is already compiled")
+
+    self._compiled = True
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"set_func"} type={"set_func(self, /, func) -> None"}>
+
+Manually set the function for this function node.
+
+Args:
+func: Callable function to execute during invocation
+
+<PySourceCode >
+
+```python
+def set_func(self, func: Callable[..., Any]) -> None:
+    """
+    Manually set the function for this function node.
+
+    Args:
+        func: Callable function to execute during invocation
+    """
+    self.func = func
+    self.spec.func = str(func)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"func"} type={"Callable[..., Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"invoke"} type={"invoke(self, /, input_, **kwargs) -> Any"}>
+
+Execute the function node with provided input.
+
+Extracts function arguments from input and executes the function.
+Handles both synchronous and asynchronous functions.
+
+Args:
+input\_: Input data to pass to the function
+\*\*kwargs: Additional keyword arguments
+
+Returns:
+Result of function execution
+
+<PySourceCode >
+
+```python
+async def invoke(self, input_: Any, **kwargs: Any) -> Any:
+    """
+    Execute the function node with provided input.
+
+    Extracts function arguments from input and executes the function.
+    Handles both synchronous and asynchronous functions.
+
+    Args:
+        input_: Input data to pass to the function
+        **kwargs: Additional keyword arguments
+
+    Returns:
+        Result of function execution
+    """
+    func = self.func
+    call_args = self._extract_function_args(input_)
+
+    if asyncio.iscoroutinefunction(func):
+        result = await func(**call_args)
+    else:
+        result = func(**call_args)
+    return result
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"Any"} value={null} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
+
+<PyFunction name={"get_new_state"} type={"get_new_state(self) -> FunctionNodeState"}>
+
+Create new state instance for this function node.
+
+Returns:
+Fresh FunctionNodeState with empty message history
+
+<PySourceCode >
+
+```python
+def get_new_state(self) -> FunctionNodeState:
+    """
+    Create new state instance for this function node.
+
+    Returns:
+        Fresh FunctionNodeState with empty message history
+    """
+    return FunctionNodeState(name=self.spec.name, messages=[])
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"FunctionNodeState"} />
+
+</PyFunction>
+
+<PyFunction name={"_extract_function_args"} type={"_extract_function_args(self, /, args_dict) -> dict[str, Any]"}>
+
+Extract function arguments based on function signature from provided args dict.
+
+Args:
+args_dict: Dictionary containing all available arguments
+
+Returns:
+Dictionary with only the arguments that match function signature
+
+<PySourceCode >
+
+```python
+def _extract_function_args(
+    self, args_dict: dict[str, Any] | None
+) -> dict[str, Any]:
+    """
+    Extract function arguments based on function signature from provided args dict.
+
+    Args:
+        args_dict: Dictionary containing all available arguments
+
+    Returns:
+        Dictionary with only the arguments that match function signature
+    """
+    if not hasattr(self, "func") or self.func is None:
+        raise LimanError("func is not set for the FunctionNode")
+
+    if not args_dict:
+        return {}
+
+    sig = inspect.signature(self.func)
+    filtered_args = {}
+
+    for param_name, param in sig.parameters.items():
+        if param_name in args_dict:
+            filtered_args[param_name] = args_dict[param_name]
+        elif param.default is not inspect.Parameter.empty:
+            continue
+        else:
+            raise ValueError(f"Required parameter is missing: '{param_name}'")
+
+    return filtered_args
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"args_dict"} type={"dict[str, Any] | None"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

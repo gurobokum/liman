@@ -1,0 +1,271 @@
+---
+title: OpenAPIOperation
+---
+
+## Attributes
+
+<PyAttribute name={"endpoint"} type={null} value={"endpoint"} />
+
+<PyAttribute name={"refs"} type={null} value={"refs"} />
+
+<PyAttribute name={"base_url"} type={null} value={"base_url"} />
+
+<PyAttribute
+  name={"__signature__"}
+  type={null}
+  value={"self._create_signature()"}
+/>
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, endpoint, refs=None, *, base_url=None) -> None"}>
+
+<PySourceCode >
+
+```python
+def __init__(
+    self,
+    endpoint: Endpoint,
+    refs: dict[str, Ref] | None = None,
+    *,
+    base_url: str | None = None,
+) -> None:
+    self.endpoint = endpoint
+    self.refs = refs
+    self.base_url = base_url
+
+    self.__signature__ = self._create_signature()
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"endpoint"} type={"Endpoint"} value={null} />
+<PyParameter name={"refs"} type={"dict[str, Ref] | None"} value={"None"} />
+<PyParameter name={"base_url"} type={"str | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"__repr__"} type={"__repr__(self) -> str"}>
+
+<PySourceCode >
+
+```python
+def __repr__(self) -> str:
+    return f"liman_openapi.gen.id_{id(self)}.{self.endpoint.operation_id}"
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"str"} />
+
+</PyFunction>
+
+<PyFunction name={"__call__"} type={"__call__(self, **kwargs) -> object"}>
+
+<PySourceCode >
+
+```python
+async def __call__(self, **kwargs: Any) -> object:
+    return await self._request(**kwargs)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"object"} />
+
+</PyFunction>
+
+<PyFunction name={"_create_signature"} type={"_create_signature(self) -> inspect.Signature"}>
+
+Create inspection signature based on OpenAPI endpoint specification.
+
+<PySourceCode >
+
+```python
+def _create_signature(self) -> inspect.Signature:
+    """
+    Create inspection signature based on OpenAPI endpoint specification.
+    """
+    parameters = []
+
+    for param in self.endpoint.parameters:
+        parameters.append(
+            inspect.Parameter(
+                param.name,
+                inspect.Parameter.KEYWORD_ONLY,
+                default=None if not param.required else inspect.Parameter.empty,
+            )
+        )
+
+    if self.endpoint.request_body:
+        parameters.append(
+            inspect.Parameter(
+                self.endpoint.request_body.name,
+                inspect.Parameter.KEYWORD_ONLY,
+                default=inspect.Parameter.empty
+                if self.endpoint.request_body.required
+                else None,
+            )
+        )
+
+    return inspect.Signature(parameters)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"inspect.Signature"} />
+
+</PyFunction>
+
+<PyFunction name={"_request"} type={"_request(self, **kwargs) -> object"}>
+
+<PySourceCode >
+
+```python
+async def _request(self, **kwargs: Any) -> object:
+    method = self.endpoint.method
+    url, query_params, headers, json_data = self._build_url_and_params(**kwargs)
+
+    params = query_params if query_params else None
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.request(
+                method, url, params=params, headers=headers, json=json_data
+            )
+            response.raise_for_status()
+            return self._parse_response(response)
+    except httpx.HTTPStatusError as e:
+        raise RuntimeError(
+            f"HTTP error occurred: {e.response.status_code} {e.response.text}"
+        ) from e
+    except httpx.RequestError as e:
+        raise RuntimeError(f"Request error occurred: {e}") from e
+    except Exception as e:
+        raise RuntimeError(f"Unexpected error occurred: {e}") from e
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"object"} />
+
+</PyFunction>
+
+<PyFunction name={"_parse_response"} type={"_parse_response(self, /, response) -> object"}>
+
+<PySourceCode >
+
+```python
+def _parse_response(self, response: httpx.Response) -> object:
+    content_type = response.headers.get("content-type", "").lower()
+
+    if "application/json" in content_type:
+        return response.json()
+    elif "text/" in content_type:
+        return response.text
+    elif (
+        content_type.startswith("image/")
+        or content_type == "application/octet-stream"
+    ):
+        return response.content
+
+    raise ValueError(
+        f"Unsupported content type: {content_type}. Expected 'application/json', 'text/*', or 'image/*'."
+    )
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"response"} type={"httpx.Response"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"object"} />
+
+</PyFunction>
+
+<PyFunction name={"_build_url_and_params"} type={"_build_url_and_params(self, **kwargs) -> RequestParams"}>
+
+<PySourceCode >
+
+```python
+def _build_url_and_params(self, **kwargs: Any) -> RequestParams:
+    path = self.endpoint.path
+    query_params: dict[str, Any] = {}
+    headers: dict[str, Any] = {}
+    json_data = None
+
+    for param in self.endpoint.parameters:
+        value = kwargs.get(param.name)
+        if value is None and param.required:
+            raise ValueError(f"Required parameter is missing: '{param.name}'")
+
+        if value is not None:
+            if param.in_ == "path":
+                path = path.replace(f"{{{param.name}}}", str(value))
+            elif param.in_ == "query":
+                query_params[param.name] = value
+            elif param.in_ == "header":
+                headers[param.name] = str(value)
+
+    if self.endpoint.request_body:
+        json_data = kwargs.get(self.endpoint.request_body.name)
+        if json_data is None and self.endpoint.request_body.required:
+            raise ValueError(
+                f"Required request body is missing: '{self.endpoint.request_body.name}'"
+            )
+
+        if json_data and "application/json" in self.endpoint.request_body.content:
+            headers["Content-Type"] = "application/json"
+
+    url = f"{self.base_url.rstrip('/')}{path}" if self.base_url else path
+    return RequestParams(url, query_params, headers, json_data)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"RequestParams"} />
+
+</PyFunction>

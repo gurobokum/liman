@@ -1,0 +1,106 @@
+---
+title: LimanInstrumentor
+---
+
+OpenTelemetry instrumentor for the Liman library.
+
+## Attributes
+
+<PyAttribute
+  name={"methods"}
+  type={null}
+  value={
+    "{'LLMNode.invoke': ('liman_core.llm_node.node', node_invoke), 'ToolNode.invoke': ('liman_core.tool_node.node', node_invoke), 'LLMNode.ainvoke': ('liman_core.llm_node.node', node_ainvoke), 'ToolNode.ainvoke': ('liman_core.tool_node.node', node_ainvoke), 'AsyncNodeActor.execute': ('liman_core.node_actor.actor', actor_execute), 'NodeActor.execute': ('liman_core.node_actor', actor_execute), 'ChatOpenAI.ainvoke': ('langchain_openai', langchain_ainvoke)}"
+  }
+/>
+
+## Functions
+
+<PyFunction name={"_instrument"} type={"_instrument(self, **kwargs) -> None"}>
+
+<PySourceCode >
+
+```python
+def _instrument(self, **kwargs: Any) -> None:
+    tracer_provider = kwargs.get("tracer_provider")
+    tracer = get_tracer(
+        __name__,
+        __version__,
+        tracer_provider,
+        schema_url=Schemas.V1_28_0.value,
+    )
+
+    meter_provider = kwargs.get("meter_provider")
+    meter = get_meter(
+        __name__,
+        __version__,
+        meter_provider,
+        schema_url=Schemas.V1_28_0.value,
+    )
+    metrics = Metrics(meter)
+
+    for method, (module, fn) in self.methods.items():
+        try:
+            wrap_function_wrapper(
+                module=module,
+                name=method,
+                wrapper=fn(tracer, metrics),
+            )
+        except ImportError as e:
+            logger.warning(f"Failed to instrument {method} in {module}: {e}. ")
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_uninstrument"} type={"_uninstrument(self, **kwargs) -> None"}>
+
+<PySourceCode >
+
+```python
+def _uninstrument(self, **kwargs: Any) -> None: ...
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"kwargs"} type={"Any"} value={"{}"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"instrumentation_dependencies"} type={"instrumentation_dependencies(self) -> Collection[str]"}>
+
+<PySourceCode >
+
+```python
+def instrumentation_dependencies(self) -> Collection[str]:
+    return ("liman-core ~= 0.1.0rc0",)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Collection[str]"} />
+
+</PyFunction>

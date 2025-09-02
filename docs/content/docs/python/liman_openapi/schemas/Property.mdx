@@ -1,0 +1,118 @@
+---
+title: Property
+---
+
+## Attributes
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute
+  name={"type_"}
+  type={
+    "Annotated[ParameterType | list[ParameterType] | None, Field(alias='type', default=None)]"
+  }
+  value={null}
+/>
+
+<PyAttribute name={"title"} type={"str | None"} value={"None"} />
+
+<PyAttribute name={"description"} type={"str | None"} value={"None"} />
+
+<PyAttribute name={"required"} type={"bool"} value={"False"} />
+
+<PyAttribute
+  name={"example"}
+  type={"str | int | float | None"}
+  value={"None"}
+/>
+
+## Functions
+
+<PyFunction name={"parse"} type={"parse(cls, /, values) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+@model_validator(mode="before")
+@classmethod
+def parse(cls, values: dict[str, Any]) -> dict[str, Any]:
+    keys = ["anyOf", "allOf", "oneOf"]
+
+    for key in keys:
+        if value := values.get(key):
+            types, is_optional = cls._compose_type(value)
+            if values.get("type"):
+                raise ValueError(
+                    f"Property cannot have both 'type' and '{key}' defined."
+                )
+            values["type"] = types
+            values["required"] = not is_optional
+            break
+    return values
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"values"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>
+
+<PyFunction name={"_compose_type"} type={"_compose_type(items) -> tuple[list[str], bool]"}>
+
+<PySourceCode >
+
+```python
+@staticmethod
+def _compose_type(items: list[dict[str, Any]]) -> tuple[list[str], bool]:
+    types = []
+    is_optional = False
+    for item in items:
+        if item["type"] == "null":
+            is_optional = True
+            continue
+        types.append(item["type"])
+    return types, is_optional
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"items"} type={"list[dict[str, Any]]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"tuple[list[str], bool]"} />
+
+</PyFunction>
+
+<PyFunction name={"get_tool_parameter_spec"} type={"get_tool_parameter_spec(self) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+def get_tool_parameter_spec(self) -> dict[str, Any]:
+    spec: dict[str, Any] = {"type": self.type_, "name": self.name}
+    if self.description:
+        spec["description"] = self.description
+    return spec
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

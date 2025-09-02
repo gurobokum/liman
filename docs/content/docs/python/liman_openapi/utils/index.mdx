@@ -1,0 +1,33 @@
+---
+title: utils
+---
+
+<Tabs items={["Functions"]}>
+
+<Tab value={"Functions"}>
+
+<PyFunction name={"is_url"} type={"is_url(path) -> bool"}>
+
+<PySourceCode >
+
+```python
+def is_url(path: str) -> bool:
+    parsed = urlparse(path)
+    return bool(parsed.scheme and parsed.netloc)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"path"} type={"str"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"bool"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

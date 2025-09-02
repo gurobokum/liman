@@ -1,0 +1,16 @@
+---
+title: LLMNodeState
+---
+
+Runtime state for LLM nodes.
+
+Maintains conversation history, current input/output messages,
+and other state data specific to LLM node execution.
+
+## Attributes
+
+<PyAttribute name={"messages"} type={"list[LangChainMessage]"} value={"[]"} />
+
+<PyAttribute name={"input_"} type={"LangChainMessage | None"} value={"None"} />
+
+<PyAttribute name={"output"} type={"LangChainMessage | None"} value={"None"} />

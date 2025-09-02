@@ -1,0 +1,50 @@
+---
+title: Response
+---
+
+## Attributes
+
+<PyAttribute name={"status_code"} type={"str"} value={null} />
+
+<PyAttribute name={"description"} type={"str"} value={null} />
+
+<PyAttribute
+  name={"content"}
+  type={"dict[str, dict[Literal['schema'], ResponseSchema]]"}
+  value={null}
+/>
+
+## Functions
+
+<PyFunction name={"inject_content_types"} type={"inject_content_types(cls, /, values) -> dict[str, Any]"}>
+
+<PySourceCode >
+
+```python
+@model_validator(mode="before")
+@classmethod
+def inject_content_types(cls, values: dict[str, Any]) -> dict[str, Any]:
+    content = {}
+
+    for key, value in values.get("content", {}).items():
+        schema = value.get("schema")
+        if schema:
+            content[key] = {**value, "schema": {**schema, "content_type": key}}
+        else:
+            content[key] = {**value}
+    values["content"] = content
+    return values
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"values"} type={"dict[str, Any]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Any]"} />
+
+</PyFunction>

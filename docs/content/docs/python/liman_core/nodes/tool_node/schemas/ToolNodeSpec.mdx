@@ -1,0 +1,42 @@
+---
+title: ToolNodeSpec
+---
+
+Specification schema for tool nodes.
+
+Defines the complete configuration for a tool node including
+function reference, arguments, descriptions, and triggers.
+
+## Attributes
+
+<PyAttribute name={"kind"} type={"Literal['ToolNode']"} value={"'ToolNode'"} />
+
+<PyAttribute name={"name"} type={"str"} value={null} />
+
+<PyAttribute
+  name={"description"}
+  type={"LocalizedValue | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"func"} type={"str | None"} value={"None"} />
+
+<PyAttribute
+  name={"arguments"}
+  type={"list[ToolArgument] | list[ToolObjectArgument] | None"}
+  value={"None"}
+/>
+
+<PyAttribute
+  name={"triggers"}
+  type={"list[LocalizedValue] | None"}
+  value={"None"}
+/>
+
+<PyAttribute
+  name={"tool_prompt_template"}
+  type={"LocalizedValue | None"}
+  value={"None"}
+/>
+
+<PyAttribute name={"llm_nodes"} type={"list[EdgeSpec]"} value={"[]"} />

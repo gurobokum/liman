@@ -1,0 +1,80 @@
+---
+title: parse
+---
+
+<Tabs items={["Functions"]}>
+
+<Tab value={"Functions"}>
+
+<PyFunction name={"parse_refs"} type={"parse_refs(schema) -> dict[str, Ref]"}>
+
+Parses components from an OpenAPI schema.
+
+<PySourceCode >
+
+```python
+def parse_refs(schema: Schema) -> dict[str, Ref]:
+    """
+    Parses components from an OpenAPI schema.
+    """
+    schemas = schema.get("components", {"schemas": {}}).get("schemas", {})
+    components = {}
+    for name, schema in schemas.items():
+        components[name] = Ref.model_validate(
+            {
+                "name": name,
+                **schema,
+            }
+        )
+    return components
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"schema"} type={"Schema"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"dict[str, Ref]"} />
+
+</PyFunction>
+<PyFunction name={"parse_endpoints"} type={"parse_endpoints(schema) -> list[Endpoint]"}>
+
+Parses endpoints from an OpenAPI schema.
+
+<PySourceCode >
+
+```python
+def parse_endpoints(schema: Schema) -> list[Endpoint]:
+    """
+    Parses endpoints from an OpenAPI schema.
+    """
+    paths = schema.get("paths", {})
+    endpoints = []
+    for path, methods in paths.items():
+        for method, details in methods.items():
+            endpoints.append(
+                Endpoint.model_validate(
+                    {**details, "method": method.upper(), "path": path},
+                )
+            )
+    return endpoints
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"schema"} type={"Schema"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"list[Endpoint]"} />
+
+</PyFunction>
+
+</Tab>
+
+</Tabs>

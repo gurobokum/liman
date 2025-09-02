@@ -1,0 +1,524 @@
+---
+title: Executor
+---
+
+## Attributes
+
+<PyAttribute name={"id"} type={null} value={"uuid4()"} />
+
+<PyAttribute
+  name={"execution_id"}
+  type={null}
+  value={"execution_id or uuid4()"}
+/>
+
+<PyAttribute name={"max_iterations"} type={null} value={"max_iterations"} />
+
+<PyAttribute name={"registry"} type={null} value={"registry"} />
+
+<PyAttribute name={"state_storage"} type={null} value={"state_storage"} />
+
+<PyAttribute name={"llm"} type={null} value={"llm"} />
+
+<PyAttribute name={"node_actor"} type={null} value={"node_actor"} />
+
+<PyAttribute name={"status"} type={null} value={"ExecutorStatus.IDLE"} />
+
+<PyAttribute name={"iteration_count"} type={null} value={"0"} />
+
+<PyAttribute name={"parent_executor"} type={null} value={"parent_executor"} />
+
+<PyAttribute
+  name={"child_executors"}
+  type={"dict[UUID, Executor]"}
+  value={"{}"}
+/>
+
+<PyAttribute
+  name={"logger"}
+  type={null}
+  value={
+    "logging.LoggerAdapter(logger, {'execution_id': str(self.execution_id)})"
+  }
+/>
+
+<PyAttribute name={"is_child"} type={"bool"} value={null} />
+
+## Functions
+
+<PyFunction name={"__init__"} type={"__init__(self, /, registry, state_storage, node_actor, llm, *, execution_id=None, max_iterations=10, parent_executor=None, root_output_queue=None) -> None"}>
+
+<PySourceCode >
+
+```python
+def __init__(
+    self,
+    registry: Registry,
+    state_storage: StateStorage,
+    node_actor: NodeActor[T],
+    llm: BaseChatModel,
+    *,
+    execution_id: UUID | None = None,
+    max_iterations: int = 10,
+    # executors
+    parent_executor: Executor | None = None,
+    root_output_queue: Queue[ExecutorOutput] | None = None,
+) -> None:
+    self.id = uuid4()
+    self.execution_id = execution_id or uuid4()
+    self.max_iterations = max_iterations
+
+    self.registry = registry
+    self.state_storage = state_storage
+    self.llm = llm
+    self.node_actor = node_actor
+
+    self.status = ExecutorStatus.IDLE
+    self.iteration_count = 0
+
+    # Parent-child relationship
+    self.parent_executor = parent_executor
+
+    # Child management
+    self.child_executors: dict[UUID, Executor] = {}
+
+    # Queues for input and output management
+    self._input_queue: Queue[ExecutorInput] = Queue()
+    self._output_queue: Queue[ExecutorOutput] = Queue()
+    self._root_output_queue: Queue[ExecutorOutput] = root_output_queue or Queue()
+    self._processing_task: Task[None] | None = None
+
+    self.logger = logging.LoggerAdapter(
+        logger, {"execution_id": str(self.execution_id)}
+    )
+
+    self.logger.debug("Created executor")
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"registry"} type={"Registry"} value={null} />
+<PyParameter name={"state_storage"} type={"StateStorage"} value={null} />
+<PyParameter name={"node_actor"} type={"NodeActor[T]"} value={null} />
+<PyParameter name={"llm"} type={"BaseChatModel"} value={null} />
+<PyParameter name={"execution_id"} type={"UUID | None"} value={"None"} />
+<PyParameter name={"max_iterations"} type={"int"} value={"10"} />
+<PyParameter name={"parent_executor"} type={"Executor | None"} value={"None"} />
+<PyParameter
+  name={"root_output_queue"}
+  type={"Queue[ExecutorOutput] | None"}
+  value={"None"}
+/>
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"step"} type={"step(self, /, input_) -> ExecutorOutput"}>
+
+Execute a single step in the executor
+
+Args:
+input\_: ExecutorInput containing current input and target
+
+<PySourceCode >
+
+```python
+async def step(self, input_: ExecutorInput) -> ExecutorOutput:
+    """
+    Execute a single step in the executor
+
+    Args:
+        input_: ExecutorInput containing current input and target
+    """
+    self.status = ExecutorStatus.RUNNING
+    self.logger.debug(
+        f"Executor stepping with input: {repr(input_)}, qsize: {self._input_queue.qsize()}"
+    )
+
+    await self._input_queue.put(input_)
+
+    if not self._processing_task:
+        self._processing_task = asyncio.create_task(self._process_input_loop())
+        self._processing_task.add_done_callback(self._on_exit_input_loop)
+
+    res = await self._output_queue.get()
+    return res
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"ExecutorInput"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"ExecutorOutput"} />
+
+</PyFunction>
+
+<PyFunction name={"_process_input_loop"} type={"_process_input_loop(self) -> None"}>
+
+<PySourceCode >
+
+```python
+async def _process_input_loop(self) -> None:
+    try:
+        while self.status != ExecutorStatus.COMPLETED:
+            self.logger.debug(f"Iteration: {self.iteration_count}")
+            if self.iteration_count >= self.max_iterations:
+                raise RuntimeError(
+                    f"Executor exceeded max iterations ({self.max_iterations})"
+                )
+
+            input_ = await self._input_queue.get()
+            self.logger.debug(f"Executor getting input from queue: {repr(input_)}")
+            self.iteration_count += 1
+
+            if input_.execution_id != self.execution_id:
+                child_executor = self.child_executors[input_.execution_id]
+                self.logger.debug(
+                    f"Executor delegates input to child executor {child_executor.execution_id}"
+                )
+                asyncio.create_task(child_executor.step(input_))
+                continue
+
+            self.logger.debug(
+                f"Executor executes node {input_.node_full_name} with input {repr(input_)}"
+            )
+            result = await self._execute_node(input_)
+
+            if not result.next_nodes:
+                output = ExecutorOutput(
+                    execution_id=self.execution_id,
+                    node_actor_id=self.node_actor.id,
+                    node_full_name=self.node_actor.node.full_name,
+                    node_output=result.output,
+                    exit_=True,
+                )
+                self.logger.debug(
+                    f"Executor completed with output: {repr(output)}, queue size: {self._output_queue.qsize()}"
+                )
+                await self._output_queue.put(output)
+                self.status = ExecutorStatus.COMPLETED
+                break
+
+            self.logger.debug(f"Next nodes to process: {result.next_nodes}")
+            await self._handle_next_nodes(input_, result)
+    except Exception as e:
+        self.logger.exception(f"Executor fails with {e}")
+        self.status = ExecutorStatus.FAILED
+        error_output = ExecutorOutput(
+            execution_id=self.execution_id,
+            node_full_name=self.node_actor.node.full_name,
+            node_actor_id=self.node_actor.id,
+            node_output=None,
+            exit_=True,
+        )
+        await self._output_queue.put(error_output)
+        raise
+    finally:
+        self._processing_task = None
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_on_exit_input_loop"} type={"_on_exit_input_loop(self, /, task) -> None"}>
+
+<PySourceCode >
+
+```python
+def _on_exit_input_loop(self, task: Task[None]) -> None:
+    try:
+        task.result()
+    except asyncio.CancelledError:
+        ...
+    except Exception:
+        raise
+    finally:
+        self.logger.debug("Executor stopped processing input loop")
+        self._processing_task = None
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"task"} type={"Task[None]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_execute_node"} type={"_execute_node(self, /, input_) -> Any"}>
+
+Execute the node with the given input
+
+Args:
+input\_: ExecutorInput containing current input and target
+
+<PySourceCode >
+
+```python
+async def _execute_node(self, input_: ExecutorInput) -> Any:
+    """
+    Execute the node with the given input
+
+    Args:
+        input_: ExecutorInput containing current input and target
+    """
+
+    self.status = ExecutorStatus.RUNNING
+    # Get node actor
+
+    node_input = input_.node_input
+    result = await self.node_actor.execute(
+        node_input, execution_id=self.execution_id, context=input_.context
+    )
+
+    # Save state after execution
+    actor_state = self.node_actor.serialize_state()
+    await self.state_storage.asave_actor_state(
+        input_.execution_id, self.node_actor.id, actor_state
+    )
+
+    return result
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"ExecutorInput"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
+
+<PyFunction name={"_handle_next_nodes"} type={"_handle_next_nodes(self, /, input_, result) -> None"}>
+
+Handle the next nodes based on the execution result
+
+Args:
+result: Result of the node execution
+input\_: ExecutorInput containing current input and target
+
+<PySourceCode >
+
+```python
+async def _handle_next_nodes(self, input_: ExecutorInput, result: Any) -> None:
+    """
+    Handle the next nodes based on the execution result
+
+    Args:
+        result: Result of the node execution
+        input_: ExecutorInput containing current input and target
+    """
+    next_nodes = result.next_nodes
+
+    if len(next_nodes) == 1:
+        await self._handle_sequential_execution(
+            next_nodes[0], context=input_.context
+        )
+    else:
+        await self._handle_parallel_execution(next_nodes, context=input_.context)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"input_"} type={"ExecutorInput"} value={null} />
+<PyParameter name={"result"} type={"Any"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_handle_sequential_execution"} type={"_handle_sequential_execution(self, /, next_node_tuple, context=None) -> None"}>
+
+Handle sequential execution of the next node
+
+<PySourceCode >
+
+```python
+async def _handle_sequential_execution(
+    self, next_node_tuple: NextNode, context: dict[str, Any] | None = None
+) -> None:
+    """
+    Handle sequential execution of the next node
+    """
+    self.logger.debug(
+        "Sequential execution with next node tuple: %s", next_node_tuple
+    )
+    next_node, node_input = next_node_tuple
+    child_executor = await self._fork_executor(next_node)
+
+    child_input = ExecutorInput(
+        execution_id=child_executor.execution_id,
+        node_actor_id=child_executor.node_actor.id,
+        node_input=node_input,
+        node_full_name=next_node.full_name,
+        context=context,
+    )
+
+    # Execute child and get result
+    child_output = await child_executor.step(child_input)
+
+    continue_input = ExecutorInput(
+        execution_id=self.execution_id,
+        node_actor_id=self.node_actor.id,
+        node_input=child_output.node_output,
+        node_full_name=self.node_actor.node.full_name,
+        context=context,
+    )
+
+    await self._input_queue.put(continue_input)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"next_node_tuple"} type={"NextNode"} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any] | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_handle_parallel_execution"} type={"_handle_parallel_execution(self, /, next_nodes, context=None) -> None"}>
+
+Handle parallel execution of multiple nodes
+
+<PySourceCode >
+
+```python
+async def _handle_parallel_execution(
+    self,
+    next_nodes: list[NextNode],
+    context: dict[str, Any] | None = None,
+) -> None:
+    """
+    Handle parallel execution of multiple nodes
+    """
+    self.status = ExecutorStatus.SUSPENDED
+
+    async def _handle_next_node(next_node_tuple: NextNode) -> ExecutorOutput:
+        next_node, node_input = next_node_tuple
+        child_executor = await self._fork_executor(next_node)
+        child_input = ExecutorInput(
+            execution_id=child_executor.execution_id,
+            node_actor_id=child_executor.node_actor.id,
+            node_input=node_input,
+            node_full_name=next_node.full_name,
+            context=context,
+        )
+        return await child_executor.step(child_input)
+
+    def _get_node_output(output: ExecutorOutput | BaseException) -> Any:
+        if isinstance(output, BaseException):
+            return str(output)
+        return output.node_output
+
+    child_outputs = await asyncio.gather(
+        *[_handle_next_node(next_node) for next_node in next_nodes],
+        return_exceptions=True,
+    )
+
+    self.status = ExecutorStatus.RUNNING
+    if child_outputs:
+        combined_input = ExecutorInput(
+            execution_id=self.execution_id,
+            node_actor_id=self.node_actor.id,
+            node_input=[_get_node_output(output) for output in child_outputs],
+            node_full_name=self.node_actor.node.full_name,
+            context=context,
+        )
+        await self._input_queue.put(combined_input)
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"next_nodes"} type={"list[NextNode]"} value={null} />
+<PyParameter name={"context"} type={"dict[str, Any] | None"} value={"None"} />
+
+</div>
+
+<PyFunctionReturn type={"None"} />
+
+</PyFunction>
+
+<PyFunction name={"_fork_executor"} type={"_fork_executor(self, /, node) -> Executor"}>
+
+Create child executor for the given node
+
+<PySourceCode >
+
+```python
+async def _fork_executor(self, node: BaseNode[S, NS]) -> Executor:
+    """
+    Create child executor for the given node
+    """
+    child_node_actor = NodeActor.create(node, llm=self.llm)
+
+    child_executor = Executor(
+        registry=self.registry,
+        state_storage=self.state_storage,
+        node_actor=child_node_actor,
+        llm=self.llm,
+        parent_executor=self,
+        root_output_queue=self._root_output_queue,
+    )
+    self.logger.debug(
+        f"Executor forks executor with id {child_executor.execution_id} for node {node.full_name}"
+    )
+
+    self.child_executors[child_executor.execution_id] = child_executor
+    return child_executor
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"self"} type={null} value={null} />
+<PyParameter name={"node"} type={"BaseNode[S, NS]"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Executor"} />
+
+</PyFunction>

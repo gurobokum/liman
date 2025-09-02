@@ -1,0 +1,50 @@
+---
+title: AuthFieldSpec
+---
+
+## Attributes
+
+<PyAttribute
+  name={"service_account"}
+  type={"str | ServiceAccountSpec | None"}
+  value={"None"}
+/>
+
+## Functions
+
+<PyFunction name={"parse_service_account"} type={"parse_service_account(cls, /, value, info) -> Any"}>
+
+<PySourceCode >
+
+```python
+@field_validator("service_account", mode="before")
+@classmethod
+def parse_service_account(cls, value: Any, info: ValidationInfo) -> Any:
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        return value
+
+    try:
+        name = value.get("name")
+        if not name:
+            value["name"] = f"ServiceAccount-{uuid4()}"
+        return ServiceAccountSpec(**value)
+    except Exception as e:
+        raise InvalidSpecError(f"Invalid service_account spec: {e}") from e
+```
+
+</PySourceCode>
+
+<div >
+
+<PyParameter name={"cls"} type={null} value={null} />
+<PyParameter name={"value"} type={"Any"} value={null} />
+<PyParameter name={"info"} type={"ValidationInfo"} value={null} />
+
+</div>
+
+<PyFunctionReturn type={"Any"} />
+
+</PyFunction>
