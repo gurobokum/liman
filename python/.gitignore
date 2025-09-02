@@ -1,7 +1,8 @@
 *.pyc
 .coverage
-coverage.xml
 .python-version
+coverage.xml
+library_api_info.json
 
 __pycache__/
 

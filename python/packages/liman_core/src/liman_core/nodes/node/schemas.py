@@ -9,6 +9,13 @@ from liman_core.nodes.base.schemas import NodeState as BaseNodeState
 
 
 class NodeSpec(BaseSpec):
+    """
+    Specification schema for generic custom nodes.
+
+    Defines the configuration for custom nodes that implement
+    specialized logic not covered by LLM or Tool nodes.
+    """
+
     kind: Literal["Node"] = "Node"
     name: str
     func: str
@@ -23,7 +30,10 @@ class NodeSpec(BaseSpec):
 
 class NodeState(BaseNodeState):
     """
-    State for Node.
+    Runtime state for generic custom nodes.
+
+    Maintains execution state including input/output data and
+    message history for custom node execution.
     """
 
     kind: Literal["Node"] = "Node"

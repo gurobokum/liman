@@ -5,13 +5,19 @@ from liman_core.nodes.tool_node import ToolNode
 
 def get_node_cls(node_type: str) -> type[LLMNode | ToolNode | FunctionNode]:
     """
-    Get the Node class based on the node type.
+    Get node class by type string.
+
+    Maps node type strings to their corresponding node class types
+    for dynamic node instantiation.
 
     Args:
-        node_type (str): The type of the node.
+        node_type: String identifier for the node type
 
     Returns:
-        type[Node]: The corresponding Node class.
+        Node class corresponding to the specified type
+
+    Raises:
+        ValueError: If node type is not supported
     """
     match node_type:
         case "LLMNode":

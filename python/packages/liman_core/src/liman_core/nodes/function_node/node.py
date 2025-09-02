@@ -10,6 +10,13 @@ from liman_core.registry import Registry
 
 
 class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
+    """
+    Node for executing custom Python functions within workflows.
+
+    FunctionNode allows integration of arbitrary Python functions
+    into the Liman execution graph. Functions can be sync or async.
+    """
+
     spec_type = FunctionNodeSpec
     state_type = FunctionNodeState
 
@@ -24,6 +31,18 @@ class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
+        """
+        Initialize function node with specification and registry.
+
+        Args:
+            spec: Function node specification defining the target function
+            registry: Component registry for dependency resolution
+            initial_data: Optional initial data for the component
+            yaml_path: Optional path to the YAML file this node was loaded from
+            strict: Whether to enforce strict validation
+            default_lang: Default language code for localization
+            fallback_lang: Fallback language code when default is unavailable
+        """
         super().__init__(
             spec,
             registry,
@@ -38,6 +57,15 @@ class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
         self.registry.add(self)
 
     def compile(self) -> None:
+        """
+        Compile the function node for execution.
+
+        Prepares the node for execution. Currently performs basic
+        validation and sets the compiled flag.
+
+        Raises:
+            LimanError: If the node is already compiled
+        """
         if self._compiled:
             raise LimanError("FunctionNode is already compiled")
 
@@ -45,14 +73,27 @@ class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
 
     def set_func(self, func: Callable[..., Any]) -> None:
         """
-        Set the function to be executed by the function node.
+        Manually set the function for this function node.
+
+        Args:
+            func: Callable function to execute during invocation
         """
         self.func = func
         self.spec.func = str(func)
 
     async def invoke(self, input_: Any, **kwargs: Any) -> Any:
         """
-        Asynchronous invoke method for the FunctionNode.
+        Execute the function node with provided input.
+
+        Extracts function arguments from input and executes the function.
+        Handles both synchronous and asynchronous functions.
+
+        Args:
+            input_: Input data to pass to the function
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            Result of function execution
         """
         func = self.func
         call_args = self._extract_function_args(input_)
@@ -65,10 +106,10 @@ class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
 
     def get_new_state(self) -> FunctionNodeState:
         """
-        Get a new state for the Node.
+        Create new state instance for this function node.
 
         Returns:
-            FunctionNodeState: A new instance of NodeState with the specified language.
+            Fresh FunctionNodeState with empty message history
         """
         return FunctionNodeState(name=self.spec.name, messages=[])
 

@@ -31,13 +31,21 @@ def tool_arg_to_jsonschema(
     fallback_lang: LanguageCode,
 ) -> dict[str, ToolArgumentJSONSchema]:
     """
-    Convert a tool specification to JSON Schema format.
+    Convert tool argument specification to JSON Schema format.
+
+    Transforms a tool argument specification into OpenAI-compatible
+    JSON Schema format for LLM function calling.
 
     Args:
-        spec (ToolArgument | ToolObjectArgument): The tool specification model.
+        spec: Tool argument or object argument specification
+        default_lang: Preferred language for description
+        fallback_lang: Fallback language if default is unavailable
 
     Returns:
-        dict[str, Any]: The JSON Schema representation of the tool specification.
+        Dictionary mapping argument name to JSON Schema definition
+
+    Raises:
+        InvalidSpecError: If description or type is invalid
     """
     name = spec.name
     try:
@@ -78,6 +86,22 @@ def tool_arg_to_jsonschema(
 
 
 def get_tool_arg_type(type_: str | list[str]) -> str | list[str]:
+    """
+    Convert Python type names to JSON Schema type names.
+
+    Maps Python type annotations to their JSON Schema equivalents
+    for use in OpenAI function calling schemas.
+
+    Args:
+        type_: Python type name or list of type names
+
+    Returns:
+        JSON Schema type name or list of type names
+
+    Raises:
+        InvalidSpecError: If type is unsupported
+        NotImplementedError: If array type is used (not yet supported)
+    """
     if isinstance(type_, list):
         return cast(list[str], [get_tool_arg_type(t) for t in type_])
 
@@ -105,5 +129,14 @@ def get_tool_arg_type(type_: str | list[str]) -> str | list[str]:
 
 
 def noop(*args: Any, **kwargs: Any) -> None:
-    """A no-operation function that does nothing."""
+    """
+    No-operation function used as fallback when strict mode is disabled.
+
+    Used when tool function loading fails but strict validation is off.
+    Accepts any arguments and returns None.
+
+    Args:
+        *args: Any positional arguments (ignored)
+        **kwargs: Any keyword arguments (ignored)
+    """
     pass

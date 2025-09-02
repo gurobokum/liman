@@ -96,6 +96,18 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
+        """
+        Initialize tool node with specification and registry.
+
+        Args:
+            spec: Tool node specification defining function and arguments
+            registry: Component registry for dependency resolution
+            initial_data: Optional initial data for the component
+            yaml_path: Optional path to the YAML file this node was loaded from
+            strict: Whether to enforce strict validation and imports
+            default_lang: Default language code for description selection
+            fallback_lang: Fallback language code when default is unavailable
+        """
         super().__init__(
             spec,
             registry,
@@ -112,13 +124,21 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         self._compiled = False
 
     def compile(self) -> None:
+        """
+        Compile the tool node by loading the target function.
+
+        Loads the function specified in spec.func and prepares the node
+        for execution. Must be called before invoke().
+        """
         self.func = self._load_func()
         self._compiled = True
 
     def set_func(self, func: Callable[..., Any]) -> None:
         """
-        Set the function to be executed by the tool node.
-        This function should match the signature defined in the tool node specification.
+        Manually set the function for this tool node.
+
+        Args:
+            func: Callable function that matches the tool specification signature
         """
         self.func = func
         self.spec.func = str(func)
@@ -129,13 +149,20 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         execution_context: ExecutionContext[ToolNodeState] | None = None,
     ) -> ToolMessage:
         """
-        Asynchronously invoke the tool function with the provided arguments.
+        Execute the tool function with provided arguments.
+
+        Calls the underlying function with extracted arguments and returns
+        the result wrapped in a ToolMessage. Handles both sync and async functions.
 
         Args:
-            tool_call: Tool call dict with structure like {'name': 'tool_name', 'args': {...}, 'id': '...', 'type': 'tool_call'}
+            tool_call: Tool call containing name, arguments, and call ID
+            execution_context: Optional execution context for dependency injection
 
         Returns:
-            ToolMessage with function result and proper tool call metadata
+            ToolMessage containing function result and call metadata
+
+        Raises:
+            ValueError: If no function is set or required parameters are missing
         """
         if not self.func:
             raise ValueError(
@@ -240,6 +267,18 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
             return noop
 
     def get_tool_description(self, lang: LanguageCode) -> str:
+        """
+        Generate tool description for specified language.
+
+        Creates a formatted description using the tool prompt template,
+        description, and example triggers for the given language.
+
+        Args:
+            lang: Language code for description generation
+
+        Returns:
+            Formatted tool description string
+        """
         if not self.spec.description:
             return ""
         template = self._get_tool_prompt_template(lang)
@@ -266,6 +305,21 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         ).strip()
 
     def get_json_schema(self, lang: LanguageCode | None = None) -> dict[str, Any]:
+        """
+        Generate JSON Schema representation for LLM function calling.
+
+        Creates OpenAI-compatible function schema including name, description,
+        and parameter definitions for the specified language.
+
+        Args:
+            lang: Language code for schema generation (uses default_lang if None)
+
+        Returns:
+            JSON Schema dict compatible with LLM function calling
+
+        Raises:
+            InvalidSpecError: If description is missing or invalid
+        """
         if lang is None:
             lang = self.default_lang
 
@@ -309,10 +363,10 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
 
     def get_new_state(self) -> ToolNodeState:
         """
-        Get a new state for the ToolNode.
+        Create new state instance for this tool node.
 
         Returns:
-            ToolNodeState: A new instance of ToolNodeState.
+            Fresh ToolNodeState for execution
         """
         return ToolNodeState(kind=self.spec.kind, name=self.spec.name)
 

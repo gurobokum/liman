@@ -10,6 +10,13 @@ from liman_core.nodes.base.schemas import NodeState
 
 
 class ToolArgument(BaseModel):
+    """
+    Specification for a tool function argument.
+
+    Defines the name, type, description, and optionality of a single
+    argument that can be passed to a tool function.
+    """
+
     name: str
     type: str | list[str]
     description: LocalizedValue | None = None
@@ -17,6 +24,13 @@ class ToolArgument(BaseModel):
 
 
 class ToolObjectArgument(BaseModel):
+    """
+    Specification for a complex object argument with nested properties.
+
+    Extends ToolArgument to support object types with nested properties,
+    allowing for complex data structures as tool arguments.
+    """
+
     name: str
     type: str
     description: LocalizedValue | None = None
@@ -25,6 +39,13 @@ class ToolObjectArgument(BaseModel):
 
 
 class ToolNodeSpec(BaseSpec):
+    """
+    Specification schema for tool nodes.
+
+    Defines the complete configuration for a tool node including
+    function reference, arguments, descriptions, and triggers.
+    """
+
     kind: Literal["ToolNode"] = "ToolNode"
     name: str
     description: LocalizedValue | None = None
@@ -37,6 +58,13 @@ class ToolNodeSpec(BaseSpec):
 
 
 class ToolCall(BaseModel):
+    """
+    Represents a function call request from an LLM.
+
+    Contains the tool name, arguments, and call ID needed to
+    execute a tool function and track the response.
+    """
+
     name: str
     args: dict[str, Any]
     id_: Annotated[str | None, Field(alias="id")] = None
@@ -44,5 +72,12 @@ class ToolCall(BaseModel):
 
 
 class ToolNodeState(NodeState):
+    """
+    Runtime state for tool nodes.
+
+    Maintains the current tool call input and output message
+    for tracking execution state.
+    """
+
     input_: ToolCall | None = None
     output: ToolMessage | None = None

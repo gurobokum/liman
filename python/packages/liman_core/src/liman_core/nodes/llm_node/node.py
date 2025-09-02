@@ -81,6 +81,18 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         default_lang: str = "en",
         fallback_lang: str = "en",
     ) -> None:
+        """
+        Initialize LLM node with specification and registry.
+
+        Args:
+            spec: LLM node specification defining prompts and tools
+            registry: Component registry for tool and dependency resolution
+            initial_data: Optional initial data for the component
+            yaml_path: Optional path to the YAML file this node was loaded from
+            strict: Whether to enforce strict validation
+            default_lang: Default language code for prompt selection
+            fallback_lang: Fallback language code when default is unavailable
+        """
         super().__init__(
             spec,
             registry,
@@ -96,10 +108,13 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
 
     def add_tools(self, tools: list[ToolNode]) -> None:
         """
-        Add tools to the LLMNode.
+        Add tool nodes to this LLM node for function calling.
 
         Args:
-            tools (list[ToolNode]): List of ToolNode instances to add.
+            tools: List of ToolNode instances to register with this LLM node
+
+        Raises:
+            TypeError: If any item in tools is not a ToolNode instance
         """
         for tool in tools:
             if not isinstance(tool, ToolNode):
@@ -107,6 +122,15 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
             self.spec.tools.append(tool.name)
 
     def compile(self) -> None:
+        """
+        Compile the LLM node for execution.
+
+        Initializes prompts bundle and prepares the node for invocation.
+        Must be called before invoke().
+
+        Raises:
+            LimanError: If the node is already compiled
+        """
         if self._compiled:
             raise LimanError("LLMNode is already compiled")
 
@@ -120,6 +144,24 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         lang: LanguageCode | None = None,
         **kwargs: Any,
     ) -> LangChainMessage:
+        """
+        Execute the LLM node with given inputs.
+
+        Combines system prompts with input messages and invokes the LLM
+        with available tools. Returns the LLM's response message.
+
+        Args:
+            llm: Language model instance to use for generation
+            inputs: Sequence of input messages for the conversation
+            lang: Language code for prompt selection (uses default_lang if None)
+            **kwargs: Additional arguments passed to LLM invocation
+
+        Returns:
+            Response message from the language model
+
+        Raises:
+            LimanError: If node is not compiled or tool is not found in registry
+        """
         if not self._compiled:
             raise LimanError(
                 "LLMNode must be compiled before invoking. Use `compile()` method."
@@ -152,10 +194,10 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
 
     def get_new_state(self) -> LLMNodeState:
         """
-        Get a new state for the LLMNode.
+        Create new state instance for this LLM node.
 
         Returns:
-            LLMNodeState: A new instance of LLMNodeState.
+            Fresh LLMNodeState with empty message history
         """
         return LLMNodeState(kind=self.spec.kind, name=self.spec.name, messages=[])
 

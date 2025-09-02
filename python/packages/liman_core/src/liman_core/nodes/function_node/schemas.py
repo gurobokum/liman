@@ -9,6 +9,13 @@ from liman_core.nodes.base.schemas import NodeState as BaseNodeState
 
 
 class FunctionNodeSpec(BaseSpec):
+    """
+    Specification schema for function nodes.
+
+    Defines the configuration for custom function nodes including
+    function reference, descriptions, and connected nodes.
+    """
+
     kind: Literal["FunctionNode"] = "FunctionNode"
     name: str
     func: str | None = None
@@ -22,6 +29,13 @@ class FunctionNodeSpec(BaseSpec):
 
 
 class FunctionNodeState(BaseNodeState):
+    """
+    Runtime state for function nodes.
+
+    Maintains execution state including input/output data and
+    message history for function node execution.
+    """
+
     kind: Literal["FunctionNode"] = "FunctionNode"
     name: str
 
