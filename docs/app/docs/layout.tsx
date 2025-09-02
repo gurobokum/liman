@@ -41,7 +41,7 @@ const docsOptions: DocsLayoutProps = {
       {
         title: "Python SDK",
         description: "Python Reference for Liman",
-        url: "/docs/python/liman_core",
+        url: "/docs/python/",
         icon: <SiPython className="size-9 md:size-5 shrink-0" />,
       },
     ],
