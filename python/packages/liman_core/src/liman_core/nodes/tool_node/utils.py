@@ -126,17 +126,3 @@ def get_tool_arg_type(type_: str | list[str]) -> str | list[str]:
         case _:
             raise InvalidSpecError(f"Unsupported type in tool specification: {type_}")
     return type_
-
-
-def noop(*args: Any, **kwargs: Any) -> None:
-    """
-    No-operation function used as fallback when strict mode is disabled.
-
-    Used when tool function loading fails but strict validation is off.
-    Accepts any arguments and returns None.
-
-    Args:
-        *args: Any positional arguments (ignored)
-        **kwargs: Any keyword arguments (ignored)
-    """
-    pass

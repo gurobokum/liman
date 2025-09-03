@@ -7,6 +7,7 @@ from typing import Any, cast, get_type_hints
 
 from langchain_core.messages import ToolMessage
 
+from liman_core.base.utils import noop
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.nodes.base.execution_context import ExecutionContext
@@ -15,7 +16,6 @@ from liman_core.nodes.base.node import BaseNode
 from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeSpec, ToolNodeState
 from liman_core.nodes.tool_node.utils import (
     ToolArgumentJSONSchema,
-    noop,
     tool_arg_to_jsonschema,
 )
 from liman_core.registry import Registry
