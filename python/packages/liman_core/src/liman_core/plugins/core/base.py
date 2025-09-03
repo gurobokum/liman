@@ -33,6 +33,13 @@ class Plugin(Protocol):
         """
         ...
 
+    @abstractmethod
+    def apply(self, instance: Any) -> None:
+        """
+        Apply plugin logic to the given instance
+        """
+        ...
+
 
 @runtime_checkable
 class ExecutionStateProvider(Protocol):

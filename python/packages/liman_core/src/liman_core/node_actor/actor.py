@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import sys
-from typing import Any, Generic, TypeVar
+from collections.abc import Callable, Coroutine
+from inspect import iscoroutinefunction
+from typing import Any, Generic, TypedDict, TypeVar, cast
 from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -59,6 +63,32 @@ if settings.DEBUG:
 T = TypeVar("T", bound=BaseNode[Any, Any])
 
 
+class PreHookData(TypedDict):
+    input_: Any
+    execution_id: UUID
+    context: dict[str, Any]
+
+
+PreExecutionHook = Callable[
+    ["NodeActor[T]", PreHookData],
+    PreHookData | Coroutine[None, None, PreHookData],
+]
+
+
+class PostHookData(TypedDict):
+    input_: Any
+    execution_id: UUID
+    context: dict[str, Any]
+    node_output: Any
+    next_nodes: list[NextNode]
+
+
+PostExecutionHook = Callable[
+    ["NodeActor[T]", PostHookData],
+    PostHookData | Coroutine[None, None, PostHookData],
+]
+
+
 class NodeActor(Generic[T]):
     """
     Unified NodeActor supporting both sync and async execution
@@ -84,6 +114,9 @@ class NodeActor(Generic[T]):
         self._execution_lock = asyncio.Lock()
 
         self.logger = logging.LoggerAdapter(logger, {"actor_id": str(self.id)})
+
+        self.pre_hooks: list[PreExecutionHook[T]] = []
+        self.post_hooks: list[PostExecutionHook[T]] = []
 
         self._initialize()
 
@@ -164,6 +197,24 @@ class NodeActor(Generic[T]):
         else:
             return cls.create(node=node, llm=llm)
 
+    def add_pre_hook(self, hook: PreExecutionHook[T]) -> None:
+        """
+        Add a pre-execution hook to the actor
+
+        Args:
+            hook: PreExecutionHook callable
+        """
+        self.pre_hooks.append(hook)
+
+    def add_post_hook(self, hook: PostExecutionHook[T]) -> None:
+        """
+        Add a post-execution hook to the actor
+
+        Args:
+            hook: PostExecutionHook callable
+        """
+        self.post_hooks.append(hook)
+
     async def execute(
         self,
         input_: Any,
@@ -191,7 +242,7 @@ class NodeActor(Generic[T]):
 
         context = context or {}
         async with self._execution_lock:
-            return await self._execute_internal(input_, context, execution_id)
+            return await self._execute_internal(input_, execution_id, context)
 
     def serialize_state(self) -> dict[str, Any]:
         """
@@ -218,6 +269,9 @@ class NodeActor(Generic[T]):
             if not self.node._compiled:
                 self.node.compile()
 
+            for plugin in self.node.registry.get_plugins(self.node.spec.kind):
+                plugin.apply(self)
+
             self.status = NodeActorStatus.READY
 
         except Exception as e:
@@ -226,7 +280,7 @@ class NodeActor(Generic[T]):
             raise self.error from e
 
     async def _execute_internal(
-        self, input_: Any, context: dict[str, Any], execution_id: UUID
+        self, input_: Any, execution_id: UUID, context: dict[str, Any]
     ) -> Result:
         self.status = NodeActorStatus.EXECUTING
 
@@ -245,6 +299,17 @@ class NodeActor(Generic[T]):
             for k, v in d.items()
         }
 
+        kwargs: PreHookData = {
+            "input_": input_,
+            "execution_id": execution_id,
+            "context": context,
+        }
+        for pre_hook in self.pre_hooks:
+            if iscoroutinefunction(pre_hook):
+                kwargs = await pre_hook(self, kwargs)
+            else:
+                kwargs = cast(PreHookData, pre_hook(self, kwargs))
+
         self.logger.debug(
             f"NodeActor executes {self.node.full_name} with input: {input_}, state: {state}"
         )
@@ -253,7 +318,7 @@ class NodeActor(Generic[T]):
             execution_context = self._prepare_execution_context(context, execution_id)
 
             if isinstance(self.node, LLMNode):
-                node_output = await self._execute_llm_node(input_)
+                node_output = await self._execute_llm_node(**kwargs)
             elif isinstance(self.node, ToolNode):
                 node_output = await self._execute_tool_node(input_, execution_context)
             elif isinstance(self.node, FunctionNode):
@@ -272,10 +337,23 @@ class NodeActor(Generic[T]):
             next_nodes = self._get_next_nodes(node_output)
             self.logger.debug(f"Next nodes to execute: {next_nodes}")
 
+            data: PostHookData = {
+                "input_": input_,
+                "execution_id": execution_id,
+                "context": context,
+                "node_output": node_output,
+                "next_nodes": next_nodes,
+            }
+            for post_hook in self.post_hooks:
+                if iscoroutinefunction(post_hook):
+                    data = await post_hook(self, data)
+                else:
+                    data = cast(PostHookData, post_hook(self, data))
+
             self.status = NodeActorStatus.COMPLETED
             return Result(
-                output=node_output,
-                next_nodes=next_nodes,
+                output=data["node_output"],
+                next_nodes=data["next_nodes"],
             )
 
         except Exception as e:
@@ -284,7 +362,7 @@ class NodeActor(Generic[T]):
             )
             raise self.error from e
 
-    async def _execute_llm_node(self, input_: Any) -> LangChainMessage:
+    async def _execute_llm_node(self, input_: Any, **kwargs: Any) -> LangChainMessage:
         if not self.llm:
             raise create_error(
                 "LLM required for LLMNode execution but not provided", self

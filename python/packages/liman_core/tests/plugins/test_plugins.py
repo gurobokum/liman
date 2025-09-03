@@ -20,6 +20,8 @@ class MockPlugin(Plugin):
     def validate(self, spec_data: Any) -> Any:
         return spec_data
 
+    def apply(self, instance: Any) -> None: ...
+
 
 def test_get_plugins_existing_kind(registry: Registry) -> None:
     plugins = registry.get_plugins("LLMNode")

@@ -37,6 +37,8 @@ class MockPlugin(Plugin):
     def validate(self, spec_data: Any) -> Any:
         return spec_data
 
+    def apply(self, instance: Any) -> None: ...
+
 
 def test_component_full_name(registry: Registry) -> None:
     spec = MockComponentSpec(kind="TestKind", name="test_component")

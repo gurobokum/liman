@@ -11,7 +11,7 @@ class Liman:
     context during node execution. Acts as a facade over ExecutionContext.
     """
 
-    def __init__(self, execution_context: ExecutionContext[Any]) -> None:
+    def __init__(self, execution_context: ExecutionContext[Any], **kwargs: Any) -> None:
         """
         Initialize Liman with execution context.
 
@@ -19,6 +19,7 @@ class Liman:
             execution_context: The execution context for this runtime
         """
         self.execution_context = execution_context
+        self._kwargs = kwargs or {}
 
     def set(self) -> None: ...
 
@@ -33,3 +34,6 @@ class Liman:
             Value of the requested attribute
         """
         return getattr(self.execution_context, key)
+
+    def __getattr__(self, key: str) -> Any:
+        return self._kwargs[key]

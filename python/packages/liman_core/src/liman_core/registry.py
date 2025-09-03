@@ -63,13 +63,13 @@ class Registry:
 
     def lookup(self, kind: type[T], name: str) -> T:
         """
-        Retrieve a node by its name.
+        Retrieve a component by its name.
 
         Args:
-            name (str): The name of the node to retrieve.
+            name (str): The name of the component to retrieve.
 
         Returns:
-            BaseNode: The node associated with the given name.
+            Component: The component associated with the given name.
         """
         key = f"{kind.__name__}:{name}"
         if key in self._components:
@@ -88,10 +88,10 @@ class Registry:
 
     def add(self, node: Component[Any]) -> None:
         """
-        Add a node to the registry.
+        Add a component to the registry.
 
         Args:
-            node (BaseNode): The node to add to the registry.
+            component (Component): The component to add to the registry.
         """
         key = f"{node.spec.kind}:{node.name}"
         if self._components.get(key):
