@@ -53,7 +53,7 @@ class Component(Generic[S], ABC):
         *,
         initial_data: dict[str, Any] | None = None,
         yaml_path: str | None = None,
-        strict: bool = False,
+        strict: bool = True,
     ) -> None:
         self._initial_data = initial_data
         self.spec = spec
@@ -74,7 +74,7 @@ class Component(Generic[S], ABC):
         registry: Registry,
         *,
         yaml_path: str | None = None,
-        strict: bool = False,
+        strict: bool = True,
         **kwargs: Any,
     ) -> Self:
         """
