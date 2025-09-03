@@ -14,7 +14,7 @@ from liman.loader import load_specs_from_directory
 from liman.state import InMemoryStateStorage, StateStorage
 
 # Don't update the version manually, it is set by the build system.
-__version__ = "0.1.0-a4"
+__version__ = "0.1.0-a5"
 
 __all__ = [
     "Agent",
