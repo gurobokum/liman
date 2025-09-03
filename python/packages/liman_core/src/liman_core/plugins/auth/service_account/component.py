@@ -8,7 +8,8 @@ from ruamel.yaml import YAML
 
 from liman_core.base.component import Component
 from liman_core.errors import InvalidSpecError
-from liman_core.plugins.auth.schemas import ServiceAccountSpec
+
+from .schemas import ServiceAccountSpec
 
 if TYPE_CHECKING:
     from liman_core.registry import Registry

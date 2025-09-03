@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Any
 
 from liman_core.base.component import Component
 from liman_core.errors import ComponentNotFoundError, LimanError
-from liman_core.plugins.auth.schemas import AuthFieldSpec, ServiceAccountSpec
-from liman_core.plugins.auth.service_account import ServiceAccount
+from liman_core.plugins.auth.schemas import AuthFieldSpec
+from liman_core.plugins.auth.service_account.component import ServiceAccount
+from liman_core.plugins.auth.service_account.schemas import ServiceAccountSpec
 from liman_core.plugins.core.base import ExecutionStateProvider, Plugin
 
 if TYPE_CHECKING:
