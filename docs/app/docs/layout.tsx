@@ -30,6 +30,7 @@ const docsOptions: DocsLayoutProps = {
           "/docs/getting-started/adding-tools",
           "/docs/getting-started/openapi-integration",
           "/docs/specification/auth/service_account",
+          "/docs/specification/auth/credentials_provider",
           "/docs/specification/internal_types",
           "/docs/specification/llm_node",
           "/docs/specification/node",

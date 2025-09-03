@@ -1,3 +1,4 @@
 {
-  "defaultOpen": false
+  "defaultOpen": true,
+  "pages": ["service_account", "credentials_provider"]
 }
