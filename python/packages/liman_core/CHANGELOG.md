@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.1.0-a4](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a3...liman_core_py-v0.1.0-a4) (2025-09-22)
+
+
+### ✨ Features
+
+* **liman_core:** add dependency injection ([338f65b](https://github.com/gurobokum/liman/commit/338f65b8ebb1690c5239817a88a1f63d401a251d))
+* **liman_core:** add ExecutionContext and Liman API ([278c6c3](https://github.com/gurobokum/liman/commit/278c6c3058b31e6d2769eab271628aec27e32ff3))
+* **liman_core:** add pre and post execution hooks for NodeActor ([141192a](https://github.com/gurobokum/liman/commit/141192a3a3fd10709b22cbc63b829f5da96f16ed))
+* **liman_core:** implement CredentialsProvider ([5bc9f7a](https://github.com/gurobokum/liman/commit/5bc9f7aa698460f7ce47539139940e3bf3a45bb4))
+* **liman_core:** make strict=True by default ([f21195f](https://github.com/gurobokum/liman/commit/f21195fdf897e416127f96afbb3c15876b566ec7))
+* **liman_core:** support building python reference ([0218f67](https://github.com/gurobokum/liman/commit/0218f6729b788f884289acd8e58c7548739590ef))
+
+
+### 🛠 Code Refactoring
+
+* **liman_core:** move noop function to utils ([dc93a7e](https://github.com/gurobokum/liman/commit/dc93a7e0a08d7c6d6bce6e1ab4f33e7c82eafc5c))
+
+
+### 📚 Documentation
+
+* **liman_core:** add docstrings ([2ee03c3](https://github.com/gurobokum/liman/commit/2ee03c336205048adae831c27b92c3254f9889c1))
+
+
+### ♻️ Tests
+
+* **liman_core:** add plugins and registry basic tests ([7c45bf0](https://github.com/gurobokum/liman/commit/7c45bf0aeb1a259e83f551307b8347381f4430ca))
+* **liman_core:** add tests for errors ([759edc7](https://github.com/gurobokum/liman/commit/759edc753c8a06eb7bd19d1210f6c124beef662b))
+* **liman_core:** cover edge CE DSL with tests ([eeba4a7](https://github.com/gurobokum/liman/commit/eeba4a78258b4c9b00e0c63d9b47299d6f866426))
+* **liman_core:** cover utils ([333fb4b](https://github.com/gurobokum/liman/commit/333fb4bb947d54cfa41c8a11e430be58e0982e7d))
+* **liman_core:** improve coverage ([0079a81](https://github.com/gurobokum/liman/commit/0079a81ae769c4fcbd2671f608b05261cbc9a61f))
+* **liman_core:** refactor tests ([eb4bacf](https://github.com/gurobokum/liman/commit/eb4bacf0bf1085de411d6a777df85aad4f9036ef))
+* rework tests/nodes ([3e9d36c](https://github.com/gurobokum/liman/commit/3e9d36c0d77c5a3fb5d91d07592d9775b7eac3d8))
+
 ## [0.1.0-a3](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a1...liman_core_py-v0.1.0-a3) (2025-08-15)
 
 
