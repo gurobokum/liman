@@ -3,12 +3,14 @@ from __future__ import annotations
 from typing import Any, TypeVar
 
 from liman_core.base.component import Component
+from liman_core.dishka import Scope, get_root_container
 from liman_core.errors import ComponentNotFoundError, LimanError
 from liman_core.plugins import PluginConflictError
 from liman_core.plugins.auth.plugin import AuthPlugin
 from liman_core.plugins.core.base import Plugin
 
 T = TypeVar("T", bound="Component[Any]")
+D = TypeVar("D")
 
 
 DEFAULT_PLUGINS = [AuthPlugin()]
@@ -26,6 +28,7 @@ class Registry:
         self._plugins: dict[str, list[Plugin]] = {
             kind: [*DEFAULT_PLUGINS] for kind in self._plugins_kinds
         }
+        self.container = get_root_container()(scope=Scope.REGISTRY).container
 
     def add_plugins(self, plugins: list[Plugin]) -> None:
         """

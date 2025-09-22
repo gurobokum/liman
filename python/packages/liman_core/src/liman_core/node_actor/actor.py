@@ -36,7 +36,6 @@ from liman_core.nodes.node.node import Node
 from liman_core.nodes.supported_types import get_node_cls
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeState
-from liman_core.plugins.core.base import ExecutionStateProvider
 from liman_core.utils import to_snake_case
 
 if sys.version_info >= (3, 11):
@@ -284,21 +283,6 @@ class NodeActor(Generic[T]):
     ) -> Result:
         self.status = NodeActorStatus.EXECUTING
 
-        registry = self.node.registry
-        plugins = [
-            plugin
-            for plugin in registry.get_plugins(self.node.spec.kind)
-            if isinstance(plugin, ExecutionStateProvider)
-        ]
-        state = {
-            k: v
-            for d in [
-                plugin.get_execution_state(self.node, context, registry)
-                for plugin in plugins
-            ]
-            for k, v in d.items()
-        }
-
         kwargs: PreHookData = {
             "input_": input_,
             "execution_id": execution_id,
@@ -311,19 +295,23 @@ class NodeActor(Generic[T]):
                 kwargs = cast(PreHookData, pre_hook(self, kwargs))
 
         self.logger.debug(
-            f"NodeActor executes {self.node.full_name} with input: {input_}, state: {state}"
+            f"NodeActor executes {self.node.full_name} with input: {input_}, context: {context}"
         )
 
         try:
-            execution_context = self._prepare_execution_context(context, execution_id)
+            execution_context = self._prepare_execution_context(
+                kwargs["context"], execution_id
+            )
 
             if isinstance(self.node, LLMNode):
                 node_output = await self._execute_llm_node(**kwargs)
             elif isinstance(self.node, ToolNode):
-                node_output = await self._execute_tool_node(input_, execution_context)
+                node_output = await self._execute_tool_node(
+                    kwargs["input_"], execution_context
+                )
             elif isinstance(self.node, FunctionNode):
                 node_output = await self._execute_function_node(
-                    input_, execution_context
+                    kwargs["input_"], execution_context
                 )
             else:
                 raise create_error(

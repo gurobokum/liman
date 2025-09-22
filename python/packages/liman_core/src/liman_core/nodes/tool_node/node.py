@@ -8,6 +8,12 @@ from typing import Any, cast, get_type_hints
 from langchain_core.messages import ToolMessage
 
 from liman_core.base.utils import noop
+from liman_core.dishka import (
+    DI_VAR_PREFIX,
+    Scope,
+    is_from_liman_dependency,
+    resolve_from_liman_dependency,
+)
 from liman_core.errors import InvalidSpecError
 from liman_core.languages import LanguageCode, flatten_dict
 from liman_core.nodes.base.execution_context import ExecutionContext
@@ -147,6 +153,7 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         self,
         tool_call: ToolCall,
         execution_context: ExecutionContext[ToolNodeState] | None = None,
+        **kwargs: Any,
     ) -> ToolMessage:
         """
         Execute the tool function with provided arguments.
@@ -176,14 +183,27 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         )
 
         try:
-            if asyncio.iscoroutinefunction(func) or (
-                callable(func)
-                and not inspect.isfunction(func)
-                and asyncio.iscoroutinefunction(getattr(func, "__call__", None))
-            ):
-                result = await func(**call_args)
-            else:
-                result = func(**call_args)
+            async with self.registry.container(
+                {"execution_context": execution_context, **kwargs}, scope=Scope.NODE
+            ) as container:
+                # Resolve FromLiman dependencies using dishka container
+                di_keys = [key for key in call_args if key.startswith(DI_VAR_PREFIX)]
+                for key in di_keys:
+                    param_name = key.replace(DI_VAR_PREFIX, "")
+                    param_type = call_args.pop(key)  # Remove the marker
+                    dependency = await resolve_from_liman_dependency(
+                        param_type, container
+                    )
+                    call_args[param_name] = dependency
+
+                if asyncio.iscoroutinefunction(func) or (
+                    callable(func)
+                    and not inspect.isfunction(func)
+                    and asyncio.iscoroutinefunction(getattr(func, "__call__", None))
+                ):
+                    result = await func(**call_args)
+                else:
+                    result = func(**call_args)
         except Exception as e:
             response = ToolMessage(
                 content=str(e),
@@ -202,14 +222,17 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
         self,
         args_dict: dict[str, Any],
         execution_context: ExecutionContext[ToolNodeState] | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """
         Extract function arguments based on function signature from provided args dict.
         Automatically inject Liman dependency if function parameter is typed as Liman.
+        Automatically inject FromLiman dependencies using their factory functions.
 
         Args:
             args_dict: Dictionary containing all available arguments
             execution_context: Optional ExecutionContext
+            **kwargs: Additional keyword arguments
 
         Returns:
             Dictionary with only the arguments that match function signature
@@ -230,8 +253,13 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
                     raise ValueError(
                         f"Cannot inject Liman instance for parameter '{param_name}' because no execution context was provided."
                     )
-                liman = Liman(execution_context=execution_context)
+                liman = Liman(execution_context=execution_context, **kwargs)
                 filtered_args[param_name] = liman
+            # Check if parameter is a FromLiman dependency
+            elif is_from_liman_dependency(param_type):
+                # FromLiman dependencies are resolved during tool execution in invoke()
+                # We mark them for later resolution
+                filtered_args[f"{DI_VAR_PREFIX}{param_name}"] = param_type
             elif param_name in args_dict:
                 filtered_args[param_name] = args_dict[param_name]
             elif param.default is not inspect.Parameter.empty:

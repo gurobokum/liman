@@ -3,6 +3,7 @@ import inspect
 from collections.abc import Callable
 from typing import Any
 
+from liman_core.dishka import Scope
 from liman_core.errors import LimanError
 from liman_core.nodes.base.node import BaseNode
 from liman_core.nodes.function_node.schemas import FunctionNodeSpec, FunctionNodeState
@@ -98,10 +99,11 @@ class FunctionNode(BaseNode[FunctionNodeSpec, FunctionNodeState]):
         func = self.func
         call_args = self._extract_function_args(input_)
 
-        if asyncio.iscoroutinefunction(func):
-            result = await func(**call_args)
-        else:
-            result = func(**call_args)
+        async with self.registry.container(kwargs, scope=Scope.NODE):
+            if asyncio.iscoroutinefunction(func):
+                result = await func(**call_args)
+            else:
+                result = func(**call_args)
         return result
 
     def get_new_state(self) -> FunctionNodeState:
