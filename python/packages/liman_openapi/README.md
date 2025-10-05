@@ -6,6 +6,13 @@ Allows to generate ToolNode based on OpenAPI specification.
 
 ```python
 spec = load_openapi(file_path) # or url, yaml, json
+registry = Registry()
 
-tool_nodes = create_nodes(spec)
+tool_nodes = create_tool_nodes(spec, registry)
 ```
+
+## Limitations
+
+- Not supported securitySchemes:
+  - [] OpenID
+  - [] OAuth2

@@ -1,0 +1,18 @@
+openapi: 3.0.0
+info:
+  title: Test API from File
+  version: 1.0.0
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+paths:
+  /test:
+    get:
+      summary: Test endpoint
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successful response

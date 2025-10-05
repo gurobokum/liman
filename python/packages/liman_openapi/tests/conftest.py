@@ -110,7 +110,14 @@ def complex_openapi_schema() -> Schema:
                         "email": {"type": "string", "description": "User email"},
                     },
                 }
-            }
+            },
+            "securitySchemes": {
+                "bearerAuth": {
+                    "type": "http",
+                    "scheme": "bearer",
+                    "bearerFormat": "JWT",
+                }
+            },
         },
     }
 

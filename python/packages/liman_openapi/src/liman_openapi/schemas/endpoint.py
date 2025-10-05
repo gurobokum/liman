@@ -21,6 +21,7 @@ class Endpoint(BaseModel):
         RequestBody | None, Field(alias="requestBody", default=None)
     ]
     responses: dict[str, Response]
+    security: list[dict[str, list[str]]] | None = None
 
     @model_validator(mode="before")
     @classmethod

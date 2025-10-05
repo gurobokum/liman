@@ -6,7 +6,7 @@ from liman_core.registry import Registry
 from openapi_core import OpenAPI
 
 from liman_openapi.operation import OpenAPIOperation
-from liman_openapi.parse import parse_endpoints, parse_refs
+from liman_openapi.parse import parse_endpoints, parse_refs, parse_security_schemes
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ def create_tool_nodes(
     spec_content = openapi_spec.spec.content()
     endpoints = parse_endpoints(spec_content)
     refs = parse_refs(spec_content)
+    security_schemes = parse_security_schemes(spec_content)
 
     if not base_url:
         servers = spec_content.get("servers", [])
@@ -53,7 +54,9 @@ def create_tool_nodes(
         }
 
         node = ToolNode.from_dict(decl, registry)
-        impl_func = OpenAPIOperation(endpoint, refs, base_url=base_url)
+        impl_func = OpenAPIOperation(
+            endpoint, refs, security_schemes, base_url=base_url
+        )
         node.set_func(impl_func)
         nodes.append(node)
 

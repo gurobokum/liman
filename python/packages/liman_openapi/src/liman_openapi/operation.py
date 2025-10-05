@@ -4,6 +4,7 @@ from typing import Any, NamedTuple
 import httpx
 
 from liman_openapi.schemas import Endpoint, Ref
+from liman_openapi.schemas.security import SecurityScheme
 
 
 class RequestParams(NamedTuple):
@@ -18,11 +19,13 @@ class OpenAPIOperation:
         self,
         endpoint: Endpoint,
         refs: dict[str, Ref] | None = None,
+        security_schemes: list[SecurityScheme] | None = None,
         *,
         base_url: str | None = None,
     ) -> None:
         self.endpoint = endpoint
         self.refs = refs
+        self.security_schemes = security_schemes
         self.base_url = base_url
 
         self.__signature__ = self._create_signature()
