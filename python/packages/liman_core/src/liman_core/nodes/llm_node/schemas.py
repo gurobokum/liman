@@ -17,6 +17,8 @@ class LLMPrompts(BaseModel):
     to configure the language model's behavior.
     """
 
+    model_config = {"extra": "allow"}
+
     system: str | None = None
 
 

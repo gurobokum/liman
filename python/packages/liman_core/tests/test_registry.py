@@ -6,6 +6,7 @@ from unittest.mock import Mock
 import pytest
 
 from liman_core.base.component import Component
+from liman_core.dishka import Scope
 from liman_core.errors import ComponentNotFoundError, LimanError
 from liman_core.registry import DEFAULT_PLUGINS, Registry
 
@@ -35,6 +36,33 @@ def test_registry_init(registry: Registry) -> None:
     assert "LLMNode" in registry._plugins_kinds
     assert "ToolNode" in registry._plugins_kinds
     assert len(registry._plugins["Node"]) == len(DEFAULT_PLUGINS)
+    assert registry._container is None
+
+
+def test_container_is_built_lazily(registry: Registry) -> None:
+    assert registry._container is None
+    _ = registry.container
+    assert registry._container is not None
+
+
+def test_provide_before_container_is_built(registry: Registry) -> None:
+    def get_value() -> str:
+        return "hello"
+
+    registry.provide(get_value, scope=Scope.APP)
+    assert registry._container is None
+
+
+def test_provide_after_container_raises(registry: Registry) -> None:
+    _ = registry.container
+
+    def get_value() -> str:
+        return "hello"
+
+    with pytest.raises(
+        RuntimeError, match="Cannot provide dependencies after the container is built"
+    ):
+        registry.provide(get_value)
 
 
 def test_add_component(registry: Registry, mock_component: MockComponent) -> None:

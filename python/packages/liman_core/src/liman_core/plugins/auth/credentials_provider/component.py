@@ -1,3 +1,4 @@
+import inspect
 from collections.abc import Callable
 from importlib import import_module
 from typing import Any, cast
@@ -32,3 +33,11 @@ class CredentialsProvider(Component[CredentialsProviderSpec]):
                     f"Failed to import module for function '{self.spec.func}': {e}"
                 ) from e
             return noop
+
+    async def invoke(self, *args: Any, **kwargs: Any) -> Any:
+        if not callable(self.func):
+            raise InvalidSpecError(f"Function '{self.spec.func}' is not callable.")
+        result = self.func(*args, **kwargs)
+        if inspect.isawaitable(result):
+            return await result
+        return result

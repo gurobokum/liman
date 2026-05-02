@@ -9,6 +9,10 @@ def mock_function() -> dict[str, str]:
     return {"token": "mock_token", "type": "bearer"}
 
 
+async def async_mock_function() -> dict[str, str]:
+    return {"token": "async_mock_token", "type": "bearer"}
+
+
 VALID_CREDENTIALS_PROVIDER_BEARER = {
     "kind": "CredentialsProvider",
     "name": "BearerProvider",
@@ -21,6 +25,13 @@ VALID_CREDENTIALS_PROVIDER_AWS = {
     "name": "AWSProvider",
     "type": "aws",
     "func": "tests.plugins.auth.test_credentials_provider.mock_function",
+}
+
+VALID_ASYNC_CREDENTIALS_PROVIDER_BEARER = {
+    "kind": "CredentialsProvider",
+    "name": "AsyncBearerProvider",
+    "type": "bearer",
+    "func": "tests.plugins.auth.test_credentials_provider.async_mock_function",
 }
 
 INVALID_CREDENTIALS_PROVIDER_MISSING_FUNC = {
@@ -37,7 +48,7 @@ INVALID_CREDENTIALS_PROVIDER_NONEXISTENT_FUNC = {
 }
 
 
-def test_credentials_provider_creation_bearer(registry: Registry) -> None:
+async def test_credentials_provider_creation_bearer(registry: Registry) -> None:
     provider = CredentialsProvider.from_dict(
         VALID_CREDENTIALS_PROVIDER_BEARER, registry
     )
@@ -46,9 +57,23 @@ def test_credentials_provider_creation_bearer(registry: Registry) -> None:
     assert provider.spec.type_ == "bearer"
     assert provider.func is not None
     assert callable(provider.func)
-    result = provider.func()
-    print(provider.func)
+    result = await provider.invoke()
     assert result == {"token": "mock_token", "type": "bearer"}
+
+
+async def test_credentials_provider_creation_async_bearer(
+    registry: Registry,
+) -> None:
+    provider = CredentialsProvider.from_dict(
+        VALID_ASYNC_CREDENTIALS_PROVIDER_BEARER, registry
+    )
+
+    assert provider.spec.name == "AsyncBearerProvider"
+    assert provider.spec.type_ == "bearer"
+    assert provider.func is not None
+    assert callable(provider.func)
+    result = await provider.invoke()
+    assert result == {"token": "async_mock_token", "type": "bearer"}
 
 
 def test_credentials_provider_creation_aws(registry: Registry) -> None:

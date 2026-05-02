@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Any, TypeVar
 
+from dishka import AsyncContainer
+
 from liman_core.base.component import Component
-from liman_core.dishka import Scope, get_root_container
+from liman_core.dishka import LimanProvider, Scope, make_container
 from liman_core.errors import ComponentNotFoundError, LimanError
 from liman_core.plugins import PluginConflictError
 from liman_core.plugins.auth.plugin import AuthPlugin
@@ -23,12 +25,26 @@ class Registry:
 
     def __init__(self) -> None:
         self._components: dict[str, Component[Any]] = {}
-
         self._plugins_kinds: set[str] = {"Node", "LLMNode", "ToolNode"}
         self._plugins: dict[str, list[Plugin]] = {
             kind: [*DEFAULT_PLUGINS] for kind in self._plugins_kinds
         }
-        self.container = get_root_container()(scope=Scope.REGISTRY).container
+        self._provider = LimanProvider(scope=Scope.APP)
+        self._container: AsyncContainer | None = None
+
+    def provide(self, dependency: Any, scope: Scope = Scope.APP) -> None:
+        if self._container is not None:
+            raise RuntimeError(
+                "Cannot provide dependencies after the container is built."
+            )
+        self._provider.provide(dependency, scope=scope)
+
+    @property
+    def container(self) -> AsyncContainer:
+        if self._container is None:
+            root = make_container(self._provider)
+            self._container = root(scope=Scope.REGISTRY).container
+        return self._container
 
     def add_plugins(self, plugins: list[Plugin]) -> None:
         """

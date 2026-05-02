@@ -1,6 +1,5 @@
 from dataclasses import dataclass
-from functools import lru_cache
-from typing import Any, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypeVar
 
 from dishka import AsyncContainer, BaseScope, Provider, make_async_container, new_scope
 
@@ -18,19 +17,8 @@ class Scope(BaseScope):
 class LimanProvider(Provider): ...
 
 
-provider = LimanProvider(scope=Scope.APP)
-
-
-@lru_cache(maxsize=1)
-def get_root_container() -> AsyncContainer:
+def make_container(provider: LimanProvider) -> AsyncContainer:
     return make_async_container(provider, scopes=Scope)
-
-
-def provide(dependency: Any, scope: Scope = Scope.APP) -> None:
-    """
-    Provide a dependency to the DI container.
-    """
-    provider.provide(dependency, scope=scope)
 
 
 @dataclass
@@ -39,41 +27,37 @@ class DependencyMarker:
     _is_from_liman: Literal[True] = True
 
 
-class FromLiman:
-    """
-    FastAPI-like dependency injection for Liman nodes using dishka.
+if TYPE_CHECKING:
+    from typing import Union
 
-    Usage:
-        # 1. Register factory in registry
-        def get_database() -> Database:
-            return Database("production")
+    FromLiman = Union[T, T]  # noqa: UP007,PYI016
+else:
 
-        registry.provide(get_database, scope=Scope.NODE)
-
-        # 2. Use in tool function
-        def my_tool(
-            message: str,
-            db: FromLiman[Database]
-        ) -> str:
-            return f"Message: {message}, DB: {db.name}"
-
-    The type annotation FromLiman[Database] tells the system:
-    - To inject a Database instance
-    - Resolved through dishka's dependency injection system
-    """
-
-    def __class_getitem__(cls, dependency_type: type[T]) -> DependencyMarker:
+    class FromLiman:
         """
-        Create a dependency marker for the specified type.
+        FastAPI-like dependency injection for Liman nodes using dishka.
 
-        Args:
-            dependency_type: The type to inject from dishka container
+        Usage:
+            # 1. Register factory in registry
+            def get_database() -> Database:
+                return Database("production")
 
-        Returns:
-            The dependency type with marker metadata attached
+            registry.provide(get_database, scope=Scope.NODE)
+
+            # 2. Use in tool function
+            def my_tool(
+                message: str,
+                db: FromLiman[Database]
+            ) -> str:
+                return f"Message: {message}, DB: {db.name}"
+
+        The type annotation FromLiman[Database] tells the system:
+        - To inject a Database instance
+        - Resolved through dishka's dependency injection system
         """
 
-        return DependencyMarker(dependency_type=dependency_type)
+        def __class_getitem__(cls, dependency_type: type[T]) -> DependencyMarker:
+            return DependencyMarker(dependency_type=dependency_type)
 
 
 def is_from_liman_dependency(param_type: Any) -> bool:
