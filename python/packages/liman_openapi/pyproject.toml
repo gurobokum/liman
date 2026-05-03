@@ -13,6 +13,7 @@ authors = [
     { name = "Guro Bokum", email = "jiojiajiu@gmail.com" }
 ]
 classifiers = [
+    "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

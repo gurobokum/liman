@@ -3,6 +3,7 @@
   "always-update": true,
   "component-no-space": true,
   "versioning": "prerelease",
+  "bump-patch-for-minor-pre-major": true,
   "changelog-sections": [
     { "type": "feat", "section": "✨ Features" },
     { "type": "feat_py", "section": "✨ Features" },
@@ -36,7 +37,6 @@
     "python/packages/liman_finops": {
       "component": "liman_finops_py",
       "release-type": "python",
-      "release-as": "0.1.0-a0",
       "extra-label": "python"
     },
     "python/packages/liman_openapi": {
@@ -47,8 +47,7 @@
     "typescript/packages/liman_core": {
       "component": "liman_core_ts",
       "release-type": "node",
-      "extra-label": "typescript",
-      "release-as": "0.1.0-a0"
+      "extra-label": "typescript"
     }
   }
 }
