@@ -28,18 +28,18 @@ def parse_refs(schema: Schema) -> dict[str, Ref]:
     return components
 
 
-def parse_security_schemes(schema: Schema) -> list[SecurityScheme]:
+def parse_security_schemes(schema: Schema) -> dict[str, SecurityScheme]:
     security_schemes = schema.get("components", {"securitySchemes": {}}).get(
         "securitySchemes", {}
     )
 
-    schemes: list[SecurityScheme] = []
-    for security_scheme in security_schemes.values():
+    schemes: dict[str, SecurityScheme] = {}
+    for name, security_scheme in security_schemes.items():
         match security_scheme["type"]:
             case "http":
-                schemes.append(HTTPSecurityScheme.model_validate(security_scheme))
+                schemes[name] = HTTPSecurityScheme.model_validate(security_scheme)
             case "apiKey":
-                schemes.append(ApiKeySecurityScheme.model_validate(security_scheme))
+                schemes[name] = ApiKeySecurityScheme.model_validate(security_scheme)
             case _:
                 logger.warning(
                     f"Unsupported security scheme type: {security_scheme['type']}"

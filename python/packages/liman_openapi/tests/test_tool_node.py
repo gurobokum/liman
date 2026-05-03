@@ -8,7 +8,7 @@ from liman_core.registry import Registry
 
 from liman_openapi.operation import OpenAPIOperation
 from liman_openapi.schemas import Endpoint
-from liman_openapi.tool_node import create_tool_nodes
+from liman_openapi.tool_node import build_auth_field, create_tool_nodes
 
 
 @pytest.fixture
@@ -322,3 +322,23 @@ def test_create_tool_nodes_no_parameters(registry: Registry) -> None:
             registry,
         )
         assert len(nodes) == 1
+
+
+def test_build_auth_field_empty_security() -> None:
+    endpoint = Mock(spec=Endpoint)
+    endpoint.security = []
+    assert build_auth_field(endpoint) == {}
+
+
+def test_build_auth_field_single_security() -> None:
+    endpoint = Mock(spec=Endpoint)
+    endpoint.security = [{"bearerAuth": []}]
+    result = build_auth_field(endpoint)
+    assert result == {"service_account": {"credentials_provider": "bearerAuth"}}
+
+
+def test_build_auth_field_multiple_security() -> None:
+    endpoint = Mock(spec=Endpoint)
+    endpoint.security = [{"bearerAuth": []}, {"apiKey": []}]
+    with pytest.raises(NotImplementedError):
+        build_auth_field(endpoint)

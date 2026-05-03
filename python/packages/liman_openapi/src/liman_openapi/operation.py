@@ -2,9 +2,15 @@ import inspect
 from typing import Any, NamedTuple
 
 import httpx
+from liman_core.plugins.auth.credentials_provider.component import CredentialsProvider
+from liman_core.registry import Registry
 
 from liman_openapi.schemas import Endpoint, Ref
-from liman_openapi.schemas.security import SecurityScheme
+from liman_openapi.schemas.security import (
+    ApiKeySecurityScheme,
+    HTTPSecurityScheme,
+    SecurityScheme,
+)
 
 
 class RequestParams(NamedTuple):
@@ -18,12 +24,14 @@ class OpenAPIOperation:
     def __init__(
         self,
         endpoint: Endpoint,
+        registry: Registry,
         refs: dict[str, Ref] | None = None,
-        security_schemes: list[SecurityScheme] | None = None,
+        security_schemes: dict[str, SecurityScheme] | None = None,
         *,
         base_url: str | None = None,
     ) -> None:
         self.endpoint = endpoint
+        self.registry = registry
         self.refs = refs
         self.security_schemes = security_schemes
         self.base_url = base_url
@@ -67,6 +75,10 @@ class OpenAPIOperation:
     async def _request(self, **kwargs: Any) -> object:
         method = self.endpoint.method
         url, query_params, headers, json_data = self._build_url_and_params(**kwargs)
+
+        if self.endpoint.security:
+            security_headers = await self._build_security_headers()
+            headers = {**headers, **security_headers}
 
         params = query_params if query_params else None
         try:
@@ -133,3 +145,31 @@ class OpenAPIOperation:
 
         url = f"{self.base_url.rstrip('/')}{path}" if self.base_url else path
         return RequestParams(url, query_params, headers, json_data)
+
+    async def _build_security_headers(self) -> dict[str, Any]:
+        if not self.security_schemes or not self.endpoint.security:
+            return {}
+
+        headers: dict[str, Any] = {}
+        for security_req in self.endpoint.security:
+            for scheme_name in security_req:
+                if scheme_name not in self.security_schemes:
+                    continue
+                scheme = self.security_schemes[scheme_name]
+                provider = self.registry.lookup(CredentialsProvider, scheme_name)
+                credentials = await provider.invoke()
+                headers.update(self._format_auth_header(scheme, credentials))
+        return headers
+
+    @staticmethod
+    def _format_auth_header(scheme: SecurityScheme, credentials: Any) -> dict[str, Any]:
+        token = (
+            credentials.get("token")
+            if isinstance(credentials, dict)
+            else str(credentials)
+        )
+        if isinstance(scheme, HTTPSecurityScheme):
+            return {"Authorization": f"{scheme.scheme.capitalize()} {token}"}
+        if isinstance(scheme, ApiKeySecurityScheme) and scheme.in_ == "header":
+            return {scheme.name: token}
+        return {}

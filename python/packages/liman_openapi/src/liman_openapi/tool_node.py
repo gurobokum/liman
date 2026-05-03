@@ -1,5 +1,5 @@
 import logging
-from typing import TypeVar
+from typing import Any
 
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
@@ -7,6 +7,7 @@ from openapi_core import OpenAPI
 
 from liman_openapi.operation import OpenAPIOperation
 from liman_openapi.parse import parse_endpoints, parse_refs, parse_security_schemes
+from liman_openapi.schemas.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -46,16 +47,19 @@ def create_tool_nodes(
 
     for endpoint in endpoints:
         name = f"{prefix}__{endpoint.operation_id}"
-        decl = {
+        decl: dict[str, Any] = {
             "kind": "ToolNode",
             "name": name,
             "description": endpoint.description or endpoint.summary,
             "arguments": endpoint.get_tool_arguments_spec(refs),
         }
 
+        if endpoint.security:
+            decl["auth"] = build_auth_field(endpoint)
+
         node = ToolNode.from_dict(decl, registry)
         impl_func = OpenAPIOperation(
-            endpoint, refs, security_schemes, base_url=base_url
+            endpoint, registry, refs, security_schemes, base_url=base_url
         )
         node.set_func(impl_func)
         nodes.append(node)
@@ -63,4 +67,18 @@ def create_tool_nodes(
     return nodes
 
 
-R = TypeVar("R")
+def build_auth_field(endpoint: Endpoint) -> dict[str, Any]:
+    if not endpoint.security:
+        return {}
+
+    if len(endpoint.security) > 1:
+        raise NotImplementedError(
+            "Multiple security requirements are not supported yet."
+        )
+
+    security = endpoint.security[0]
+    return {
+        "service_account": {
+            "credentials_provider": list(security.keys())[0],
+        }
+    }
