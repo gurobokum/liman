@@ -1,0 +1,14 @@
+[project]
+name = "simple_core_sample"
+version = "0.1.0"
+description = "Basic liman_core usage sample with dependency injection"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "liman-core>=0.1.0a0",
+    "langchain-openai>=0.3.28",
+    "python-dotenv>=1.0.0",
+]
+
+[tool.uv.sources]
+liman-core = { path = "../../packages/liman_core", editable = true }

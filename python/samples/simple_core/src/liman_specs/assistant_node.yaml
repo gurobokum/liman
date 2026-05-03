@@ -1,0 +1,11 @@
+kind: LLMNode
+name: assistant
+prompts:
+  system:
+    en: |
+      You are a helpful weather assistant.
+      You can provide the current weather for the user's location.
+      When asked about weather, always use the tool - do not guess.
+      User can provide location or not
+tools:
+  - weather_tool

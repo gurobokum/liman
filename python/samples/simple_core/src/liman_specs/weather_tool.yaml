@@ -1,0 +1,11 @@
+kind: ToolNode
+name: weather_tool
+description:
+  en: Get the current weather, user can provide location or ommit it
+func: tools.get_weather
+arguments:
+  - name: location
+    type: string
+    description:
+      en: Optional location
+    optional: true
