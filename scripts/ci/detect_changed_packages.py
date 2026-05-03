@@ -30,6 +30,9 @@ from typing import Dict, List, Literal, TypedDict
 GITHUB_SHA = os.environ.get("GITHUB_SHA")
 GITHUB_BASE_REF = os.environ.get("GITHUB_BASE_REF")
 GITHUB_EVENT_NAME = os.environ.get("GITHUB_EVENT_NAME")
+GITHUB_BEFORE_SHA = os.environ.get("GITHUB_BEFORE_SHA")
+
+NULL_SHA = "0000000000000000000000000000000000000000"
 
 
 class PackageConfig(TypedDict):
@@ -110,8 +113,10 @@ def get_changed_files() -> List[str] | Literal["ALL_FILES"]:
     Get list of changed files based on GitHub event type.
     """
     if GITHUB_EVENT_NAME == "push":
+        if not GITHUB_BEFORE_SHA or GITHUB_BEFORE_SHA == NULL_SHA:
+            return "ALL_FILES"
         result = subprocess.run(
-            ["git", "diff", "--name-only", f"{GITHUB_SHA}^..{GITHUB_SHA}"],
+            ["git", "diff", "--name-only", f"{GITHUB_BEFORE_SHA}..{GITHUB_SHA}"],
             capture_output=True,
             text=True,
             check=True,
