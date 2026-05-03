@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0](https://github.com/gurobokum/liman/compare/liman_openapi_py-v0.1.0-a1...liman_openapi_py-v0.1.0) (2026-05-03)
+
+
+### ✨ Features
+
+* **liman_openapi:** add security scheme support ([089adee](https://github.com/gurobokum/liman/commit/089adee96f3d086b9185a16d93582a18a450654d))
+* **liman_openapi:** parse secureSchemes ([a5ad301](https://github.com/gurobokum/liman/commit/a5ad301eedc90a8ea8d66b1027ed0749695b732d))
+
+
+### 🛠 Code Refactoring
+
+* **liman_openapi:** split schemas ([1a123a0](https://github.com/gurobokum/liman/commit/1a123a0476d5fd70f80a403329837fa803da13e3))
+
 ## [0.1.0-a1](https://github.com/gurobokum/liman/compare/liman_openapi_py-v0.1.0-a0...liman_openapi_py-v0.1.0-a1) (2025-08-16)
 
 
