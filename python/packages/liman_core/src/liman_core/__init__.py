@@ -11,6 +11,6 @@ from liman_core.nodes.tool_node import ToolNode
 from liman_core.registry import Registry
 
 # Don't update the version manually, it is set by the build system.
-__version__ = "0.1.0-a3"
+__version__ = "0.1.0"
 
 __all__ = ["LLMNode", "ToolNode", "NodeActor", "Registry"]
