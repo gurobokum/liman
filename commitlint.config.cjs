@@ -20,6 +20,7 @@ const Configuration = {
       "always",
       [
         "build",
+        "build_py",
         "chore",
         "ci",
         "docs",

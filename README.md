@@ -110,6 +110,8 @@ The DSL expressions are parsed at runtime and evaluated against the current exec
 
 ## Python
 
+![Python Version](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fgurobokum%2Fliman%2Frefs%2Fheads%2Fmain%2Fpython%2Fpackages%2Fliman_core%2Fpyproject.toml)
+
 ### Packages
 
 - [**liman**](python/packages/liman): Main package with executor and agent functionality, should be used as an entry point [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman)
