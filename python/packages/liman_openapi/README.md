@@ -1,6 +1,8 @@
 # Liman OpenAPI plugin
 
 [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_openapi)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_openapi)
+[![PyPI - Version](https://img.shields.io/pypi/v/liman_openapi)](https://pypi.org/project/liman-openapi/)
+
 
 Allows to generate ToolNode based on OpenAPI specification.
 

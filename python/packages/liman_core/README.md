@@ -1,6 +1,7 @@
 # Liman Core
 
 [![codecov](https://codecov.io/gh/gurobokum/liman/graph/badge.svg?token=PMKWXNBF1K&component=python/liman_core)](https://codecov.io/gh/gurobokum/liman?components[0]=python/liman_core)
+[![PyPI - Version](https://img.shields.io/pypi/v/liman_core)](https://pypi.org/project/liman-core/)
 
 Core library for **Liman** - a declarative YAML-based agent framework with custom DSL for building AI workflows.
 
