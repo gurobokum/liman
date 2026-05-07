@@ -1,8 +1,6 @@
-# Liman
+# Liman [![Docs](https://img.shields.io/badge/docs-read-blue)](https://liman-ai.vercel.app/docs/poc)
 
 Code-first declarative framework for building composable AI agents using YAML manifests
-
-> ⚠️ **Warning:** This project is in early development phase.
 
 ## Features
 
@@ -121,8 +119,5 @@ The DSL expressions are parsed at runtime and evaluated against the current exec
 
 ## Resources
 
-- [📖 Documentation](https://liman-ai.vercel.app/docs/poc)
+- [📖 Proof of Concept](https://liman-ai.vercel.app/docs/poc)
 - [🔧 Specification](https://liman-ai.vercel.app/docs/specification/node)
-
-[![Docs](https://img.shields.io/badge/docs-read-brightgreen?logo=nextdotjs)](https://liman-ai.vercel.app/docs/poc)
-[![Discord](https://dcbadge.limes.pink/api/server/https://discord.gg/rmucxEzSyY?compact=true&style=flat)](https://discord.gg/rmucxEzSyY) [![X Follow](https://img.shields.io/twitter/follow/liman_ai?style=social)](https://x.com/liman_ai)

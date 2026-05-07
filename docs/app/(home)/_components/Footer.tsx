@@ -5,7 +5,6 @@ import { FaXTwitter } from "react-icons/fa6";
 import * as links from "@/src/links";
 import Link from "fumadocs-core/link";
 import { Button } from "@/src/components/ui/button";
-import Discord from "@/src/components/ui/icons/Discord";
 
 const footerSections = [
   {
@@ -20,12 +19,11 @@ const footerSections = [
       },
     ],
   },
+  /*
+   * Temporary disabled
   {
     title: "Community",
     links: [
-      {
-        ...links.Discord,
-      },
       {
         ...links.Twitter,
       },
@@ -34,6 +32,7 @@ const footerSections = [
       },
     ],
   },
+  */
 ];
 
 export default function Footer() {
@@ -55,7 +54,7 @@ export default function Footer() {
             </p>
           </div>
 
-          <div className="col-span-3 grid grid-cols-1 md:grid-cols-2 gap-12 md:justify-self-end">
+          <div className="col-span-3 grid grid-cols-1 md:grid-cols-1 gap-12 md:justify-self-end">
             {footerSections.map((section) => (
               <div key={section.title}>
                 <h4 className="font-bold mb-4">{section.title}</h4>
@@ -79,7 +78,7 @@ export default function Footer() {
 
         <div className="border-t border-muted-foreground/20 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p className="text-foreground text-sm">
-            &copy; 2025 Liman. All rights reserved.
+            &copy; 2026 Liman. All rights reserved.
           </p>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <Link
@@ -93,9 +92,6 @@ export default function Footer() {
               className="text-foreground transition-colors"
             >
               <FaXTwitter className="w-5 h-5" />
-            </Link>
-            <Link href={links.Discord.url}>
-              <Discord className="w-6 h-6 stroke-foreground transition-colors" />
             </Link>
           </div>
         </div>

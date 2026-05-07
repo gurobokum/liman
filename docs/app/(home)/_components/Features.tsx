@@ -27,7 +27,7 @@ const features = [
     description:
       "Built-in authorization with service accounts. State isolation, credential provisioning, and minimal permissions with least privilege principles.",
     badge: "Security",
-    link: "/docs/poc#authientication--authorization",
+    link: "/docs/poc#authentication--authorization",
   },
   {
     icon: Globe,
@@ -92,16 +92,15 @@ export default function Features() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Built for{" "}
-            <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              AgentOps
-            </span>{" "}
-            at Scale
+            Designed for What Comes{" "}
+            <span className="bg-gradient-to-r from-pink-500 to-pink-800 bg-clip-text text-transparent">
+              After Hello World
+            </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            From OpenAPI integration to distributed execution, Liman provides
-            everything needed to build, deploy, and operate production AI agents
-            across multiple languages and environments.
+            From OpenAPI tool generation to distributed execution and cost
+            tracking, Liman designed each one around real production pain
+            points.
           </p>
         </div>
 

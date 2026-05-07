@@ -1,10 +1,9 @@
 "use client";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Github } from "lucide-react";
+import { AlbumIcon, ArrowRight, BookOpen, Github } from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
-import Discord from "@/src/components/ui/icons/Discord";
 import Link from "fumadocs-core/link";
 
 import * as links from "@/src/links";
@@ -14,7 +13,8 @@ const communityLinks = [
     icon: BookOpen,
     title: "Documentation",
     url: "/docs/getting-started/simple-agent",
-    description: "Explore documentation and usage examples",
+    description:
+      "Explore guides, API reference, and usage examples to get started quickly",
     buttonText: "Read Docs",
     color:
       "bg-emerald-100 hover:bg-emerald-200 group-hover:bg-emerald-200 dark:bg-emerald-900 dark:hover:bg-emerald-800 dark:group-hover:bg-emerald-800",
@@ -30,14 +30,14 @@ const communityLinks = [
       "bg-slate-100 hover:bg-slate-200 group-hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:group-hover:bg-slate-700",
   },
   {
-    icon: Discord,
-    title: links.Discord.title,
-    url: links.Discord.url,
+    icon: AlbumIcon,
+    title: "Blog",
+    url: "/blog",
     description:
-      "Chat with developers in real-time and get help from the community",
-    buttonText: "Join Discord",
+      "Read articles about Liman development, new features, and practical agent patterns",
+    buttonText: "Read Blog",
     color:
-      "bg-indigo-100 hover:bg-indigo-200 group-hover:bg-indigo-200 dark:bg-indigo-900 dark:hover:bg-indigo-800 dark:group-hover:bg-indigo-800",
+      "bg-violet-100 hover:bg-violet-200 group-hover:bg-violet-200 dark:bg-violet-900 dark:hover:bg-violet-800 dark:group-hover:bg-violet-800",
   },
 ];
 
@@ -53,7 +53,7 @@ export default function Community() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            Join the Community
+            Get Involved
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Participate in specification development and share experiences with
@@ -68,14 +68,14 @@ export default function Community() {
             return (
               <motion.div
                 key={link.title}
-                className="text-center"
+                className="h-full text-center"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ y: -5 }}
               >
-                <Card className="p-8 group">
+                <Card className="h-full p-8 group flex flex-col items-center">
                   <div
                     className={`w-16 h-16 ${link.color} rounded-xl flex items-center justify-center mx-auto mb-6 transition-colors`}
                   >
@@ -84,7 +84,7 @@ export default function Community() {
                   <h3 className="text-xl font-semibold text-foreground mb-4">
                     {link.title}
                   </h3>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">
+                  <p className="text-muted-foreground mb-6 leading-relaxed flex-1">
                     {link.description}
                   </p>
                   <Button variant="ghost" asChild={true}>

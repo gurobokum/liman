@@ -1,12 +1,20 @@
 import Link from "fumadocs-core/link";
-import { ArrowRight, Github, Newspaper } from "lucide-react";
+import {
+  ArrowRight,
+  Github,
+  Newspaper,
+  Cog,
+  Shield,
+  Network,
+  BarChart3,
+} from "lucide-react";
 
 import { Button } from "@/src/components/ui/button";
 import * as links from "@/src/links";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center hero-gradient overflow-hidden">
+    <section className="relative py-32 md:py-48 hero-gradient overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary-glow/5" />
       <div className="absolute inset-0 bg-[url('/api/placeholder/1920/1080')] opacity-5 bg-cover bg-center" />
@@ -26,37 +34,40 @@ export default function Hero() {
       />
 
       <div className="container mx-auto px-4 text-center relative z-10">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* announcement badge - restore when a new post is ready
           <div className="flex flex-col items-center gap-2 mt-4 mb-8 md:mt-0 md:mb-10">
             <HeroBadge url="/blog/2025-08-17_simple_openapi">
               New blog post: OpenAPI integration
             </HeroBadge>
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold leading-tight tracking-tight text-foreground">
-            Build Reliable{" "}
+          */}
+          <h1 className="text-5xl md:text-8xl mb-16 font-bold leading-none tracking-tight text-foreground">
+            AI Agents as{" "}
             <span className="bg-gradient-to-r from-pink-500 to-pink-800 bg-clip-text text-transparent">
-              AI Agents{" "}
+              Manifests
             </span>
-            with Simple YAML
+            <span className="block text-2xl md:text-3xl font-normal text-muted-foreground mt-8">
+              Define the Graph. Any Language Runs It.
+            </span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Liman is a declarative, language-agnostic framework for building AI
-            agents using YAML manifests.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              🤖 OpenAPI → Tools Generation
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <Cog className="w-4 h-4" />
+              OpenAPI → Tools Generation
             </span>
-            <span className="flex items-center gap-1">
-              🔐 Built-in Authorization
+            <span className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              Built-in Authorization
             </span>
-            <span className="flex items-center gap-1">
-              🌐 Distributed Execution
+            <span className="flex items-center gap-2">
+              <Network className="w-4 h-4" />
+              Distributed Execution
             </span>
-            <span className="flex items-center gap-1">
-              📊 OTel & FinOps Ready
+            <span className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              OTel & FinOps Ready
             </span>
           </div>
 
@@ -84,15 +95,15 @@ export default function Hero() {
           <div className="flex justify-center gap-8 text-sm text-muted-foreground pt-8">
             <div className="text-center">
               <div className="font-semibold text-foreground">Python</div>
-              <div>Go • Java • TS</div>
+              <div>Available now</div>
             </div>
             <div className="text-center">
               <div className="font-semibold text-foreground">Graph</div>
-              <div>Agent Structure</div>
+              <div>Compose any flow</div>
             </div>
             <div className="text-center">
-              <div className="font-semibold text-foreground">Kustomize</div>
-              <div>Overlay System</div>
+              <div className="font-semibold text-foreground">Overlays</div>
+              <div>Extend without forking</div>
             </div>
           </div>
         </div>
@@ -101,7 +112,7 @@ export default function Hero() {
   );
 }
 
-function HeroBadge({
+export function HeroBadge({
   children,
   url,
 }: {

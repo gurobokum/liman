@@ -120,6 +120,9 @@
   body {
     @apply bg-background text-foreground;
   }
+  pre, code {
+    font-family: var(--font-mono), ui-monospace, monospace;
+  }
 }
 
 @keyframes float {
