@@ -11,6 +11,7 @@ name: string
 prompts: LanguageBundle
 tools?: ToolNode[]
 nodes?: Node[]
+structured_output?: Schema
 ```
 
 import { TypeTable } from "fumadocs-ui/components/type-table";
@@ -46,8 +47,94 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
         "The nodes that the LLMNode can use, can be used to chain nodes together.",
       required: false,
     },
+    structured_output: {
+      type: "Schema",
+      description:
+        "Constrain the LLM response to a typed structure. Cannot be used together with tools.",
+      required: false,
+    },
   }}
 />
+
+## Structured Output
+
+When `structured_output` is set, the node returns a typed result instead of a plain text message.
+Use a simplified inline schema - keys are field names, values are types.
+A `?` suffix on a key marks the field as optional.
+
+```yaml
+kind: LLMNode
+name: BookExtractor
+prompts:
+  en:
+    system: Extract book information from the text.
+structured_output:
+  title: str
+  author: str
+  year: int
+  genre: str
+  summary?: str
+```
+
+Supported scalar types: `str`, `int`, `float`, `bool`.
+
+In the short form, add a `#` comment on the line before a field to set its description.
+The description is injected into the system prompt and the JSON schema sent to the LLM.
+Multi-line comments are joined with a space into a single description string.
+
+```yaml
+structured_output:
+  # The main title of the book as it appears on the cover
+  title: str
+  # The full name of the primary author, including first and last name
+  author: str
+  # The year the book was first published;
+  # use 0 when the year cannot be determined from the text
+  year: int
+```
+
+For more control, use the extended form. Each field becomes a mapping with `type`, `description`, and `optional` keys.
+Comments are not read in this form - use `description` instead.
+
+```yaml
+structured_output:
+  title:
+    type: str
+    description: The main title of the book as it appears on the cover
+  year:
+    type: int
+    description: The year the book was first published; use 0 when unknown
+    optional: true
+```
+
+`description` also accepts a localized value to match the prompt language:
+
+```yaml
+structured_output:
+  title:
+    type: str
+    description:
+      en: The main title of the book as it appears on the cover
+      ru: Название книги, как оно указано на обложке
+```
+
+For arrays, wrap the type in a list:
+
+```yaml
+structured_output:
+  tags: [str]
+  scores: [int]
+```
+
+For nested objects, use a nested mapping:
+
+```yaml
+structured_output:
+  title: str
+  publisher:
+    name: str
+    country: str
+```
 
 <Cards>
   <Card

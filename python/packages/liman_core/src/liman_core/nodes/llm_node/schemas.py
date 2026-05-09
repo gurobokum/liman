@@ -7,6 +7,7 @@ from liman_core.base.schemas import BaseSpec
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.languages import LanguageCode, LanguagesBundle, LocalizedValue
 from liman_core.nodes.base.schemas import LangChainMessage, NodeState
+from liman_core.nodes.llm_node.structured_output import StructuredOutputSpec
 
 
 class LLMPrompts(BaseModel):
@@ -62,6 +63,7 @@ class LLMNodeSpec(BaseSpec):
     prompts: LocalizedValue
     tools: list[str] = []
     nodes: list[str | EdgeSpec] = []
+    structured_output: StructuredOutputSpec | None = None
 
 
 class LLMNodeState(NodeState):

@@ -190,6 +190,8 @@ class Component(Generic[S], ABC):
         """
         return f"{self.spec.kind}/{self.name}"
 
+    def compile(self) -> None: ...
+
     def print_spec(self, initial: bool = False) -> None:
         """
         Print the tool node specification in YAML format.
@@ -205,6 +207,7 @@ class Component(Generic[S], ABC):
         if initial:
             to_dump = _preserve_multiline_strings(self._initial_data)
         else:
+            self.compile()
             to_dump = _preserve_multiline_strings(
                 self.spec.model_dump(exclude_none=True)
             )

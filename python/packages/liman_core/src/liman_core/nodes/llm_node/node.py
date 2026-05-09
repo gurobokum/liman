@@ -1,13 +1,14 @@
+import json
 from collections.abc import Sequence
 from typing import Any, cast
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import AIMessage, BaseMessage
 
 from liman_core.errors import LimanError
 from liman_core.languages import LanguageCode
 from liman_core.nodes.base.node import BaseNode
-from liman_core.nodes.base.schemas import LangChainMessage
+from liman_core.nodes.base.schemas import LangChainMessage, StructuredOutput
 from liman_core.nodes.llm_node.schemas import (
     LLMNodeSpec,
     LLMNodeState,
@@ -134,6 +135,19 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         if self._compiled:
             raise LimanError("LLMNode is already compiled")
 
+        if self.spec.structured_output is not None:
+            if self.spec.tools:
+                # LangChain's with_structured_output hijacks the function-calling
+                # mechanism, so custom tools conflict at the API layer.
+                # Remove this guard when we implement our own LLM wrappers.
+                raise LimanError(
+                    f"LLMNode '{self.spec.name}': 'structured_output' and 'tools' cannot be used together"
+                )
+            if not self.spec.structured_output.fields:
+                raise LimanError(
+                    f"LLMNode '{self.spec.name}': 'structured_output' must not be empty"
+                )
+
         self._init_prompts()
         self._compiled = True
 
@@ -170,6 +184,22 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
         lang = lang or self.default_lang
 
         system_message = self.prompts.to_system_message(lang)
+
+        mapped = self._map_inputs(list(inputs))
+
+        if self.spec.structured_output is not None:
+            schema = self.spec.structured_output.to_json_schema(
+                self.spec.name, lang, self.fallback_lang
+            )
+            response = await llm.with_structured_output(schema).ainvoke(
+                [system_message, *mapped]
+            )
+            return StructuredOutput(
+                content=[
+                    response if isinstance(response, dict) else response.model_dump()
+                ]
+            )
+
         tools_jsonschema = []
         tools: dict[str, ToolNode] = {}
 
@@ -183,10 +213,7 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
             tools[tool_node.name] = tool_node
 
         response = await llm.ainvoke(
-            [
-                system_message,
-                *inputs,
-            ],
+            [system_message, *mapped],
             tools=tools_jsonschema,
         )
 
@@ -200,6 +227,21 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
             Fresh LLMNodeState with empty message history
         """
         return LLMNodeState(kind=self.spec.kind, name=self.spec.name, messages=[])
+
+    def _map_inputs(self, inputs: Sequence[BaseMessage]) -> list[BaseMessage]:
+        """
+        Convert StructuredOutput messages to plain AIMessage before sending to the LLM.
+
+        Temporary workaround for a LangChain API limitation - LangChain does not
+        recognize StructuredOutput as a valid message type in the conversation history.
+        Remove this when we implement our own chat LLM SDK.
+        """
+        return [
+            AIMessage(content=json.dumps(msg.content[-1]))
+            if isinstance(msg, StructuredOutput)
+            else msg
+            for msg in inputs
+        ]
 
     def _init_prompts(self) -> None:
         self.prompts = LLMPromptsBundle.model_validate(
@@ -232,5 +274,14 @@ class LLMNode(BaseNode[LLMNodeSpec, LLMNodeState]):
                 + "\n"
                 + "\n".join(tool_desc for tool_desc in bundle)
             )
+
+        if self.spec.structured_output is not None:
+            for lang in supported_langs:
+                prompts = getattr(self.prompts, lang, LLMPrompts())
+                prompts.system = (
+                    (prompts.system or "")
+                    + "\n"
+                    + self.spec.structured_output.to_prompt(lang, self.fallback_lang)
+                )
 
         self.spec.prompts = cast(dict[LanguageCode, Any], self.prompts.model_dump())

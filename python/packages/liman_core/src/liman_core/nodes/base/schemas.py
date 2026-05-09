@@ -21,5 +21,9 @@ class NodeState(BaseModel):
 NS = TypeVar("NS", bound=NodeState)
 
 
-LangChainMessage = AIMessage | HumanMessage | ToolMessage
+class StructuredOutput(AIMessage):
+    is_structured_output: bool = True
+
+
+LangChainMessage = AIMessage | HumanMessage | ToolMessage | StructuredOutput
 LangChainMessageT = Annotated[LangChainMessage, Field(discriminator="type")]
