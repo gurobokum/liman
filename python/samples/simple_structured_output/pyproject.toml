@@ -1,0 +1,22 @@
+[project]
+name = "liman_simple_structured_output"
+version = "0.1.0"
+description = "Simple structured output sample for Liman AI"
+readme = "README.md"
+requires-python = ">=3.10, <3.14"
+dependencies = [
+    "langchain-google-genai>=2.1.9",
+    "langchain-openai>=0.3.30",
+    "liman>=0.1.0a2",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.10.1",
+    "rich>=14.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]
+
+[tool.uv.sources]
+liman = { path = "../../packages/liman" }

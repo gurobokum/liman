@@ -1,0 +1,60 @@
+kind: LLMNode
+name: extractor
+prompts:
+  system:
+    en: |
+      You are a book information extractor.
+      Given question about a book, provide the info.
+      Select any matches the request.
+structured_output:
+  # The main title of the book as it appears on the cover
+  title: str
+  # The full name of the primary author, including first and last name
+  author: str
+  # The year the book was first published;
+  # use 0 when the year cannot be determined from the text
+  year: int
+  # The primary literary genre of the book,
+  # for example Fantasy, Science Fiction, Mystery, or Romance
+  genre: str
+  # A list of the most important characters in the story,
+  # by their names as they appear in the book
+  main_characters: [str]
+  info:
+    # True if the book is known to have reached bestseller status in any major market
+    bestseller: bool
+    # Years of subsequent editions or new print runs after the original publication,
+    # excluding the first one; omit if unknown
+    publications?: [str]
+
+# Extended format: each field is a descriptor with type, description, optional.
+# Can be mixed with the simple format in the same structured_output block,
+# e.g. some fields use "field: type" and others use the descriptor dict below.
+# description also supports i18n - instead of a plain string you can provide a map:
+#   description:
+#     en: The book title
+#     ru: Название книги
+#structured_output:
+#  title:
+#    type: str
+#    description: The main title of the book as it appears on the cover
+#  author:
+#    type: str
+#    description: The full name of the primary author, including first and last name
+#  year:
+#    type: int
+#    description: The year the book was first published; use 0 when the year cannot be determined from the text
+#  genre:
+#    type: str
+#    description: The primary literary genre of the book, for example Fantasy, Science Fiction, Mystery, or Romance
+#  main_characters:
+#    type: [str]
+#    description: A list of the most important characters in the story, by their names as they appear in the book
+#  info:
+#    bestseller:
+#      type: bool
+#      description: True if the book is known to have reached bestseller status in any major market
+#    publications:
+#      type: [str]
+#      description: Years of subsequent editions or new print runs after the original publication, excluding the first one; omit if unknown
+#      optional: true
