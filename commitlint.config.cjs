@@ -57,6 +57,7 @@ const Configuration = {
         "config",
         "ci",
         "scripts",
+        "samples",
         // custom
         "liman",
         "liman_core",

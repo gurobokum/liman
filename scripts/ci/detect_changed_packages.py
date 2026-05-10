@@ -31,6 +31,7 @@ GITHUB_SHA = os.environ.get("GITHUB_SHA")
 GITHUB_BASE_REF = os.environ.get("GITHUB_BASE_REF")
 GITHUB_EVENT_NAME = os.environ.get("GITHUB_EVENT_NAME")
 GITHUB_BEFORE_SHA = os.environ.get("GITHUB_BEFORE_SHA")
+GITHUB_EVENT_PATH = os.environ.get("GITHUB_EVENT_PATH")
 
 NULL_SHA = "0000000000000000000000000000000000000000"
 
@@ -71,6 +72,18 @@ PY_PACKAGES_CONFIG: Dict[str, PackageConfig] = {
     },
 }
 
+PY_SAMPLES_CONFIG: Dict[str, PackageConfig] = {
+    "simple_core": {
+        "paths": [
+            "python/samples/simple_core/",
+            "python/packages/liman_core/",
+        ],
+        "files": [
+            ".github/workflows/python-checks.yaml",
+        ],
+    },
+}
+
 TS_PACKAGES_CONFIG: Dict[str, PackageConfig] = {
     "liman_core": {
         "paths": ["typescript/packages/liman_core/"],
@@ -100,6 +113,8 @@ def get_packages_config(
     """
     if type_ == "python":
         return PY_PACKAGES_CONFIG
+    elif type_ == "python-samples":
+        return PY_SAMPLES_CONFIG
     elif type_ == "typescript":
         return TS_PACKAGES_CONFIG
     elif type_ == "go":
@@ -115,6 +130,12 @@ def get_changed_files() -> List[str] | Literal["ALL_FILES"]:
     if GITHUB_EVENT_NAME == "push":
         if not GITHUB_BEFORE_SHA or GITHUB_BEFORE_SHA == NULL_SHA:
             return "ALL_FILES"
+        # Force-push rewrites history, so we can't trust the before/after diff.
+        if GITHUB_EVENT_PATH:
+            with open(GITHUB_EVENT_PATH, encoding="utf-8") as fd:
+                event = json.load(fd)
+            if event.get("forced"):
+                return "ALL_FILES"
         result = subprocess.run(
             ["git", "diff", "--name-only", f"{GITHUB_BEFORE_SHA}..{GITHUB_SHA}"],
             capture_output=True,
@@ -179,7 +200,7 @@ def main() -> None:
     """
     if len(sys.argv) != 2:
         print("Usage: detect_changed_packages.py <type>", file=sys.stderr)
-        print("Supported types: python, typescript, go", file=sys.stderr)
+        print("Supported types: python, python-samples, typescript, go", file=sys.stderr)
         sys.exit(1)
 
     type_ = sys.argv[1]

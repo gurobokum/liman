@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       packages: ${{ steps.changes.outputs.packages }}
+      samples: ${{ steps.samples.outputs.samples }}
     defaults:
       run:
         working-directory: .
@@ -40,6 +41,14 @@ jobs:
           packages=$(python3 scripts/ci/detect_changed_packages.py python)
           echo "packages=$packages" >> $GITHUB_OUTPUT
           echo "Changed packages: $packages"
+      - name: Get changed samples
+        id: samples
+        env:
+          GITHUB_BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          samples=$(python3 scripts/ci/detect_changed_packages.py python-samples)
+          echo "samples=$samples" >> $GITHUB_OUTPUT
+          echo "Changed samples: $samples"
 
   lint:
     name: Lint ${{ matrix.package }}
@@ -100,6 +109,32 @@ jobs:
       - name: Run tests
         run: |
           uv run poe -C packages/${{ matrix.package }} test
+
+  test-samples:
+    name: Test sample ${{ matrix.sample }}
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.samples != '[]'
+    defaults:
+      run:
+        working-directory: ./python/samples/${{ matrix.sample }}
+    strategy:
+      matrix:
+        sample: ${{ fromJson(needs.changes.outputs.samples) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --all-extras
+      - name: Run tests
+        run: uv run pytest
 
   coverage:
     name: Coverage ${{ matrix.package }}
