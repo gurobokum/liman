@@ -170,6 +170,7 @@ class NodeActor(Generic[T]):
         actor = cls(node=node, actor_id=actor_id, llm=llm)
         return actor
 
+    # TODO: drop the method in favor of restore_or_create
     @classmethod
     async def create_or_restore(
         cls,
@@ -195,6 +196,15 @@ class NodeActor(Generic[T]):
             return actor
         else:
             return cls.create(node=node, llm=llm)
+
+    @classmethod
+    async def restore_or_create(
+        cls,
+        node: T,
+        state: dict[str, Any] | None,
+        llm: BaseChatModel | None = None,
+    ) -> Self:
+        return await cls.create_or_restore(node, state, llm)
 
     def add_pre_hook(self, hook: PreExecutionHook[T]) -> None:
         """

@@ -13,51 +13,44 @@ from liman.executor.schemas import (
 
 
 def test_create_executor_input() -> None:
+    executor_id = uuid4()
     execution_id = uuid4()
     node_actor_id = uuid4()
     node_input = {"test": "data"}
-    node_full_name = "llm_node/test_node"
+    node_fullname = "llm_node/test_node"
 
     input_obj = ExecutorInput(
+        executor_id=executor_id,
         execution_id=execution_id,
         node_actor_id=node_actor_id,
         node_input=node_input,
-        node_full_name=node_full_name,
+        node_fullname=node_fullname,
     )
 
+    assert input_obj.executor_id == executor_id
     assert input_obj.execution_id == execution_id
     assert input_obj.node_actor_id == node_actor_id
     assert input_obj.node_input == node_input
-    assert input_obj.node_full_name == node_full_name
+    assert input_obj.node_fullname == node_fullname
 
 
 def test_executor_input_with_string_input() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_input = "test string input"
-    node_full_name = "llm_node/test_node"
-
     input_obj = ExecutorInput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_input=node_input,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_input="test string input",
+        node_fullname="llm_node/test_node",
     )
 
-    assert input_obj.node_input == node_input
+    assert input_obj.node_input == "test string input"
 
 
 def test_executor_input_with_none_input() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_input = None
-    node_full_name = "llm_node/test_node"
-
     input_obj = ExecutorInput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_input=node_input,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_input=None,
+        node_fullname="llm_node/test_node",
     )
 
     assert input_obj.node_input is None
@@ -66,26 +59,29 @@ def test_executor_input_with_none_input() -> None:
 def test_executor_input_validation_error() -> None:
     with pytest.raises(ValidationError):
         ExecutorInput(
+            executor_id=uuid4(),
             execution_id="not-a-uuid",
-            node_actor_id=uuid4(),
             node_input="test",
-            node_full_name="test_node",
+            node_fullname="test_node",
         )
 
 
 def test_create_executor_output_basic() -> None:
+    executor_id = uuid4()
     execution_id = uuid4()
     node_actor_id = uuid4()
     node_full_name = "llm_node/test_node"
     node_output = {"result": "success"}
 
     output_obj = ExecutorOutput(
+        executor_id=executor_id,
         execution_id=execution_id,
         node_actor_id=node_actor_id,
         node_full_name=node_full_name,
         node_output=node_output,
     )
 
+    assert output_obj.executor_id == executor_id
     assert output_obj.execution_id == execution_id
     assert output_obj.node_actor_id == node_actor_id
     assert output_obj.node_full_name == node_full_name
@@ -96,14 +92,11 @@ def test_create_executor_output_basic() -> None:
 
 
 def test_create_executor_output_with_exit() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
-
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
         exit_=True,
     )
 
@@ -111,16 +104,14 @@ def test_create_executor_output_with_exit() -> None:
 
 
 def test_create_executor_output_with_error() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
     error_msg = "Something went wrong"
     error_type = "ValueError"
 
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
         error=error_msg,
         error_type=error_type,
     )
@@ -130,31 +121,25 @@ def test_create_executor_output_with_error() -> None:
 
 
 def test_executor_output_str_with_string_output() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
-    node_output = "Hello, World!"
-
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
-        node_output=node_output,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
+        node_output="Hello, World!",
     )
 
     assert str(output_obj) == "Hello, World!"
 
 
 def test_executor_output_str_with_base_message() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
     message = HumanMessage(content="Test message")
 
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
         node_output=message,
     )
 
@@ -162,15 +147,13 @@ def test_executor_output_str_with_base_message() -> None:
 
 
 def test_executor_output_str_with_base_message_list_content() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
     message = HumanMessage(content=["Part 1", "Part 2", "Part 3"])
 
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
         node_output=message,
     )
 
@@ -178,15 +161,13 @@ def test_executor_output_str_with_base_message_list_content() -> None:
 
 
 def test_executor_output_str_with_other_types() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
     node_output = {"key": "value", "number": 42}
 
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
         node_output=node_output,
     )
 
@@ -194,14 +175,11 @@ def test_executor_output_str_with_other_types() -> None:
 
 
 def test_executor_output_str_with_none_output() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
-
     output_obj = ExecutorOutput(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        executor_id=uuid4(),
+        execution_id=uuid4(),
+        node_actor_id=uuid4(),
+        node_full_name="llm_node/test_node",
         node_output=None,
     )
 
@@ -211,6 +189,7 @@ def test_executor_output_str_with_none_output() -> None:
 def test_executor_output_validation_error() -> None:
     with pytest.raises(ValidationError):
         ExecutorOutput(
+            executor_id=uuid4(),
             execution_id="not-a-uuid",
             node_actor_id=uuid4(),
             node_full_name="test_node",
@@ -218,30 +197,32 @@ def test_executor_output_validation_error() -> None:
 
 
 def test_create_executor_state_basic() -> None:
-    execution_id = uuid4()
+    executor_id = uuid4()
     node_actor_id = uuid4()
     status = ExecutorStatus.RUNNING
 
     state_obj = ExecutorState(
-        execution_id=execution_id, node_actor_id=node_actor_id, status=status
+        executor_id=executor_id,
+        node_actor_id=node_actor_id,
+        iteration_count=0,
+        status=status,
+        child_executor_ids=set(),
     )
 
-    assert state_obj.execution_id == execution_id
+    assert state_obj.executor_id == executor_id
     assert state_obj.node_actor_id == node_actor_id
     assert state_obj.status == status
     assert state_obj.child_executor_ids == set()
 
 
 def test_create_executor_state_with_children() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    status = ExecutorStatus.SUSPENDED
     child_ids = {uuid4(), uuid4(), uuid4()}
 
     state_obj = ExecutorState(
-        execution_id=execution_id,
-        node_actor_id=node_actor_id,
-        status=status,
+        executor_id=uuid4(),
+        node_actor_id=uuid4(),
+        iteration_count=0,
+        status=ExecutorStatus.SUSPENDED,
         child_executor_ids=child_ids,
     )
 
@@ -249,12 +230,12 @@ def test_create_executor_state_with_children() -> None:
 
 
 def test_executor_state_empty_children_default() -> None:
-    execution_id = uuid4()
-    node_actor_id = uuid4()
-    status = ExecutorStatus.IDLE
-
     state_obj = ExecutorState(
-        execution_id=execution_id, node_actor_id=node_actor_id, status=status
+        executor_id=uuid4(),
+        node_actor_id=uuid4(),
+        iteration_count=0,
+        status=ExecutorStatus.IDLE,
+        child_executor_ids=set(),
     )
 
     assert isinstance(state_obj.child_executor_ids, set)
@@ -262,12 +243,15 @@ def test_executor_state_empty_children_default() -> None:
 
 
 def test_executor_state_with_all_statuses() -> None:
-    execution_id = uuid4()
     node_actor_id = uuid4()
 
     for status in ExecutorStatus:
         state_obj = ExecutorState(
-            execution_id=execution_id, node_actor_id=node_actor_id, status=status
+            executor_id=uuid4(),
+            node_actor_id=node_actor_id,
+            iteration_count=0,
+            status=status,
+            child_executor_ids=set(),
         )
         assert state_obj.status == status
 
@@ -275,7 +259,9 @@ def test_executor_state_with_all_statuses() -> None:
 def test_executor_state_validation_error() -> None:
     with pytest.raises(ValidationError):
         ExecutorState(
-            execution_id="not-a-uuid",
+            executor_id="not-a-uuid",
             node_actor_id=uuid4(),
+            iteration_count=0,
             status=ExecutorStatus.RUNNING,
+            child_executor_ids=set(),
         )

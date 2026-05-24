@@ -1,5 +1,4 @@
 import asyncio
-from asyncio import Queue
 from unittest.mock import AsyncMock, Mock, patch
 from uuid import UUID, uuid4
 
@@ -12,8 +11,8 @@ from liman_core.nodes.llm_node.node import LLMNode
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
 
-from liman.executor.base import Executor
-from liman.executor.schemas import ExecutorInput, ExecutorOutput, ExecutorStatus
+from liman.executor.base import Executor, ParentExecutorPair
+from liman.executor.schemas import ExecutorInput, ExecutorStatus
 from liman.state import InMemoryStateStorage
 
 
@@ -33,8 +32,7 @@ def llm_node(registry: Registry) -> LLMNode:
 
 @pytest.fixture
 def node_actor(mock_llm: Mock, llm_node: LLMNode) -> NodeActor[LLMNode]:
-    mock_actor = NodeActor(llm_node, llm=mock_llm)
-    return mock_actor
+    return NodeActor(llm_node, llm=mock_llm)
 
 
 @pytest.fixture
@@ -47,39 +45,31 @@ def mock_llm() -> Mock:
 def test_executor_init_basic(
     registry: Registry,
     storage: InMemoryStateStorage,
-    node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-    )
+    executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
 
     assert isinstance(executor.id, UUID)
     assert isinstance(executor.execution_id, UUID)
     assert executor.max_iterations == 10
     assert executor.registry == registry
-    assert executor.node_actor == node_actor
+    assert executor.node_actors == {}
     assert executor.llm == mock_llm
     assert executor.status == ExecutorStatus.IDLE
     assert executor.iteration_count == 0
-    assert executor.parent_executor is None
+    assert executor.parent_executor_pair is None
     assert executor.child_executors == {}
 
 
 def test_executor_init_with_execution_id(
     registry: Registry,
     storage: InMemoryStateStorage,
-    node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
     execution_id = uuid4()
     executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
         execution_id=execution_id,
     )
@@ -90,62 +80,32 @@ def test_executor_init_with_execution_id(
 def test_executor_init_with_max_iterations(
     registry: Registry,
     storage: InMemoryStateStorage,
-    node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    max_iterations = 20
     executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-        max_iterations=max_iterations,
+        registry=registry, state_storage=storage, llm=mock_llm, max_iterations=20
     )
 
-    assert executor.max_iterations == max_iterations
+    assert executor.max_iterations == 20
 
 
-def test_executor_init_with_parent(
+def test_executor_init_with_parent_pair(
     registry: Registry,
     storage: InMemoryStateStorage,
     node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    parent_executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-    )
-
+    parent_executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
+    pair = ParentExecutorPair(parent_executor, node_actor.id)
     child_executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
-        parent_executor=parent_executor,
+        parent_executor_pair=pair,
     )
 
-    assert child_executor.parent_executor == parent_executor
+    assert child_executor.parent_executor_pair == pair
     assert child_executor.is_child is True
-
-
-def test_executor_init_with_root_output_queue(
-    registry: Registry,
-    storage: InMemoryStateStorage,
-    node_actor: NodeActor[LLMNode],
-    mock_llm: Mock,
-) -> None:
-    root_queue: Queue[ExecutorOutput] = Queue()
-    executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-        root_output_queue=root_queue,
-    )
-
-    assert executor._root_output_queue == root_queue
 
 
 def test_is_child_true(
@@ -154,19 +114,13 @@ def test_is_child_true(
     node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    parent_executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-    )
-
+    parent_executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
+    pair = ParentExecutorPair(parent_executor, node_actor.id)
     child_executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
-        parent_executor=parent_executor,
+        parent_executor_pair=pair,
     )
 
     assert child_executor.is_child is True
@@ -175,15 +129,9 @@ def test_is_child_true(
 def test_is_child_false(
     registry: Registry,
     storage: InMemoryStateStorage,
-    node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-    )
+    executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
 
     assert executor.is_child is False
 
@@ -196,24 +144,29 @@ async def test_step_basic_execution(
     mock_llm: Mock,
 ) -> None:
     execution_id = uuid4()
-    with patch.object(node_actor, "execute", new_callable=AsyncMock) as mock_execute:
+    executor = Executor(
+        registry=registry,
+        state_storage=storage,
+        llm=mock_llm,
+        execution_id=execution_id,
+    )
+
+    with (
+        patch.object(
+            executor,
+            "_get_or_create_node_actor",
+            new=AsyncMock(return_value=node_actor),
+        ),
+        patch.object(node_actor, "execute", new_callable=AsyncMock) as mock_execute,
+    ):
         mock_execute.return_value = Result(output="test result", next_nodes=[])
-
-        executor = Executor(
-            registry=registry,
-            state_storage=storage,
-            node_actor=node_actor,
-            llm=mock_llm,
-            execution_id=execution_id,
-        )
-
         input_ = ExecutorInput(
+            executor_id=executor.id,
             execution_id=execution_id,
             node_actor_id=node_actor.id,
             node_input="test input",
-            node_full_name="LLMNode/test",
+            node_fullname="LLMNode/test_llm_node",
         )
-
         result = await executor.step(input_)
 
     assert result.execution_id == execution_id
@@ -231,51 +184,42 @@ async def test_step_with_next_nodes_sequential(
     mock_llm: Mock,
 ) -> None:
     execution_id = uuid4()
-
     next_node = Mock(spec=ToolNode)
-    next_node.full_name = "ToolNode/test"
+    next_node.full_name = "ToolNode/next"
     next_node_tuple = NextNode(next_node, "next input")
 
     executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
         execution_id=execution_id,
     )
 
     with (
+        patch.object(
+            executor,
+            "_get_or_create_node_actor",
+            new=AsyncMock(return_value=node_actor),
+        ),
         patch.object(node_actor, "execute", new_callable=AsyncMock) as mock_execute,
-        patch.object(executor, "_fork_executor") as mock_fork,
     ):
+        mock_execute.side_effect = [
+            Result(output="intermediate", next_nodes=[next_node_tuple]),
+            Result(output="final result", next_nodes=[]),
+        ]
         input_ = ExecutorInput(
+            executor_id=executor.id,
             execution_id=execution_id,
             node_actor_id=node_actor.id,
             node_input="test input",
-            node_full_name="LLMNode/test_llm_node",
+            node_fullname="LLMNode/test_llm_node",
         )
-        mock_execute.side_effect = [
-            Result(output="intermediate result", next_nodes=[next_node_tuple]),
-            Result(output="final result", next_nodes=[]),
-        ]
+        result = await executor.step(input_)
 
-        # Mock the child executor
-        mock_child_executor = Mock()
-        mock_child_executor.execution_id = uuid4()
-        mock_child_executor.node_actor.id = uuid4()
-        mock_child_executor.step = AsyncMock(
-            return_value=ExecutorOutput(
-                execution_id=mock_child_executor.execution_id,
-                node_actor_id=mock_child_executor.node_actor.id,
-                node_full_name="ToolNode/test",
-                node_output="child result",
-                exit_=True,
-            )
-        )
-        mock_fork.return_value = mock_child_executor
-
-        await executor.step(input_)
-        mock_fork.assert_called_once_with(next_node)
+    assert result.node_output == "final result"
+    assert result.exit_ is True
+    assert executor.status == ExecutorStatus.COMPLETED
+    assert mock_execute.call_count == 2
 
 
 @pytest.mark.asyncio
@@ -293,48 +237,37 @@ async def test_step_max_iterations_exceeded(
     executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
         execution_id=execution_id,
-        max_iterations=10,
+        max_iterations=2,
     )
 
     with (
+        patch.object(
+            executor,
+            "_get_or_create_node_actor",
+            new=AsyncMock(return_value=node_actor),
+        ),
         patch.object(node_actor, "execute", new_callable=AsyncMock) as mock_execute,
-        patch.object(executor, "_fork_executor") as mock_fork,
     ):
+        mock_execute.return_value = Result(output="loop", next_nodes=[next_node_tuple])
         input_ = ExecutorInput(
+            executor_id=executor.id,
             execution_id=execution_id,
             node_actor_id=node_actor.id,
             node_input="test input",
-            node_full_name=next_node.full_name,
+            node_fullname="LLMNode/test_llm_node",
         )
-        mock_execute.return_value = Result(
-            output="intermediate result", next_nodes=[next_node_tuple]
-        )
+        result = await executor.step(input_)
 
-        # Mock the child executor
-        mock_child_executor = Mock()
-        mock_child_executor.execution_id = uuid4()
-        mock_child_executor.node_actor.id = uuid4()
-        mock_child_executor.step = AsyncMock(
-            return_value=ExecutorOutput(
-                execution_id=mock_child_executor.execution_id,
-                node_actor_id=mock_child_executor.node_actor.id,
-                node_full_name=next_node.full_name,
-                node_output="child result",
-                exit_=True,
-            )
-        )
-        mock_fork.return_value = mock_child_executor
-
-        await executor.step(input_)
-        assert executor.status == ExecutorStatus.FAILED
-        assert executor.iteration_count == 10
+    assert executor.status == ExecutorStatus.FAILED
+    assert executor.iteration_count == 2
+    assert result.exit_ is True
+    assert result.node_output is None
 
 
 @pytest.mark.asyncio
-async def test_execute_node_basic(
+async def test_execute_basic(
     registry: Registry,
     storage: InMemoryStateStorage,
     node_actor: NodeActor[LLMNode],
@@ -344,48 +277,33 @@ async def test_execute_node_basic(
     executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
         execution_id=execution_id,
     )
     input_ = ExecutorInput(
+        executor_id=executor.id,
         execution_id=execution_id,
         node_actor_id=node_actor.id,
         node_input="test input",
-        node_full_name="LLMNode/test_llm_node",
+        node_fullname="LLMNode/test_llm_node",
     )
 
     with (
-        patch.object(executor.state_storage, "asave_actor_state") as mock_storage_asave,
         patch.object(
-            executor.node_actor, "execute", new_callable=AsyncMock
-        ) as mock_execute,
+            executor,
+            "_get_or_create_node_actor",
+            new=AsyncMock(return_value=node_actor),
+        ),
+        patch.object(node_actor, "execute", new_callable=AsyncMock) as mock_execute,
     ):
         mock_execute.return_value = Result(output="test result", next_nodes=[])
-        result = await executor._execute_node(input_)
+        result, returned_actor = await executor._execute(input_)
 
-        mock_execute.assert_called_once_with(
-            "test input", execution_id=execution_id, context=None
-        )
-        mock_storage_asave.assert_called_once_with(
-            execution_id,
-            node_actor.id,
-            {
-                "actor_id": str(node_actor.id),
-                "node_id": str(node_actor.node.id),
-                "status": "ready",
-                "node_state": {
-                    "kind": "LLMNode",
-                    "name": "test_llm_node",
-                    "context": {},
-                    "messages": [],
-                    "input_": None,
-                    "output": None,
-                },
-            },
-        )
-    assert executor.status == ExecutorStatus.RUNNING
+    mock_execute.assert_called_once_with(
+        "test input", execution_id=execution_id, context=None
+    )
     assert result.output == "test result"
+    assert returned_actor is node_actor
 
 
 @pytest.mark.asyncio
@@ -399,27 +317,22 @@ async def test_fork_executor(
     executor = Executor(
         registry=registry,
         state_storage=storage,
-        node_actor=node_actor,
         llm=mock_llm,
         execution_id=execution_id,
     )
 
     next_node = Mock(spec=BaseNode)
-    next_node.full_name = "next_node/test"
+    next_node.full_name = "LLMNode/next"
 
-    with patch("liman.executor.base.NodeActor") as mock_node_actor_class:
-        mock_child_actor = Mock()
-        mock_node_actor_class.create.return_value = mock_child_actor
+    child_executor = await executor._fork_executor(next_node, node_actor)
 
-        child_executor = await executor._fork_executor(next_node)
-
-        assert isinstance(child_executor, Executor)
-        assert child_executor.parent_executor == executor
-        assert child_executor.node_actor == mock_child_actor
-        assert child_executor.execution_id in executor.child_executors
-        assert executor.child_executors[child_executor.execution_id] == child_executor
-
-        mock_node_actor_class.create.assert_called_once_with(next_node, llm=mock_llm)
+    assert isinstance(child_executor, Executor)
+    assert child_executor.parent_executor_pair is not None
+    assert child_executor.parent_executor_pair[0] is executor
+    assert child_executor.parent_executor_pair[1] == node_actor.id
+    assert child_executor.id in executor.child_executors
+    assert executor.child_executors[child_executor.id] is child_executor
+    assert child_executor.execution_id == execution_id
 
 
 @pytest.mark.asyncio
@@ -429,67 +342,26 @@ async def test_handle_parallel_execution(
     node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    execution_id = uuid4()
-    executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-        execution_id=execution_id,
-    )
+    executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
 
     node1 = Mock(spec=BaseNode)
-    node1.full_name = "node1/test"
+    node1.full_name = "LLMNode/node1"
     node2 = Mock(spec=BaseNode)
-    node2.full_name = "node2/test"
-
+    node2.full_name = "LLMNode/node2"
     next_nodes: list[NextNode] = [NextNode(node1, "input1"), NextNode(node2, "input2")]
 
-    with patch.object(executor, "_fork_executor") as mock_fork:
-        mock_child1 = Mock()
-        mock_child1.execution_id = uuid4()
-        mock_child1.node_actor.id = uuid4()
-        mock_child1.step = AsyncMock(
-            return_value=ExecutorOutput(
-                execution_id=mock_child1.execution_id,
-                node_actor_id=mock_child1.node_actor.id,
-                node_full_name="node1/test",
-                node_output="result1",
-            )
-        )
+    with patch.object(executor, "_fork_executor", new=AsyncMock()):
+        await executor._handle_parallel_execution(next_nodes, node_actor)
 
-        mock_child2 = Mock()
-        mock_child2.execution_id = uuid4()
-        mock_child2.node_actor.id = uuid4()
-        mock_child2.step = AsyncMock(
-            return_value=ExecutorOutput(
-                execution_id=mock_child2.execution_id,
-                node_actor_id=mock_child2.node_actor.id,
-                node_full_name="node2/test",
-                node_output="result2",
-            )
-        )
-
-        mock_fork.side_effect = [mock_child1, mock_child2]
-
-        await executor._handle_parallel_execution(next_nodes)
-
-        assert mock_fork.call_count == 2
-        assert executor.status == ExecutorStatus.RUNNING
+    assert executor.status == ExecutorStatus.SUSPENDED
 
 
 def test_on_exit_input_loop_cancelled_error(
     registry: Registry,
     storage: InMemoryStateStorage,
-    node_actor: NodeActor[LLMNode],
     mock_llm: Mock,
 ) -> None:
-    executor = Executor(
-        registry=registry,
-        state_storage=storage,
-        node_actor=node_actor,
-        llm=mock_llm,
-    )
+    executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
 
     cancelled_task = Mock()
     cancelled_task.result.side_effect = asyncio.CancelledError()

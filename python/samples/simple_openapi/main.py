@@ -21,9 +21,9 @@ settings = Settings()
 console = Console()
 
 
-def confirm_destructive_action(title: str, action: str, user_id: str) -> str:
+async def confirm_destructive_action(title: str, action: str, user_id: str) -> str:
     console.print(f"{title}? [red]Y/N[/red]", end=": ")
-    res = input()
+    res = await asyncio.to_thread(input)
     if res.lower() == "y":
         return f"{action} confirmed. User ID: {user_id}"
     else:

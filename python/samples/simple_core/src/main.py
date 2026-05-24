@@ -23,7 +23,9 @@ async def main() -> None:
     registry = Registry()
     registry.provide(get_location_service, scope=Scope.NODE)
 
-    llm_node = LLMNode.from_yaml_path(SPECS_DIR / "assistant_node.yaml", registry=registry)
+    llm_node = LLMNode.from_yaml_path(
+        SPECS_DIR / "assistant_node.yaml", registry=registry
+    )
     ToolNode.from_yaml_path(SPECS_DIR / "weather_tool.yaml", registry=registry)
 
     llm = ChatOpenAI(

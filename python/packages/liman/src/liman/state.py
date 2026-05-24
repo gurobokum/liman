@@ -32,27 +32,28 @@ class StateStorage(ABC):
     @abstractmethod
     async def adelete_execution_state(self, execution_id: UUID) -> None: ...
 
-    # Sync methods
     @abstractmethod
-    def save_executor_state(
+    async def save_executor_state(
         self, execution_id: UUID, state: dict[str, Any]
     ) -> None: ...
 
     @abstractmethod
-    def load_executor_state(self, execution_id: UUID) -> dict[str, Any] | None: ...
+    async def load_executor_state(
+        self, execution_id: UUID
+    ) -> dict[str, Any] | None: ...
 
     @abstractmethod
-    def save_actor_state(
+    async def save_actor_state(
         self, execution_id: UUID, actor_id: UUID, state: dict[str, Any]
     ) -> None: ...
 
     @abstractmethod
-    def load_actor_state(
+    async def load_actor_state(
         self, execution_id: UUID, actor_id: UUID
     ) -> dict[str, Any] | None: ...
 
     @abstractmethod
-    def delete_execution_state(self, execution_id: UUID) -> None: ...
+    async def delete_execution_state(self, execution_id: UUID) -> None: ...
 
 
 class InMemoryStateStorage(StateStorage):
@@ -64,26 +65,27 @@ class InMemoryStateStorage(StateStorage):
         self.executor_states: dict[UUID, dict[str, Any]] = {}
         self.actor_states: dict[UUID, dict[UUID, dict[str, Any]]] = {}
 
-    # Sync methods
-    def save_executor_state(self, execution_id: UUID, state: dict[str, Any]) -> None:
-        self.executor_states[execution_id] = state
+    async def save_executor_state(
+        self, executor_id: UUID, state: dict[str, Any]
+    ) -> None:
+        self.executor_states[executor_id] = state
 
-    def load_executor_state(self, execution_id: UUID) -> dict[str, Any] | None:
-        return self.executor_states.get(execution_id)
+    async def load_executor_state(self, executor_id: UUID) -> dict[str, Any] | None:
+        return self.executor_states.get(executor_id)
 
-    def save_actor_state(
+    async def save_actor_state(
         self, execution_id: UUID, actor_id: UUID, state: dict[str, Any]
     ) -> None:
         if execution_id not in self.actor_states:
             self.actor_states[execution_id] = {}
         self.actor_states[execution_id][actor_id] = state
 
-    def load_actor_state(
+    async def load_actor_state(
         self, execution_id: UUID, actor_id: UUID
     ) -> dict[str, Any] | None:
         return self.actor_states.get(execution_id, {}).get(actor_id)
 
-    def delete_execution_state(self, execution_id: UUID) -> None:
+    async def delete_execution_state(self, execution_id: UUID) -> None:
         self.executor_states.pop(execution_id, None)
         self.actor_states.pop(execution_id, None)
 
@@ -91,20 +93,20 @@ class InMemoryStateStorage(StateStorage):
     async def asave_executor_state(
         self, execution_id: UUID, state: dict[str, Any]
     ) -> None:
-        self.save_executor_state(execution_id, state)
+        await self.save_executor_state(execution_id, state)
 
     async def aload_executor_state(self, execution_id: UUID) -> dict[str, Any] | None:
-        return self.load_executor_state(execution_id)
+        return await self.load_executor_state(execution_id)
 
     async def asave_actor_state(
         self, execution_id: UUID, actor_id: UUID, state: dict[str, Any]
     ) -> None:
-        self.save_actor_state(execution_id, actor_id, state)
+        await self.save_actor_state(execution_id, actor_id, state)
 
     async def aload_actor_state(
         self, execution_id: UUID, actor_id: UUID
     ) -> dict[str, Any] | None:
-        return self.load_actor_state(execution_id, actor_id)
+        return await self.load_actor_state(execution_id, actor_id)
 
     async def adelete_execution_state(self, execution_id: UUID) -> None:
-        self.delete_execution_state(execution_id)
+        await self.delete_execution_state(execution_id)

@@ -1,9 +1,9 @@
 from enum import Enum
-from typing import Any
+from typing import Annotated, Any
 from uuid import UUID
 
 from langchain_core.messages import BaseMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ExecutorStatus(str, Enum):
@@ -11,22 +11,37 @@ class ExecutorStatus(str, Enum):
     Status of an executor in the tree
     """
 
+    # Wating the task
     IDLE = "idle"
+    # Executing specific Node
     RUNNING = "running"
+    # Waiting child executors or Human in the Loop
     SUSPENDED = "suspended"
+    # Finished fully the execution, cannot be reused
+    # Can be garbage collected
     COMPLETED = "completed"
+    # Executor failed
     FAILED = "failed"
 
 
 class ExecutorInput(BaseModel):
+    executor_id: UUID
     execution_id: UUID
-    node_actor_id: UUID
+
+    node_actor_id: UUID | None = None
+    node_fullname: str
     node_input: Any
-    node_full_name: str
+
     context: dict[str, Any] | None = None
 
 
 class ExecutorOutput(BaseModel):
+    """
+    - executor_id - unique id for the Executor
+    - execution_id - trace id
+    """
+
+    executor_id: UUID
     execution_id: UUID
     node_actor_id: UUID
     node_full_name: str
@@ -59,14 +74,20 @@ class ExecutorState(BaseModel):
       ├── Child Executor 1 (child1) - SUSPENDED
       ├── Child Executor 2 (cda81fa7-75f1-4800-bc2b-3aae70aa0e60) - SUSPENDED
       │     ├── Sub Executor 3 (f1e2d3c4-5678-90ab-cdef-1234567890ab) - COMPLETED
-      │     └── Sub Executor 4 (a1b2c3d4-5678-90ab-cdef-1234567890ab) - RUNNING
+      │     ├── Sub Executor 4 (a1b2c3d4-5678-90ab-cdef-1234567890ab) - RUNNING
+      │     └── Sub Executor 5 (2f52023c-4596-4fdd-bcfe-5e980bb66fb1) - IDLE
       └── Child Executor 3 (b1c2d3e4-5678-90ab-cdef-1234567890ab) - RUNNING
 
     """
 
-    execution_id: UUID
+    schema_version: int = 1
+
+    executor_id: UUID
     node_actor_id: UUID
 
+    execution_id: UUID | None = None
+    iteration_count: int
     status: ExecutorStatus
 
-    child_executor_ids: set[UUID] = set()
+    parent_executor_pair: tuple[UUID, UUID] | None = None
+    child_executor_ids: Annotated[set[UUID], Field(default_factory=set)]

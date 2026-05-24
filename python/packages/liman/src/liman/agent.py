@@ -1,14 +1,10 @@
 import asyncio
 import logging
 from asyncio import Queue, Task
-from typing import Any, TypedDict
+from typing import Any
 from uuid import UUID, uuid4
 
 from langchain_core.language_models.chat_models import BaseChatModel
-from liman_core.errors import LimanError
-from liman_core.node_actor.actor import NodeActor
-from liman_core.nodes.llm_node.node import LLMNode
-from liman_core.nodes.supported_types import get_node_cls
 from liman_core.registry import Registry
 
 from liman.conf import settings
@@ -33,16 +29,6 @@ if settings.DEBUG:
         )
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
-
-
-class NodeAgentConfig(TypedDict):
-    """
-    NodeActor configuration that allows the agent to direct input there.
-    """
-
-    node_actor_id: UUID
-    execution_id: UUID
-    node_full_name: str
 
 
 class Agent:
@@ -77,33 +63,27 @@ class Agent:
         )
 
         self._processing_task: Task[None] | None = None
-        self._executor: Executor | None = None
-        self._last_node_actor_cfg: NodeAgentConfig | None = None
+        self._root_executor: Executor | None = None
+        self._executors: dict[UUID, Executor] = {}
 
         load_specs_from_directory(self.specs_dir, self.registry)
 
     async def step(
         self, input_: str | ExecutorInput, context: dict[str, Any] | None = None
     ) -> ExecutorOutput:
-        self.logger.debug(f"Agent '{self.name}' received input: {repr(input_)}")
-
-        if not self._executor:
-            self._executor = await self._create_executor(input_)
-            self.logger.debug(
-                f"Root executor created for agent '{self.name}' with execution ID: {self._executor.execution_id}"
-            )
+        self.logger.debug("Agent '%s' received input: %s", self.name, repr(input_))
 
         if isinstance(input_, ExecutorInput):
             if context:
                 intersection = set(input_.context or {}) & set(context)
                 if intersection:
-                    self.logger.warning(f"Overwriting keys in context: {intersection}")
+                    self.logger.warning("Overwriting keys in context: %s", intersection)
                 input_.context = (
                     {**input_.context, **context} if input_.context else context
                 )
             await self._input_queue.put(input_)
         else:
-            input_ = self._create_executor_input(input_, context)
+            input_ = await self._create_executor_input(input_, context)
             await self._input_queue.put(input_)
 
         if not self._processing_task:
@@ -114,13 +94,6 @@ class Agent:
         return res
 
     async def _process_input_loop(self) -> None:
-        async def deferred_put(output: ExecutorOutput) -> None:
-            """
-            Deferred put to the output queue to ensure that the task is not blocked
-            by any sync call outside, like input()
-            """
-            await self._output_queue.put(output)
-
         while True:
             if self.iteration_count >= self.max_iterations:
                 raise RuntimeError(
@@ -130,15 +103,13 @@ class Agent:
             input_ = await self._input_queue.get()
             self.iteration_count += 1
 
-            if not self._executor:
-                raise LimanError("Executor is not created. [CRITICAL]")
+            executor = await self._get_or_create_executor(input_)
 
-            output = await self._executor.step(input_)
-            self._last_node_actor_cfg = self._get_node_actor_cfg(output)
+            output = await executor.step(input_)
 
-            asyncio.create_task(deferred_put(output))
+            await self._output_queue.put(output)
             if output.exit_:
-                self.logger.debug(f"Agent '{self.name}' completed execution")
+                self.logger.debug("Agent '%s' completed execution", self.name)
                 return
 
     def _on_exit_input_loop(self, task: Task[None]) -> None:
@@ -152,74 +123,54 @@ class Agent:
             self.logger.debug("Agent stopped processing input loop")
             self._processing_task = None
 
-    def _get_node_actor_cfg(self, output: ExecutorOutput) -> NodeAgentConfig:
-        return {
-            "node_actor_id": output.node_actor_id,
-            "execution_id": output.execution_id,
-            "node_full_name": output.node_full_name,
-        }
+    async def _get_or_create_executor(self, input_: str | ExecutorInput) -> Executor:
+        executor: Executor | None = None
 
-    async def _create_initial_node_actor(
-        self, input_: ExecutorInput, execution_id: UUID
-    ) -> NodeActor[Any]:
-        node_cls, node_name = input_.node_full_name.split("/")
-        node = self.registry.lookup(get_node_cls(node_cls), node_name)
+        if isinstance(input_, str):
+            if not self._root_executor:
+                executor = Executor(
+                    registry=self.registry,
+                    state_storage=self.state_storage,
+                    llm=self.llm,
+                    max_iterations=self.max_iterations,
+                )
+                self.logger.debug(
+                    "Clean root executor created for agent %s with executor_id: %s",
+                    self.name,
+                    executor.id,
+                )
+                self._executors[executor.execution_id] = self._root_executor = executor
+            return self._root_executor
 
-        node_actor = await NodeActor.create_or_restore(node, llm=self.llm, state=None)
-        actor_state = node_actor.serialize_state()
-        await self.state_storage.asave_actor_state(
-            execution_id, node_actor.id, actor_state
-        )
-        return node_actor
+        executor = self._executors.get(input_.execution_id)
+        if executor:
+            return executor
 
-    async def _create_executor(self, input_: str | ExecutorInput) -> Executor:
-        if isinstance(input_, ExecutorInput):
-            execution_id = input_.execution_id
-        else:
-            if len(self.start_node.split("/")) == 2:
-                node_cls, node_name = self.start_node.split("/")
-                node = self.registry.lookup(get_node_cls(node_cls), node_name)
-            else:
-                # If start_node is just a node name, lookup by LLMNode
-                node = self.registry.lookup(LLMNode, self.start_node)
-
-            execution_id = uuid4()
-            node_actor_id = uuid4()
-            input_ = ExecutorInput(
-                execution_id=execution_id,
-                node_actor_id=node_actor_id,
-                node_input=input_,
-                node_full_name=node.full_name,
-            )
-
-        node_actor = await self._create_initial_node_actor(input_, execution_id)
-        return Executor(
+        executor = await Executor.restore_or_create(
             registry=self.registry,
             state_storage=self.state_storage,
-            node_actor=node_actor,
             llm=self.llm,
-            execution_id=execution_id,
+            execution_id=input_.execution_id,
             max_iterations=self.max_iterations,
         )
 
-    def _create_executor_input(
+        self._executors[executor.execution_id] = executor
+        return executor
+
+    async def _create_executor_input(
         self, input_: str, context: dict[str, Any] | None = None
     ) -> ExecutorInput:
-        if cfg := self._last_node_actor_cfg:
-            return ExecutorInput(
-                execution_id=cfg["execution_id"],
-                node_actor_id=cfg["node_actor_id"],
-                node_input=input_,
-                node_full_name=cfg["node_full_name"],
-                context=context,
-            )
-        else:
-            if not self._executor:
-                raise RuntimeError("Executor is not created yet.")
-            return ExecutorInput(
-                execution_id=self._executor.execution_id,
-                node_actor_id=self._executor.node_actor.id,
-                node_input=input_,
-                node_full_name=self._executor.node_actor.node.full_name,
-                context=context,
-            )
+        """
+        If the input is a plain string, send it to the root executor.
+        """
+        executor = self._root_executor
+        if not executor:
+            executor = await self._get_or_create_executor(input_)
+
+        return ExecutorInput(
+            executor_id=executor.id,
+            execution_id=executor.execution_id,
+            node_input=input_,
+            node_fullname=self.start_node,
+            context=context,
+        )

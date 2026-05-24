@@ -10,7 +10,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from liman_core.node_actor.actor import NodeActor
 from liman_core.registry import Registry
 
-from liman.agent import Agent, NodeAgentConfig
+from liman.agent import Agent
 from liman.executor.base import Executor
 from liman.executor.schemas import ExecutorInput, ExecutorOutput
 from liman.state import InMemoryStateStorage
@@ -64,10 +64,12 @@ def executor(node_actor: NodeActor[Any], request: pytest.FixtureRequest) -> Exec
     exit_ = param.get("exit_", True)
 
     mock_executor = Mock(spec=Executor)
+    mock_executor.id = uuid4()
     mock_executor.execution_id = uuid4()
     mock_executor.node_actor = node_actor
     mock_executor.step = AsyncMock(
         return_value=ExecutorOutput(
+            executor_id=mock_executor.id,
             execution_id=mock_executor.execution_id,
             node_actor_id=node_actor.id,
             node_full_name=node_actor.node.full_name,
@@ -91,8 +93,7 @@ def test_agent_init_basic(mock_llm: Mock) -> None:
         assert isinstance(agent.state_storage, InMemoryStateStorage)
         assert agent.max_iterations == 50
         assert agent.iteration_count == 0
-        assert agent._executor is None
-        assert agent._last_node_actor_cfg is None
+        assert agent._root_executor is None
 
 
 @pytest.mark.parametrize(
@@ -124,11 +125,10 @@ async def test_step_with_string_input_first_time(
     agent: Agent, executor: Executor
 ) -> None:
     with patch.object(
-        agent, "_create_executor", return_value=executor
-    ) as mock_executor:
+        agent, "_get_or_create_executor", new=AsyncMock(return_value=executor)
+    ):
         output = await agent.step("Hello")
 
-        mock_executor.assert_called_once_with("Hello")
         assert output.node_output == "Hello, World!"
         assert output.exit_ is True
 
@@ -137,18 +137,22 @@ async def test_step_with_string_input_first_time(
     "executor", [{"node_output": "Response", "exit_": True}], indirect=True
 )
 @pytest.mark.asyncio
-async def test_step_with_executor_input(agent: Agent, executor: Executor) -> None:
+async def test_step_with_executor_input(
+    agent: Agent, executor: Executor, node_actor: NodeActor[Any]
+) -> None:
     executor_input = ExecutorInput(
+        executor_id=executor.id,
         execution_id=executor.execution_id,
-        node_actor_id=executor.node_actor.id,
+        node_actor_id=node_actor.id,
         node_input="Test input",
-        node_full_name=executor.node_actor.node.full_name,
+        node_fullname=node_actor.node.full_name,
     )
 
-    with patch.object(agent, "_create_executor", return_value=executor) as mock_create:
+    with patch.object(
+        agent, "_get_or_create_executor", new=AsyncMock(return_value=executor)
+    ):
         output = await agent.step(executor_input)
 
-        mock_create.assert_called_once_with(executor_input)
         assert output.node_output == "Response"
 
 
@@ -157,12 +161,8 @@ async def test_step_with_executor_input(agent: Agent, executor: Executor) -> Non
 async def test_step_subsequent_calls_with_string(
     agent: Agent, executor: Executor
 ) -> None:
-    agent._executor = executor
-    agent._last_node_actor_cfg = {
-        "execution_id": executor.execution_id,
-        "node_actor_id": executor.node_actor.id,
-        "node_full_name": "LLMNode/start",
-    }
+    agent._root_executor = executor
+    agent._executors[executor.execution_id] = executor
 
     output = await agent.step("Follow-up")
 
@@ -181,125 +181,66 @@ async def test_step_subsequent_calls_with_string(
 @pytest.mark.asyncio
 async def test_step_max_iterations_exceeded(agent: Agent, executor: Executor) -> None:
     with (
-        patch.object(agent, "_create_executor", return_value=executor),
+        patch.object(
+            agent, "_get_or_create_executor", new=AsyncMock(return_value=executor)
+        ),
         pytest.raises(RuntimeError, match="exceeded max iterations"),
     ):
         await agent.step("First")
 
 
 @pytest.mark.asyncio
-async def test_create_executor_with_string_input(
-    agent: Agent, node_actor: NodeActor[Any], registry: Registry
-) -> None:
-    with (
-        patch.object(agent, "_create_initial_node_actor") as mock_create_actor,
-        patch.object(registry, "lookup") as mock_lookup,
-    ):
-        mock_create_actor.return_value = node_actor
-        mock_lookup.return_value = node_actor.node
+async def test_get_or_create_executor_with_string_input(agent: Agent) -> None:
+    result = await agent._get_or_create_executor("Hello")
 
-        result = await agent._create_executor("Hello")
-
-        assert isinstance(result, Executor)
-        assert result.node_actor == node_actor
-        assert result.registry == agent.registry
-
-
-@pytest.mark.asyncio
-async def test_create_executor_with_full_node_name(
-    agent: Agent, node_actor: NodeActor[Any], registry: Registry
-) -> None:
-    with (
-        patch.object(agent, "_create_initial_node_actor") as mock_create_actor,
-        patch.object(registry, "lookup") as mock_lookup,
-    ):
-        mock_lookup.return_value = node_actor.node
-        mock_create_actor.return_value = node_actor
-        node_actor.node.full_name = "LLMNode/start"
-
-        result = await agent._create_executor("Hello")
-
-        assert isinstance(result, Executor)
-        mock_lookup.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_create_executor_with_executor_input(
-    agent: Agent, node_actor: NodeActor[Any]
-) -> None:
-    execution_id = uuid4()
-    executor_input = ExecutorInput(
-        execution_id=execution_id,
-        node_actor_id=node_actor.id,
-        node_input="Test",
-        node_full_name="LLMNode/start",
-    )
-
-    with patch.object(agent, "_create_initial_node_actor") as mock_create_actor:
-        mock_create_actor.return_value = node_actor
-
-        result = await agent._create_executor(executor_input)
-
-        assert result.execution_id == execution_id
-        mock_create_actor.assert_called_once_with(executor_input, execution_id)
+    assert isinstance(result, Executor)
+    assert result.registry == agent.registry
+    assert agent._root_executor is result
 
 
 @pytest.mark.parametrize("executor", [{"node_output": "test"}], indirect=True)
-def test_get_node_actor_cfg(agent: Agent, executor: Executor) -> None:
-    output = ExecutorOutput(
-        execution_id=executor.execution_id,
-        node_actor_id=executor.node_actor.id,
-        node_full_name=executor.node_actor.node.full_name,
-        node_output="test",
-    )
-
-    result = agent._get_node_actor_cfg(output)
-
-    expected: NodeAgentConfig = {
-        "execution_id": executor.execution_id,
-        "node_actor_id": executor.node_actor.id,
-        "node_full_name": executor.node_actor.node.full_name,
-    }
-    assert result == expected
-
-
-@pytest.mark.parametrize("executor", [{"node_output": "test input"}], indirect=True)
-def test_create_executor_input_with_last_cfg(agent: Agent, executor: Executor) -> None:
-    agent._last_node_actor_cfg = {
-        "execution_id": executor.execution_id,
-        "node_actor_id": executor.node_actor.id,
-        "node_full_name": executor.node_actor.node.full_name,
-    }
-
-    result = agent._create_executor_input("test input")
-
-    assert result.execution_id == executor.execution_id
-    assert result.node_actor_id == executor.node_actor.id
-    assert result.node_full_name == executor.node_actor.node.full_name
-    assert result.node_input == "test input"
-
-
-@pytest.mark.parametrize("executor", [{"node_output": "test input"}], indirect=True)
-def test_create_executor_input_without_last_cfg(
+@pytest.mark.asyncio
+async def test_get_or_create_executor_with_executor_input_found(
     agent: Agent, executor: Executor
 ) -> None:
-    agent._executor = executor
-    agent._last_node_actor_cfg = None
+    agent._executors[executor.execution_id] = executor
+    executor_input = ExecutorInput(
+        executor_id=executor.id,
+        execution_id=executor.execution_id,
+        node_input="Test",
+        node_fullname="LLMNode/start",
+    )
 
-    result = agent._create_executor_input("test input")
+    result = await agent._get_or_create_executor(executor_input)
 
+    assert result is executor
+
+
+@pytest.mark.parametrize("executor", [{"node_output": "test input"}], indirect=True)
+@pytest.mark.asyncio
+async def test_create_executor_input_with_root_executor(
+    agent: Agent, executor: Executor
+) -> None:
+    agent._root_executor = executor
+
+    result = await agent._create_executor_input("test input")
+
+    assert result.executor_id == executor.id
     assert result.execution_id == executor.execution_id
-    assert result.node_actor_id == executor.node_actor.id
-    assert result.node_full_name == executor.node_actor.node.full_name
     assert result.node_input == "test input"
+    assert result.node_fullname == agent.start_node
 
 
-def test_create_executor_input_without_executor_raises_error(agent: Agent) -> None:
-    agent._executor = None
-    agent._last_node_actor_cfg = None
+@pytest.mark.asyncio
+async def test_create_executor_input_without_root_executor(agent: Agent) -> None:
+    assert agent._root_executor is None
 
-    with pytest.raises(RuntimeError, match="Executor is not created yet"):
-        agent._create_executor_input("test input")
+    result = await agent._create_executor_input("test input")
+
+    assert result.node_input == "test input"
+    assert result.node_fullname == agent.start_node
+    assert agent._root_executor is not None
+    assert result.executor_id == agent._root_executor.id
 
 
 def test_on_exit_input_loop_cancelled_error(agent: Agent) -> None:
