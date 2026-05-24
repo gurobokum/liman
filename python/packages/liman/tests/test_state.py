@@ -88,7 +88,7 @@ async def test_multiple_actors_same_execution() -> None:
 
 
 @pytest.mark.asyncio
-async def test_delete_execution_state() -> None:
+async def test_delete_executor_state() -> None:
     storage = InMemoryStateStorage()
     execution_id = uuid4()
     actor_id = uuid4()
@@ -98,18 +98,18 @@ async def test_delete_execution_state() -> None:
     await storage.save_executor_state(execution_id, executor_state)
     await storage.save_actor_state(execution_id, actor_id, actor_state)
 
-    await storage.delete_execution_state(execution_id)
+    await storage.delete_executor_state(execution_id)
 
     assert await storage.load_executor_state(execution_id) is None
     assert await storage.load_actor_state(execution_id, actor_id) is None
 
 
 @pytest.mark.asyncio
-async def test_delete_nonexistent_execution_state() -> None:
+async def test_delete_nonexistent_executor_state() -> None:
     storage = InMemoryStateStorage()
     execution_id = uuid4()
 
-    await storage.delete_execution_state(execution_id)
+    await storage.delete_executor_state(execution_id)
 
 
 @pytest.mark.asyncio

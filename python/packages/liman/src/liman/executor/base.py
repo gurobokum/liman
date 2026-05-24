@@ -445,7 +445,7 @@ class Executor:
 
         # Save state after execution
         # TODO: add single method for strong consistency
-        await self.state_storage.asave_actor_state(
+        await self.state_storage.save_actor_state(
             self.id, node_actor.id, node_actor.serialize_state()
         )
         await self.state_storage.save_executor_state(
