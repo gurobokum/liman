@@ -1,0 +1,31 @@
+[project]
+name = "liman_simple_async_agent"
+version = "0.1.0"
+description = "Simple asynchronous agent sample for Liman AI"
+readme = "README.md"
+requires-python = ">=3.10, <3.14"
+dependencies = [
+    "aioconsole>=0.8.2",
+    "fastapi[standard]>=0.136.3",
+    "httpx>=0.28.1",
+    "langchain-google-genai>=4.2.3",
+    "langchain-openai>=1.2.1",
+    "liman",
+    "pydantic>=2.11.7",
+    "pydantic-settings>=2.14.1",
+    "rich>=14.0.0",
+    "uvicorn[standard]>=0.48.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.12",
+]
+
+[tool.uv.sources]
+liman = { path = "../../packages/liman" }
+
+[tool.ruff]
+# https://docs.astral.sh/ruff/configuration
+line-length = 100
+indent-width = 4

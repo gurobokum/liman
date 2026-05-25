@@ -1,0 +1,6 @@
+kind: LLMNode
+name: chat
+prompts:
+  system:
+    en: |
+      You are a helpful assistant who can give the user a variety of responses.
