@@ -340,7 +340,7 @@ class Executor:
             executor_id=self.id,
             execution_id=self.execution_id,
             node_actor_id=node_actor.id,
-            node_full_name=node_actor.node.full_name,
+            node_fullname=node_actor.node.full_name,
             node_output=node_actor.node.output,
             exit_=True,
         )
@@ -360,7 +360,7 @@ class Executor:
                     )
 
                 self.logger.debug(
-                    "Executor executes node %s with input",
+                    "Executor executes node %s with input %s",
                     input_.node_fullname,
                     repr(input_),
                 )
@@ -380,7 +380,7 @@ class Executor:
                         execution_id=self.execution_id,
                         # TODO: pass proper node_actor_id if possible
                         node_actor_id=input_.node_actor_id or uuid4(),
-                        node_full_name=input_.node_fullname,
+                        node_fullname=input_.node_fullname,
                         node_output=None,
                         exit_=True,
                     )
@@ -512,7 +512,7 @@ class Executor:
             executor_id=self.id,
             execution_id=self.execution_id,
             node_actor_id=node_actor.id,
-            node_full_name=node_actor.node.full_name,
+            node_fullname=node_actor.node.full_name,
             node_output=result.output,
             exit_=True,
         )

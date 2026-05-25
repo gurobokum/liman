@@ -70,21 +70,21 @@ def test_create_executor_output_basic() -> None:
     executor_id = uuid4()
     execution_id = uuid4()
     node_actor_id = uuid4()
-    node_full_name = "llm_node/test_node"
+    node_fullname = "llm_node/test_node"
     node_output = {"result": "success"}
 
     output_obj = ExecutorOutput(
         executor_id=executor_id,
         execution_id=execution_id,
         node_actor_id=node_actor_id,
-        node_full_name=node_full_name,
+        node_fullname=node_fullname,
         node_output=node_output,
     )
 
     assert output_obj.executor_id == executor_id
     assert output_obj.execution_id == execution_id
     assert output_obj.node_actor_id == node_actor_id
-    assert output_obj.node_full_name == node_full_name
+    assert output_obj.node_fullname == node_fullname
     assert output_obj.node_output == node_output
     assert output_obj.exit_ is False
     assert output_obj.error is None
@@ -96,7 +96,7 @@ def test_create_executor_output_with_exit() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         exit_=True,
     )
 
@@ -111,7 +111,7 @@ def test_create_executor_output_with_error() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         error=error_msg,
         error_type=error_type,
     )
@@ -125,7 +125,7 @@ def test_executor_output_str_with_string_output() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         node_output="Hello, World!",
     )
 
@@ -139,7 +139,7 @@ def test_executor_output_str_with_base_message() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         node_output=message,
     )
 
@@ -153,7 +153,7 @@ def test_executor_output_str_with_base_message_list_content() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         node_output=message,
     )
 
@@ -167,7 +167,7 @@ def test_executor_output_str_with_other_types() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         node_output=node_output,
     )
 
@@ -179,7 +179,7 @@ def test_executor_output_str_with_none_output() -> None:
         executor_id=uuid4(),
         execution_id=uuid4(),
         node_actor_id=uuid4(),
-        node_full_name="llm_node/test_node",
+        node_fullname="llm_node/test_node",
         node_output=None,
     )
 
@@ -192,7 +192,7 @@ def test_executor_output_validation_error() -> None:
             executor_id=uuid4(),
             execution_id="not-a-uuid",
             node_actor_id=uuid4(),
-            node_full_name="test_node",
+            node_fullname="test_node",
         )
 
 

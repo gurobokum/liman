@@ -44,7 +44,7 @@ class ExecutorOutput(BaseModel):
     executor_id: UUID
     execution_id: UUID
     node_actor_id: UUID
-    node_full_name: str
+    node_fullname: str
     node_output: Any | None = None
 
     exit_: bool = False

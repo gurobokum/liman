@@ -48,11 +48,11 @@ def agent(
 
 @pytest.fixture
 def node_actor(request: pytest.FixtureRequest) -> NodeActor[Any]:
-    node_full_name = getattr(request, "param", "LLMNode/start")
+    node_fullname = getattr(request, "param", "LLMNode/start")
 
     mock_actor = Mock(spec=NodeActor)
     mock_actor.node = Mock()
-    mock_actor.node.full_name = node_full_name
+    mock_actor.node.full_name = node_fullname
     mock_actor.id = uuid4()
     return mock_actor
 
@@ -72,7 +72,7 @@ def executor(node_actor: NodeActor[Any], request: pytest.FixtureRequest) -> Exec
             executor_id=mock_executor.id,
             execution_id=mock_executor.execution_id,
             node_actor_id=node_actor.id,
-            node_full_name=node_actor.node.full_name,
+            node_fullname=node_actor.node.full_name,
             node_output=node_output,
             exit_=exit_,
         )
