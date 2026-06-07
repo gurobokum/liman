@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/gurobokum/liman/compare/liman_openapi_py-v0.1.0...liman_openapi_py-v0.1.1) (2026-06-07)
+
+
+### 📚 Documentation
+
+* add PyPI badges ([ff9a235](https://github.com/gurobokum/liman/commit/ff9a235a05af3fa8025fc6750f7ecb455ca1cde2))
+
 ## [0.1.0](https://github.com/gurobokum/liman/compare/liman_openapi_py-v0.1.0-a1...liman_openapi_py-v0.1.0) (2026-05-03)
 
 
