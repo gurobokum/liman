@@ -152,6 +152,7 @@ class Agent:
             llm=self.llm,
             execution_id=input_.execution_id,
             max_iterations=self.max_iterations,
+            context=input_.context,
         )
 
         self._executors[executor.execution_id] = executor

@@ -130,6 +130,7 @@ class Executor:
         executor_id: UUID,
         execution_id: UUID | None = None,
         max_iterations: int = 10,
+        context: dict[str, Any] | None = None,
     ) -> Self:
         """
         Restore an executor from saved state.
@@ -138,10 +139,13 @@ class Executor:
             executor_id: The unique ID of the executor to restore.
             execution_id: The unique ID of the execution trace. Optional if it can be determined from the state.
             max_iterations: The maximum number of iterations to run. Default is 10.
+            context: Runtime context passed through to state storage calls.
         """
         raw_state = None
         if executor_id:
-            raw_state = await state_storage.load_executor_state(executor_id)
+            raw_state = await state_storage.load_executor_state(
+                executor_id, context=context
+            )
 
         parent_executor_pair = None
         if raw_state and (pair := raw_state["parent_executor_pair"]):
@@ -188,6 +192,7 @@ class Executor:
         executor_id: UUID | None = None,
         execution_id: UUID | None = None,
         max_iterations: int = 10,
+        context: dict[str, Any] | None = None,
     ) -> Self:
         try:
             if not executor_id:
@@ -196,7 +201,13 @@ class Executor:
                 )
 
             return await cls.restore(
-                registry, state_storage, llm, executor_id, execution_id, max_iterations
+                registry,
+                state_storage,
+                llm,
+                executor_id,
+                execution_id,
+                max_iterations,
+                context,
             )
         except ExecutorRestoreError:
             return cls(
@@ -229,7 +240,7 @@ class Executor:
         res = await self._output_queue.get()
         return res
 
-    async def check_childs(self) -> None:
+    async def check_childs(self, context: dict[str, Any] | None = None) -> None:
         self.logger.debug(f"Rechecking childs for the output {self.id}")
 
         if self.status != ExecutorStatus.SUSPENDED:
@@ -248,6 +259,7 @@ class Executor:
                     executor_id=child_.id,
                     execution_id=self.execution_id,
                     max_iterations=self.max_iterations,
+                    context=context,
                 )
                 self.child_executors[child_executor.id] = child_executor
 
@@ -257,21 +269,23 @@ class Executor:
             ):
                 # Wait until all child processes are ready
                 break
-            output.append(await child_executor.get_output())
+            output.append(await child_executor.get_output(context=context))
 
         def _get_node_output(output: ExecutorOutput | BaseException) -> Any:
             if isinstance(output, BaseException):
                 return str(output)
             return output.node_output
 
-        raw_state = await self.state_storage.load_executor_state(self.id)
+        raw_state = await self.state_storage.load_executor_state(
+            self.id, context=context
+        )
         if not raw_state:
             raise LimanError(
                 f"Parent executor state is missed, it could not be restored properly {self.id}"
             )
         node_actor_id = raw_state["node_actor_id"]
         raw_actor_state = await self.state_storage.load_actor_state(
-            self.id, node_actor_id
+            self.id, node_actor_id, context=context
         )
         if not raw_actor_state:
             raise LimanError(
@@ -280,7 +294,7 @@ class Executor:
 
         self.status = ExecutorStatus.IDLE
         await self.state_storage.save_executor_state(
-            self.id, self.serialize_state(node_actor_id)
+            self.id, self.serialize_state(node_actor_id), context=context
         )
 
         input_ = ExecutorInput(
@@ -289,8 +303,7 @@ class Executor:
             node_actor_id=node_actor_id,
             node_input=[_get_node_output(o) for o in output],
             node_fullname=raw_actor_state["node_fullname"],
-            # TODO: reconsider how to restore the context
-            # context=context,
+            context=context,
         )
         await self._input_queue.put(input_)
 
@@ -310,7 +323,7 @@ class Executor:
             iteration_count=self.iteration_count,
         ).model_dump()
 
-    async def get_output(self) -> ExecutorOutput:
+    async def get_output(self, context: dict[str, Any] | None = None) -> ExecutorOutput:
         if self.status not in (ExecutorStatus.COMPLETED, ExecutorStatus.FAILED):
             raise RuntimeError(
                 f"Cannot retrieve output for executor having {self.status} status"
@@ -320,11 +333,13 @@ class Executor:
             return self._output
 
         # Restore output
-        raw_state = await self.state_storage.load_executor_state(self.id)
+        raw_state = await self.state_storage.load_executor_state(
+            self.id, context=context
+        )
         state = ExecutorState.model_validate(raw_state)
 
         raw_actor_state = await self.state_storage.load_actor_state(
-            self.id, state.node_actor_id
+            self.id, state.node_actor_id, context=context
         )
         if not raw_actor_state:
             raise RuntimeError(
@@ -333,7 +348,7 @@ class Executor:
 
         # TODO: drop node_fullname
         node_actor = await self._get_or_create_node_actor(
-            state.node_actor_id, raw_actor_state["node_fullname"]
+            state.node_actor_id, raw_actor_state["node_fullname"], context=context
         )
 
         self._output = ExecutorOutput(
@@ -387,7 +402,9 @@ class Executor:
                     self._output = error_output
                     # TODO: do we really need output queue
                     await self._output_queue.put(error_output)
-                    await self._send_output_to_parent(error_output)
+                    await self._send_output_to_parent(
+                        error_output, context=input_.context
+                    )
                     raise
 
                 self.logger.debug(f"Next nodes to process: {result.next_nodes}")
@@ -424,16 +441,16 @@ class Executor:
         self.status = ExecutorStatus.RUNNING
 
         node_actor = await self._get_or_create_node_actor(
-            input_.node_actor_id, input_.node_fullname
+            input_.node_actor_id, input_.node_fullname, context=input_.context
         )
 
         # Save state before execution
         # TODO: add single method for strong consistency
         await self.state_storage.save_actor_state(
-            self.id, node_actor.id, node_actor.serialize_state()
+            self.id, node_actor.id, node_actor.serialize_state(), context=input_.context
         )
         await self.state_storage.save_executor_state(
-            self.id, self.serialize_state(node_actor.id)
+            self.id, self.serialize_state(node_actor.id), context=input_.context
         )
 
         node_input = input_.node_input
@@ -446,16 +463,19 @@ class Executor:
         # Save state after execution
         # TODO: add single method for strong consistency
         await self.state_storage.save_actor_state(
-            self.id, node_actor.id, node_actor.serialize_state()
+            self.id, node_actor.id, node_actor.serialize_state(), context=input_.context
         )
         await self.state_storage.save_executor_state(
-            self.id, self.serialize_state(node_actor.id)
+            self.id, self.serialize_state(node_actor.id), context=input_.context
         )
 
         return result, node_actor
 
     async def _get_or_create_node_actor(
-        self, node_actor_id: UUID | None, node_fullname: str
+        self,
+        node_actor_id: UUID | None,
+        node_fullname: str,
+        context: dict[str, Any] | None = None,
     ) -> NodeActor[Any]:
         """
         Try to restore an existing node actor from the state; if not found, create a new one.
@@ -467,7 +487,7 @@ class Executor:
                 return node_actor
 
             raw_actor_state = await self.state_storage.load_actor_state(
-                self.id, node_actor_id
+                self.id, node_actor_id, context=context
             )
 
         node_cls, node_name = node_fullname.split("/")
@@ -493,7 +513,9 @@ class Executor:
 
         if len(next_nodes) == 0:
             # Complete execution
-            await self._handle_complete_execution(result, node_actor)
+            await self._handle_complete_execution(
+                result, node_actor, context=input_.context
+            )
         elif len(next_nodes) == 1:
             # Sequenital execution
             await self._handle_sequential_execution(
@@ -506,7 +528,10 @@ class Executor:
             )
 
     async def _handle_complete_execution(
-        self, result: Result, node_actor: NodeActor[Any]
+        self,
+        result: Result,
+        node_actor: NodeActor[Any],
+        context: dict[str, Any] | None = None,
     ) -> None:
         output = ExecutorOutput(
             executor_id=self.id,
@@ -518,7 +543,7 @@ class Executor:
         )
         self.status = ExecutorStatus.COMPLETED
         await self.state_storage.save_executor_state(
-            self.id, self.serialize_state(node_actor.id)
+            self.id, self.serialize_state(node_actor.id), context=context
         )
 
         self._output = output
@@ -530,9 +555,11 @@ class Executor:
             repr(output),
             self._output_queue.qsize(),
         )
-        await self._send_output_to_parent(output)
+        await self._send_output_to_parent(output, context=context)
 
-    async def _send_output_to_parent(self, output: ExecutorOutput) -> None:
+    async def _send_output_to_parent(
+        self, output: ExecutorOutput, context: dict[str, Any] | None = None
+    ) -> None:
         if not self.parent_executor_pair:
             return
 
@@ -546,12 +573,13 @@ class Executor:
                 self.llm,
                 executor_id=executor.id,
                 execution_id=output.execution_id,
+                context=context,
             )
             self.parent_executor_pair = ParentExecutorPair(
                 parent_executor,
                 self.parent_executor_pair[1],
             )
-        asyncio.create_task(parent_executor.check_childs())
+        asyncio.create_task(parent_executor.check_childs(context=context))
 
     async def _handle_sequential_execution(
         self, next_node_tuple: NextNode, context: dict[str, Any] | None = None
