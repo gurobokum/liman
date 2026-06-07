@@ -12,7 +12,12 @@ from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.registry import Registry
 
 from liman.executor.base import Executor, ParentExecutorPair
-from liman.executor.schemas import ExecutorInput, ExecutorStatus
+from liman.executor.schemas import (
+    ExecutorInput,
+    ExecutorOutput,
+    ExecutorState,
+    ExecutorStatus,
+)
 from liman.state import InMemoryStateStorage
 
 
@@ -369,3 +374,202 @@ def test_on_exit_input_loop_cancelled_error(
     executor._on_exit_input_loop(cancelled_task)
 
     assert executor._processing_task is None
+
+
+@pytest.mark.asyncio
+async def test_execute_passes_context_to_storage(
+    registry: Registry,
+    node_actor: NodeActor[LLMNode],
+    mock_llm: Mock,
+) -> None:
+    storage = AsyncMock(spec=InMemoryStateStorage)
+    context = {"user_id": "u_123"}
+    execution_id = uuid4()
+
+    executor = Executor(
+        registry=registry,
+        state_storage=storage,
+        llm=mock_llm,
+        execution_id=execution_id,
+    )
+    input_ = ExecutorInput(
+        executor_id=executor.id,
+        execution_id=execution_id,
+        node_actor_id=node_actor.id,
+        node_input="hello",
+        node_fullname="LLMNode/test_llm_node",
+        context=context,
+    )
+
+    with (
+        patch.object(
+            executor,
+            "_get_or_create_node_actor",
+            new=AsyncMock(return_value=node_actor),
+        ),
+        patch.object(node_actor, "execute", new_callable=AsyncMock) as mock_execute,
+    ):
+        mock_execute.return_value = Result(output="ok", next_nodes=[])
+        await executor._execute(input_)
+
+    for call in storage.save_executor_state.call_args_list:
+        assert call.kwargs.get("context") == context
+    for call in storage.save_actor_state.call_args_list:
+        assert call.kwargs.get("context") == context
+
+
+@pytest.mark.asyncio
+async def test_restore_passes_context_to_load(
+    registry: Registry,
+    mock_llm: Mock,
+) -> None:
+    storage = AsyncMock(spec=InMemoryStateStorage)
+    context = {"user_id": "u_123"}
+    executor_id = uuid4()
+
+    storage.load_executor_state.return_value = ExecutorState(
+        executor_id=executor_id,
+        node_actor_id=uuid4(),
+        iteration_count=0,
+        status=ExecutorStatus.IDLE,
+        child_executor_ids=set(),
+    ).model_dump()
+
+    await Executor.restore(registry, storage, mock_llm, executor_id, context=context)
+
+    storage.load_executor_state.assert_called_once_with(executor_id, context=context)
+
+
+@pytest.mark.asyncio
+async def test_handle_complete_execution_passes_context_to_storage(
+    registry: Registry,
+    node_actor: NodeActor[LLMNode],
+    mock_llm: Mock,
+) -> None:
+    storage = AsyncMock(spec=InMemoryStateStorage)
+    context = {"user_id": "u_123"}
+
+    executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
+
+    with patch.object(executor, "_send_output_to_parent", new=AsyncMock()):
+        await executor._handle_complete_execution(
+            Result(output="done", next_nodes=[]),
+            node_actor,
+            context=context,
+        )
+
+    storage.save_executor_state.assert_called_once()
+    assert storage.save_executor_state.call_args.kwargs.get("context") == context
+
+
+@pytest.mark.asyncio
+async def test_send_output_to_parent_passes_context_to_check_childs(
+    registry: Registry,
+    storage: InMemoryStateStorage,
+    node_actor: NodeActor[LLMNode],
+    mock_llm: Mock,
+) -> None:
+    context = {"user_id": "u_123"}
+
+    parent_executor = Executor(registry=registry, state_storage=storage, llm=mock_llm)
+    parent_executor.status = ExecutorStatus.SUSPENDED
+
+    child_executor = Executor(
+        registry=registry,
+        state_storage=storage,
+        llm=mock_llm,
+        parent_executor_pair=ParentExecutorPair(parent_executor, node_actor.id),
+    )
+
+    output = ExecutorOutput(
+        executor_id=child_executor.id,
+        execution_id=child_executor.execution_id,
+        node_actor_id=node_actor.id,
+        node_fullname="LLMNode/test_llm_node",
+        exit_=True,
+    )
+
+    with patch.object(parent_executor, "check_childs", new=AsyncMock()) as mock_check:
+        await child_executor._send_output_to_parent(output, context=context)
+        await asyncio.sleep(0)
+
+    mock_check.assert_called_once_with(context=context)
+
+
+@pytest.mark.asyncio
+async def test_check_childs_passes_context_to_storage(
+    registry: Registry,
+    mock_llm: Mock,
+) -> None:
+    storage = AsyncMock(spec=InMemoryStateStorage)
+    context = {"user_id": "u_123"}
+    executor_id = uuid4()
+    node_actor_id = uuid4()
+
+    storage.load_executor_state.return_value = ExecutorState(
+        executor_id=executor_id,
+        node_actor_id=node_actor_id,
+        iteration_count=0,
+        status=ExecutorStatus.SUSPENDED,
+        child_executor_ids=set(),
+    ).model_dump()
+    storage.load_actor_state.return_value = {"node_fullname": "LLMNode/test_llm_node"}
+
+    executor = Executor(
+        registry=registry,
+        state_storage=storage,
+        llm=mock_llm,
+        executor_id=executor_id,
+    )
+    executor.status = ExecutorStatus.SUSPENDED
+
+    await executor.check_childs(context=context)
+
+    storage.load_executor_state.assert_called_once_with(executor_id, context=context)
+    storage.load_actor_state.assert_called_once_with(
+        executor_id, node_actor_id, context=context
+    )
+    storage.save_executor_state.assert_called_once()
+    assert storage.save_executor_state.call_args.kwargs.get("context") == context
+
+    queued: ExecutorInput = executor._input_queue.get_nowait()
+    assert queued.context == context
+
+
+@pytest.mark.asyncio
+async def test_get_output_passes_context_to_storage(
+    registry: Registry,
+    node_actor: NodeActor[LLMNode],
+    mock_llm: Mock,
+) -> None:
+    storage = AsyncMock(spec=InMemoryStateStorage)
+    context = {"user_id": "u_123"}
+    executor_id = uuid4()
+    node_actor_id = node_actor.id
+
+    storage.load_executor_state.return_value = ExecutorState(
+        executor_id=executor_id,
+        node_actor_id=node_actor_id,
+        iteration_count=0,
+        status=ExecutorStatus.COMPLETED,
+        child_executor_ids=set(),
+    ).model_dump()
+    storage.load_actor_state.return_value = {"node_fullname": "LLMNode/test_llm_node"}
+
+    executor = Executor(
+        registry=registry,
+        state_storage=storage,
+        llm=mock_llm,
+        executor_id=executor_id,
+    )
+    executor.status = ExecutorStatus.COMPLETED
+
+    with patch.object(
+        executor, "_get_or_create_node_actor", new=AsyncMock(return_value=node_actor)
+    ):
+        await executor.get_output(context=context)
+
+    storage.load_executor_state.assert_called_once_with(executor_id, context=context)
+    storage.load_actor_state.assert_called_once_with(
+        executor_id, node_actor_id, context=context
+    )

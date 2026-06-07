@@ -28,6 +28,11 @@ dependencies = [
     "ruamel-yaml>=0.18.14",
 ]
 
+[project.optional-dependencies]
+redis = [
+    "redis[asyncio]>=7.4.0",
+]
+
 [tool.hatch.version]
 path = "src/liman/__init__.py"
 
