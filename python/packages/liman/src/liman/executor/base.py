@@ -356,7 +356,7 @@ class Executor:
             execution_id=self.execution_id,
             node_actor_id=node_actor.id,
             node_fullname=node_actor.node.full_name,
-            node_output=node_actor.node.output,
+            node_output=node_actor.node_state.output,
             exit_=True,
         )
         return self._output
