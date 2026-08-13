@@ -1,0 +1,31 @@
+---
+title: Concepts
+description: Mental models for building real agents with Liman
+---
+
+import { Database, Workflow } from "lucide-react";
+
+Liman runs agents as a graph of nodes. Each node does one thing.
+The framework connects them, runs them, and remembers where it left off.
+To build confidently, you need two mental models:
+
+<Cards>
+  <Card
+    href="/docs/concepts/execution-model"
+    title={
+      <span className="flex items-center gap-2">
+        <Workflow size={14} /> Execution Model
+      </span>
+    }
+    description="How nodes run: the three layers, graph traversal, and sequential vs parallel execution."
+  />
+  <Card
+    href="/docs/concepts/state"
+    title={
+      <span className="flex items-center gap-2">
+        <Database size={14} /> State
+      </span>
+    }
+    description="What gets remembered: multi-turn conversations, persistence, and crash recovery."
+  />
+</Cards>

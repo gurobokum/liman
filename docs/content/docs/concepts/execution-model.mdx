@@ -1,0 +1,161 @@
+---
+title: Execution Model
+description: How Liman builds and executes the AI agent - the four layers, graph traversal, and execution flow
+---
+
+<Callout type="info">
+  This page covers how nodes run. For what gets remembered across turns and
+  restarts, see [State](/docs/concepts/state).
+</Callout>
+
+Liman represents AI Agents as a **Graph**. In this graph:
+
+- Each **Node** acts as a computational unit with its own configuration and behavior.
+- **Edges** define the flow of data between these nodes.
+
+This entire structure is defined in a **YAML manifest files**, which explicitly describes nodes, their properties, and their interconnections.
+
+## Nodes
+
+A Node is the smallest unit of work in the graph. Nodes are defined in YAML
+files, which Liman parses and uses to build the execution graph.
+
+## Edges (DSL CE)
+
+One of Liman's most powerful features is **DSL CE (Domain Specific Language Condition Expression)** - a custom language for defining intelligent flow control between nodes. Rather than writing repetitive conditional logic in code, you can express complex routing decisions declaratively in Nodes YAML.
+
+```yaml
+kind: Node
+# ...
+nodes:
+  # Simple condition
+  - target: SuccessHandler
+    when: status == 'complete'
+
+  # Complex logical expressions
+  - target: RetryHandler
+    when: failed and (retry_count < 3 or priority == 'high')
+
+  # Function references for custom logic
+  - target: CustomValidator
+    when: business_rules.validate_transaction
+
+  # Built-in functions
+  - target: ErrorHandler
+    when: $is_error('UnauthorizedError') or $is_error('TimeoutError')
+
+  # Context-aware routing
+  - target: HighPriorityPath
+    when: user.tier == 'enterprise' and (urgent == true or customer_complaint == true)
+```
+
+## The four execution layers
+
+<Mermaid
+  chart="
+flowchart LR
+  A[Agent]
+  B[Executor]
+  C[NodeActor]
+  D[Node]
+
+A --> B
+B --> C
+C --> D
+"
+/>
+
+- **Agent** is the session manager. It accepts user input via `agent.step()`,
+  creates the Executor, and returns the final output. The Agent is what you
+  interact with in your code. Stateless.
+- [**Executor**](#executor) is the traversal engine. It focuses purely on graph traversal,
+  CE DSL evaluation, and flow control. It calls NodeActors to run nodes, forks child
+  Executors when the graph branches, and saves state to storage after each step. Stateful.
+- [**NodeActor**](#nodeactor) is the per-node execution wrapper. Every node in the graph gets
+  its own dedicated NodeActor with limited scope. It runs the node,
+  holds the node's state (for example, an LLMNode's message history), and decides what
+  comes next by evaluating the node's edges. Stateful.
+- **Node** is the definition of what a node does. LLMNode, ToolNode, and FunctionNode are all Node types. Stateless.
+
+You can replace the Executor or Agent with your own implementation if needed.
+
+- `liman` package provides the runtime - Executor and Agent.
+- `liman_core` package provides the core primitives - Node and NodeActor.
+
+### Executor
+
+The Executor walks the node graph, forks NodeActors, and manages the full
+execution lifecycle - including **suspension** and **resumption**.
+
+- **Forking**: each next node gets its own child Executor, spawned automatically
+  when the current node completes.
+- **Suspension**: execution can pause at any point (for example, at a
+  human-in-the-loop gate) and resume from the exact same position.
+- **Resilience**: a node failure is isolated - it does not crash the graph.
+  Retry policies and circuit breakers are configurable per node.
+
+#### Lazy initialization
+
+The Executor does not build the whole execution tree upfront. Each part of the
+tree is created at the moment it is needed:
+
+- The Agent creates the root Executor on the first `agent.step()` call.
+- A child Executor is forked only when the graph reaches its node.
+- A NodeActor is created only when an input arrives for its node.
+
+Restoration works the same way. A restored Executor keeps its parent and
+children as **LazyExecutor** references - lightweight placeholders that hold
+only an executor id. When the Executor needs a child result, it restores the
+real child from `StateStorage` by that id.
+
+This means only the active path of the graph lives in memory. Untouched
+branches are never loaded, so restoring a large execution tree stays cheap.
+
+<Callout type="info">
+  The `liman` **Executor** is the default implementation. Liman framework was
+  designed keeping in mind that the user extend/replace it. If you need custom
+  traversal logic, you can build your own on top of `liman_core` primitives -
+  **Node** and **NodeActor**.
+</Callout>
+
+### NodeActor
+
+In Liman, **every node is executed by its own dedicated NodeActor** with limited
+scope and authorization. This isolation ensures security, resource control, and
+fault tolerance. Each node runs in its own execution context, similar to how
+containers isolate processes.
+
+#### Authorization scoping
+
+Each NodeActor operates with **minimal required permissions** defined at the
+node level. The authorization system is built around role assumption and
+credential provisioning to ensure secure access to external resources.
+
+When a NodeActor needs to execute a node, it assumes specific roles required
+for that operation. This follows the principle of least privilege - each node
+only gets the permissions it absolutely needs.
+
+For example, a user lookup tool would only assume a `user-data-reader` role
+with read permissions for user data, while a ticket creation tool would assume
+a `ticket-creator` role with write permissions only for the ticketing system.
+
+#### CredentialsProvider
+
+The **CredentialsProvider** supplies the necessary credentials when a NodeActor
+assumes a role. This abstraction allows for flexible credential management
+across different environments and services.
+
+For OpenAPI calls, the CredentialsProvider automatically provides the
+appropriate authentication headers based on the assumed role and target service.
+The CredentialsProvider resolves credentials dynamically:
+
+- **API calls**: Bearer tokens, API keys, or OAuth credentials
+- **Cloud services**: Service account tokens or IAM role credentials
+
+This ensures sensitive credentials are never hardcoded in manifests and are
+only provided to NodeActors that have explicitly assumed the necessary roles.
+
+<Callout type="info">
+  For what gets saved across turns and restarts, see
+  [State](/docs/concepts/state).
+</Callout>

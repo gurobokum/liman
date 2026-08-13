@@ -1,0 +1,186 @@
+---
+title: State
+description: What gets remembered in Liman - multi-turn conversations, persistence, and crash recovery
+---
+
+<Callout type="info">
+  This page covers persistence. For how execution works, see [Execution
+  Model](/docs/concepts/execution-model).
+</Callout>
+
+## What state means in Liman
+
+Every node owns its state independently. A NodeActor is created for each node
+and holds that node's state for the lifetime of the session:
+
+- **LLMNode** state is the message history - every message sent and received.
+- **ToolNode** state is the last tool call input and output.
+
+State is saved to `StateStorage` after every node execution. Two things are
+persisted: the **actor state** (what the node knows) and the **executor state**
+(where in the graph execution is). Both allow serializing and deserializing the
+full agent, enabling suspension, restoration, and async execution.
+
+### Context is not state
+
+`context` is a third concept that looks similar but is not persisted. It is
+call-time data passed by the caller at every `agent.step()`:
+
+```python
+await agent.step("Hello", context={"user_id": "u-123", "org_id": "o-456"})
+```
+
+Context flows through the execution tree during that call - available to nodes
+for CE DSL edge evaluation and credential injection via `ServiceAccount` - but
+it is never written to `StateStorage`. When the call ends, context is gone.
+
+If a node needs to remember something from context across turns (for example,
+the current user ID), it must store it explicitly in its `node_state`. You can
+also persist context yourself - for example, by saving it alongside the
+execution ID in your own storage and re-passing it on the next `agent.step()`
+call.
+
+<Callout type="warn">
+  `StateStorage` does not enforce any access control by default. In a multi-user
+  system, a custom implementation must apply fine-grained permissions - for
+  example, Row Level Security (RLS) or ownership checks - to ensure that loading
+  state by `execution_id` never returns data belonging to another user.
+</Callout>
+
+### Actor state
+
+Owned by `NodeActor`, specific to the node type:
+
+```python
+class NodeActorState(BaseModel):
+    actor_id: UUID
+    node_id: UUID
+    node_name: str
+    node_type: str          # "LLMNode", "ToolNode", etc.
+    status: NodeActorStatus
+    has_error: bool
+    node_state: NS          # LLMNodeState (messages), ToolNodeState (last call), …
+```
+
+This state allow to restore any node from the serialized payload
+
+### Executor state
+
+Owned by `Executor`, tracks the tree of running and suspended child executors:
+
+```python
+class ExecutorState(BaseModel):
+    execution_id: UUID
+    node_actor_id: UUID
+    status: ExecutorStatus          # idle | running | suspended | completed | failed
+    child_executor_ids: set[UUID]   # every child ever spawned from this executor
+```
+
+At runtime, a tree of executors can look like this:
+
+```
+Root Executor (01a1dd9a-9374-44e7-b8a8-7fc891b29de0) - SUSPENDED
+  ├── Child Executor 1 (child1) - SUSPENDED
+  ├── Child Executor 2 (cda81fa7-75f1-4800-bc2b-3aae70aa0e60) - SUSPENDED
+  │     ├── Sub Executor 3 (f1e2d3c4-5678-90ab-cdef-1234567890ab) - COMPLETED
+  │     └── Sub Executor 4 (a1b2c3d4-5678-90ab-cdef-1234567890ab) - RUNNING
+  └── Child Executor 3 (b1c2d3e4-5678-90ab-cdef-1234567890ab) - RUNNING
+```
+
+The executor derives what to run next by comparing `child_executor_ids` (what
+has started) against the graph spec. It never stores a phase or step index -
+the spec is the source of truth.
+
+## Multi-turn conversations
+
+Within a session, the same NodeActor stays alive across user turns. This means
+an LLMNode automatically remembers the conversation:
+
+```python
+agent = Agent(specs_dir="specs/", start_node="ChatNode", llm=llm)
+
+await agent.step("My name is Alice.")
+await agent.step("What is my name?")  # LLMNode remembers Alice
+```
+
+The second call picks up the same NodeActor with the full message history in
+`node_state.messages`. No session IDs or manual context passing needed.
+
+## State across restarts
+
+Because both state types are written to `StateStorage` after every execution,
+the agent can recover from a crash or a planned shutdown and continue from
+exactly where it left off.
+
+On restart:
+
+1. The Executor loads `ExecutorState` from `StateStorage`.
+2. For each active child, it loads the matching `NodeActorState` and calls
+   `NodeActor.create_or_restore()`.
+3. Execution continues - suspended nodes resume, completed nodes are skipped.
+
+If we stop agent after the first call and then do
+
+```python
+agent = Agent(specs_dir="specs/", start_node="ChatNode", llm=llm)
+
+output = await agent.step("My name is Alice.")
+save_to_db(output)
+# -----------
+# Stop
+# -----------
+agent = Agent(specs_dir="specs/", start_node="ChatNode", llm=llm)
+input_ = ExecutorInput(
+    execution_id=get_from_db("execution_id"),
+    node_actor_id=get_from_db("node_actor_id"),
+    node_input="What is my name?",
+)
+await agent.step(input_)  # LLMNode remembers Alice
+```
+
+## Configuring state storage
+
+`InMemoryStateStorage` is the default. It is useful for testing and
+single-process use, but does not survive restarts.
+
+```python
+from liman import Agent, InMemoryStateStorage
+
+agent = Agent(
+    specs_dir="specs/",
+    start_node="ChatNode",
+    llm=llm,
+    state_storage=InMemoryStateStorage(),  # default
+)
+```
+
+<Callout type="warn">
+  `InMemoryStateStorage` is lost when the process exits. Use a persistent
+  backend for production agents that need crash recovery or multi-turn sessions
+  across restarts.
+</Callout>
+
+To use a persistent backend, implement the `StateStorage` abstract class:
+
+```python
+from liman import Agent, StateStorage
+
+class RedisStateStorage(StateStorage):
+    async def save_actor_state(self, execution_id, actor_id, state): ...
+    async def load_actor_state(self, execution_id, actor_id): ...
+    async def save_executor_state(self, execution_id, state): ...
+    async def load_executor_state(self, execution_id): ...
+
+
+agent = Agent(
+    specs_dir="specs/",
+    start_node="ChatNode",
+    llm=llm,
+    state_storage=RedisStateStorage(),
+)
+```
+
+<Callout type="info">
+  For how the Executor uses its restored state to continue graph traversal, see
+  [Execution Model](/docs/concepts/execution-model).
+</Callout>
