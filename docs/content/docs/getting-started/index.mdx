@@ -1,0 +1,40 @@
+---
+title: Getting Started
+description: Start here - the best entry points for learning and building agents with Liman
+---
+
+import { BookA, ClipboardList, FileText } from "lucide-react";
+
+Liman is a declarative framework for building AI agents. You define the agent
+graph in YAML manifests. The runtime executes it.
+
+If you want to write code first, start with the
+[Simple Agent](/docs/getting-started/simple-agent) tutorial. If you want the
+big picture first, use the links below.
+
+<Cards>
+  <Card
+    href="/docs/poc"
+    title="PoC"
+    icon={<FileText />}
+    description="The full design document: YAML manifests, the condition DSL, execution model, auth, and plugins."
+  />
+  <Card
+    href="/docs/glossary"
+    title="Glossary"
+    icon={<BookA />}
+    description="Short definitions of the framework terms used across the docs."
+  />
+  <Card
+    href="/docs/specification/node"
+    title="Specification"
+    icon={<ClipboardList />}
+    description="The manifest reference for every node kind and its fields."
+  />
+</Cards>
+
+## From the [Blog](/blog)
+
+Read about the design decisions behind Liman and what it can do today:
+
+<BlogPosts order="asc" />

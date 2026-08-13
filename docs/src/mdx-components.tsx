@@ -3,6 +3,7 @@ import type { MDXComponents } from "mdx/types";
 import * as PythonMDX from "fumadocs-python/components";
 
 import ASCIinema from "./components/asciinema";
+import { BlogPosts } from "./components/mdx/BlogPostCard";
 import { Mermaid } from "./components/mdx/Mermaid";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 import { MemeIcon } from "./components/ui/meme";
@@ -14,6 +15,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ASCIinema,
     Accordion,
     Accordions,
+    BlogPosts,
     Mermaid,
     MemeIcon,
     ...PythonMDX,
