@@ -5,7 +5,7 @@ import {
   Newspaper,
   Cog,
   Shield,
-  Network,
+  Pause,
   BarChart3,
 } from "lucide-react";
 
@@ -62,8 +62,8 @@ export default function Hero() {
               Built-in Authorization
             </span>
             <span className="flex items-center gap-2">
-              <Network className="w-4 h-4" />
-              Distributed Execution
+              <Pause className="w-4 h-4" />
+              Suspend & Resume Execution
             </span>
             <span className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />

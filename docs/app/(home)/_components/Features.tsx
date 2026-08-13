@@ -6,83 +6,114 @@ import {
   Cog,
   Globe,
   BarChart3,
+  Layers,
   Shield,
   Network,
   Puzzle,
   GitBranch,
+  Database,
+  Zap,
+  Pause,
 } from "lucide-react";
 
 const features = [
   {
-    icon: Cog,
-    title: "OpenAPI → Tools Generation",
+    title: "YAML-First Manifests",
+    icon: FileText,
     description:
-      "Automatically generate LLM tools from OpenAPI specifications. Transform any API into agent tools without writing MCP servers.",
-    badge: "Core",
-    link: "/docs/poc#openapi--toolnode-generation",
+      "Define agents as declarative YAML manifests, similar to Kubernetes. The spec is the source of truth - any language can run it.",
+    badge: "YAML",
+    link: "/docs/poc#yaml-manifests",
   },
   {
-    icon: Shield,
-    title: "Service Account Authorization",
-    description:
-      "Built-in authorization with service accounts. State isolation, credential provisioning, and minimal permissions with least privilege principles.",
-    badge: "Security",
-    link: "/docs/poc#authentication--authorization",
-  },
-  {
-    icon: Globe,
     title: "Dynamic Prompt Localization",
+    icon: Globe,
     description:
       "Multi-language support with automatic system prompt generation. Increase function calling accuracy across languages.",
     badge: "i18n",
     link: "/docs/poc#yaml-manifests",
   },
   {
-    icon: BarChart3,
-    title: "OTel & FinOps Out-of-Box",
+    title: "Kustomize Overlays",
+    icon: Layers,
     description:
-      "Built-in OpenTelemetry integration with cost tracking. Monitor performance, token usage, and financial metrics automatically.",
-    badge: "Observability",
+      "Layer configurations using Kustomize-like overlays. Perfect for multi-environment deployments and language variants.",
+    badge: "Config",
+    status: "In Development",
+    link: "/docs/poc#overlays",
   },
   {
-    icon: GitBranch,
+    title: "Suspension and Restoration",
+    icon: Pause,
+    description:
+      "Fully async design - suspend or stop execution at any point and restore it from saved state. Built for multi-turn conversations and human approval gates.",
+    badge: "Async",
+    link: "/docs/concepts/state#state-across-restarts",
+  },
+  {
+    title: "Lazy Initialization",
+    icon: Zap,
+    description:
+      "Executors and actors are created only when the graph reaches them. Only the active path lives in memory, so restoring a large tree stays cheap.",
+    badge: "Performance",
+    link: "/docs/concepts/execution-model#lazy-initialization",
+  },
+  {
     title: "Condition Expression Language",
+    icon: GitBranch,
     description:
       "Custom DSL for intelligent flow control between nodes. Express complex routing decisions declaratively without repetitive conditional logic.",
     badge: "Flow Control",
     link: "/docs/poc#condition-expression-language-dsl-ce",
   },
   {
-    icon: Network,
+    title: "Service Account Authorization",
+    icon: Shield,
+    description:
+      "Built-in authorization with service accounts. State isolation, credential provisioning, and minimal permissions with least privilege principles.",
+    badge: "Security",
+    link: "/docs/poc#authentication--authorization",
+  },
+  {
+    title: "OpenAPI → Tools Generation",
+    icon: Cog,
+    description:
+      "Automatically generate LLM tools from OpenAPI specifications. Transform any API into agent tools without writing MCP servers.",
+    badge: "Core",
+    link: "/docs/poc#openapi--toolnode-generation",
+  },
+  {
+    title: "OTel & FinOps Out-of-Box",
+    icon: BarChart3,
+    description:
+      "Built-in OpenTelemetry integration with cost tracking. Monitor performance, token usage, and financial metrics automatically.",
+    badge: "Observability",
+    link: "/docs/python/liman_finops",
+  },
+  {
     title: "Distributed Edges",
+    icon: Network,
     description:
-      "Connect nodes via MCP, A2A, HTTP, WebSocket, or shared memory. Build distributed agents across AWS Lambda and processes.",
+      "Connect nodes via MCP, A2A, HTTP, WebSocket, or shared memory. Run one graph across processes, containers, and cloud functions.",
     badge: "Connectivity",
+    status: "Planned",
   },
-  /*
   {
-    icon: Database,
     title: "Atomic State Management",
+    icon: Database,
     description:
-      "External state with pre_hook, invoke, post_hook phases. Build complex distributed agents with flexible state handling.",
+      "External state with pre_hook, invoke, post_hook phases. Persistent state survives restarts, ephemeral context lives only for the call.",
     badge: "State",
+    link: "/docs/concepts/state",
   },
-  */
   {
-    icon: Puzzle,
     title: "Plugin Ecosystem",
+    icon: Puzzle,
     description:
       "Extensible plugin system with built-in and custom plugins. Auto-context stitching, evaluation agents, and anomaly detection.",
     badge: "Plugins",
+    status: "In Development",
     link: "/docs/poc#plugins-system",
-  },
-  {
-    icon: FileText,
-    title: "Kustomize Overlays",
-    description:
-      "Layer configurations using Kustomize-like overlays. Perfect for multi-environment deployments and language variants.",
-    badge: "Config",
-    link: "/docs/poc#overlays",
   },
 ];
 
@@ -99,8 +130,7 @@ export default function Features() {
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             From OpenAPI tool generation to distributed execution and cost
-            tracking, Liman designed each one around real production pain
-            points.
+            tracking, each feature comes from a real production pain point.
           </p>
         </div>
 
@@ -117,9 +147,19 @@ export default function Features() {
                   <div className="p-3 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
                     <Icon className="w-6 h-6 text-primary" />
                   </div>
-                  <Badge variant="secondary" className="text-xs">
-                    {feature.badge}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {feature.status && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs border-dashed text-muted-foreground"
+                      >
+                        {feature.status}
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="text-xs">
+                      {feature.badge}
+                    </Badge>
+                  </div>
                 </div>
                 {feature.link ? (
                   <h3 className="font-semibold mb-2 transition-colors">
