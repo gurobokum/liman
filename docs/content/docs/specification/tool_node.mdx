@@ -15,6 +15,8 @@ func: string
 arguments: ToolArgument[]
 triggers?: LanguageBundle[]
 tool_prompt_template?: Optional[LanguageBundle]
+to?: (string | Edge)[]
+llm_nodes?: (LLMNode | Edge<LLMNode>)[]
 ```
 
 import { TypeTable } from "fumadocs-ui/components/type-table";
@@ -60,6 +62,20 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
       typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
       description:
         "Template for the tool prompt that will be used in parent LLMNode system prompt.",
+      required: false,
+    },
+    to: {
+      type: "(string | Edge)[]",
+      typeDescriptionLink: "/docs/specification/internal_types#edge",
+      description:
+        "Canonical routing field. Edges to any node kind with explicit 'Kind/name' refs. Cannot be mixed with 'llm_nodes'.",
+      required: false,
+    },
+    llm_nodes: {
+      type: "(LLMNode | Edge<LLMNode>)[]",
+      typeDescriptionLink: "/docs/specification/llm_node",
+      description:
+        "Alternative routing form scoped to LLMNode targets. Cannot be mixed with 'to'.",
       required: false,
     },
   }}

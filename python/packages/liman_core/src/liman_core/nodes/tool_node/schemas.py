@@ -1,10 +1,16 @@
+import sys
 from typing import Annotated, Any, Literal
 
 from langchain_core.messages import ToolMessage
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from liman_core.base.schemas import BaseSpec
-from liman_core.edge.schemas import EdgeSpec
+from liman_core.edge.schemas import EdgeSpec, check_exclusive_routing
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 from liman_core.languages import LocalizedValue
 from liman_core.nodes.base.schemas import NodeState
 
@@ -54,7 +60,13 @@ class ToolNodeSpec(BaseSpec):
     arguments: list[ToolArgument] | list[ToolObjectArgument] | None = None
     triggers: list[LocalizedValue] | None = None
     tool_prompt_template: LocalizedValue | None = None
-    llm_nodes: list[EdgeSpec] = []
+    llm_nodes: list[str | EdgeSpec] = []
+    to: list[str | EdgeSpec] = []
+
+    @model_validator(mode="after")
+    def validate_routing(self) -> Self:
+        check_exclusive_routing(self)
+        return self
 
 
 class ToolCall(BaseModel):

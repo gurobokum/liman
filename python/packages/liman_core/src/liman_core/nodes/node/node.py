@@ -18,6 +18,7 @@ class Node(BaseNode[NodeSpec, NodeState]):
     """
 
     spec_type = NodeSpec
+    state_type = NodeState
 
     def __init__(
         self,

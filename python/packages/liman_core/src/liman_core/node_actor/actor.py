@@ -32,7 +32,6 @@ from liman_core.nodes.base.schemas import (
 from liman_core.nodes.function_node.node import FunctionNode
 from liman_core.nodes.llm_node.node import LLMNode
 from liman_core.nodes.llm_node.schemas import LLMNodeState
-from liman_core.nodes.node.node import Node
 from liman_core.nodes.supported_types import get_node_cls
 from liman_core.nodes.tool_node.node import ToolNode
 from liman_core.nodes.tool_node.schemas import ToolCall, ToolNodeState
@@ -453,27 +452,35 @@ class NodeActor(Generic[T]):
         # ToolNode supports FunctionNode and LLMNode edges
         if isinstance(self.node, ToolNode) and edges:
             next_nodes = []
-            for node_type, edge in edges:
+            for edge in edges:
                 if self._should_follow_edge(edge, context, state_context, transformer):
-                    target_node = registry.lookup(node_type, edge.target)
+                    target_node = registry.lookup(get_node_cls(edge.kind), edge.name)
                     next_nodes.append(NextNode(target_node, output))
             return next_nodes
 
         return []
 
-    def _get_node_edges(self) -> list[tuple[type[Node | LLMNode], EdgeSpec]]:
-        edges: list[tuple[type[Node | LLMNode], EdgeSpec]] = []
+    def _get_node_edges(self) -> list[EdgeSpec]:
+        """
+        Return the node edges in canonical form.
 
-        if nodes := getattr(self.node.spec, "nodes", []):
-            for node_ref in nodes:
-                if isinstance(node_ref, EdgeSpec):
-                    edges.append((Node, node_ref))
+        'to' entries pass through; bare names in 'nodes'/'llm_nodes' get the
+        kind of the list they sit in.
+        """
+        spec = self.node.spec
+        if to := getattr(spec, "to", None):
+            return [
+                entry if isinstance(entry, EdgeSpec) else EdgeSpec(ref=entry)
+                for entry in to
+            ]
 
-        if llm_nodes := getattr(self.node.spec, "llm_nodes", []):
-            for node_ref in llm_nodes:
-                if isinstance(node_ref, EdgeSpec):
-                    edges.append((LLMNode, node_ref))
-
+        edges: list[EdgeSpec] = []
+        for field, kind in (("nodes", "Node"), ("llm_nodes", "LLMNode")):
+            for entry in getattr(spec, field, None) or []:
+                if isinstance(entry, EdgeSpec):
+                    edges.append(entry)
+                else:
+                    edges.append(EdgeSpec(ref=f"{kind}/{entry}"))
         return edges
 
     def _build_evaluation_context(

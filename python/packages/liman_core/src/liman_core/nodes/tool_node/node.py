@@ -1,4 +1,3 @@
-import asyncio
 import inspect
 from collections.abc import Callable
 from functools import reduce
@@ -196,14 +195,9 @@ class ToolNode(BaseNode[ToolNodeSpec, ToolNodeState]):
                     )
                     call_args[param_name] = dependency
 
-                if asyncio.iscoroutinefunction(func) or (
-                    callable(func)
-                    and not inspect.isfunction(func)
-                    and asyncio.iscoroutinefunction(getattr(func, "__call__", None))
-                ):
-                    result = await func(**call_args)
-                else:
-                    result = func(**call_args)
+                result = func(**call_args)
+                if inspect.isawaitable(result):
+                    result = await result
         except Exception as e:
             response = ToolMessage(
                 content=str(e),

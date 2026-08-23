@@ -25,8 +25,8 @@ def test_function_node_spec_with_func() -> None:
 
 
 def test_function_node_spec_with_edges() -> None:
-    edge1 = EdgeSpec(target="target1")
-    edge2 = EdgeSpec(target="target2")
+    edge1 = EdgeSpec(ref="Node/target1")
+    edge2 = EdgeSpec(ref="LLMNode/target2")
     spec = FunctionNodeSpec(
         name="test_function",
         nodes=["node1", edge1],

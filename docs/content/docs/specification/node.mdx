@@ -11,6 +11,7 @@ name: string
 func: string
 description?: LanguageBundle
 prompts?: LanguageBundle
+to?: (string | Edge)[]
 nodes?: (Node | Edge<Node>)[]
 llm_nodes?: (LLMNode | Edge<LLMNode>)[]
 tools?: ToolNode[]
@@ -45,6 +46,13 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
       typeDescriptionLink: "/docs/specification/internal_types#languagebundle",
       description:
         "The prompts for the node, can be used to provide additional context or instructions.",
+      required: false,
+    },
+    to: {
+      type: "(string | Edge)[]",
+      typeDescriptionLink: "/docs/specification/internal_types#edge",
+      description:
+        "Canonical routing field. Edges to any node kind with explicit 'Kind/name' refs. Cannot be mixed with 'nodes' or 'llm_nodes'.",
       required: false,
     },
     nodes: {

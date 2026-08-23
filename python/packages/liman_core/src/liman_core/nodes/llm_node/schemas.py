@@ -1,10 +1,16 @@
+import sys
 from typing import Literal
 
 from langchain_core.messages import SystemMessage
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from liman_core.base.schemas import BaseSpec
-from liman_core.edge.schemas import EdgeSpec
+from liman_core.edge.schemas import EdgeSpec, check_exclusive_routing
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 from liman_core.languages import LanguageCode, LanguagesBundle, LocalizedValue
 from liman_core.nodes.base.schemas import LangChainMessage, NodeState
 from liman_core.nodes.llm_node.structured_output import StructuredOutputSpec
@@ -63,7 +69,13 @@ class LLMNodeSpec(BaseSpec):
     prompts: LocalizedValue
     tools: list[str] = []
     nodes: list[str | EdgeSpec] = []
+    to: list[str | EdgeSpec] = []
     structured_output: StructuredOutputSpec | None = None
+
+    @model_validator(mode="after")
+    def validate_routing(self) -> Self:
+        check_exclusive_routing(self)
+        return self
 
 
 class LLMNodeState(NodeState):

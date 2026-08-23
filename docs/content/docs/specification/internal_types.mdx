@@ -9,51 +9,41 @@ BaseNode is a base type for all nodes in the system: LLMNode, ToolNode, or Node.
 
 ## Edge
 
-An Edge allows you to define a connection between nodes using a DSL condition.
+An Edge defines a connection from one node to another. Edges live in the
+node's `to` field and are followed after the node produces its output.
 
 ```yaml
-when: LimanCE | FunctionRef
-target: BaseNode | BaseNode[]
-id: Optional[ID]
-depends: Optional[ID | ID[]]
+to:
+  - ref: Kind/name
+  - ref: Kind/name
+    when: LimanCE | FunctionRef
 ```
+
+A plain string entry is a shorthand for `ref`.
 
 import { TypeTable } from "fumadocs-ui/components/type-table";
 
 <TypeTable
   type={{
+    ref: {
+      type: "string",
+      description:
+        "Reference to the target node in the 'Kind/name' format. The kind is required. ToolNode cannot be a target - use the 'tools' field instead.",
+      required: true,
+    },
     when: {
       type: "LimanCE | FunctionRef",
-      description: "Condition that must be met for the edge to be followed.",
-      required: true,
-    },
-    target: {
-      type: "BaseNode | BaseNode[]",
-      description: "The target node(s) that the edge connects to.",
-      required: true,
-    },
-    id: {
-      type: "EdgeID",
       description:
-        "Optional ID for the edge, can be used to reference the edge. Must be unique with the same parent node.",
-      required: false,
-    },
-    depends: {
-      type: "EdgeID | EdgeID[]",
-      description:
-        "Optional EdgeID or array of EdgeIDs that this edge depends on. The edge will only be followed if the dependencies are resolved.",
+        "Condition that must be met for the edge to be followed. When omitted, the edge is always followed.",
       required: false,
     },
   }}
 />
 
-### EdgeID
-
-Any string or number used to identify an edge within a node. It must be unique within the same parent node.
-
-```
-<edge-id> ::= <string> | <number>
-```
+The `nodes` and `llm_nodes` fields are supported as an alternative form.
+Bare names in them get the kind from the field itself: `nodes` targets `Node`,
+`llm_nodes` targets `LLMNode`. A spec cannot use `to` together with `nodes`
+or `llm_nodes` - this is a validation error.
 
 ### LimanCE
 

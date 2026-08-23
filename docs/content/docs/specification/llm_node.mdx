@@ -10,7 +10,8 @@ kind: LLMNode
 name: string
 prompts: LanguageBundle
 tools?: ToolNode[]
-nodes?: Node[]
+to?: (string | Edge)[]
+nodes?: (Node | Edge<Node>)[]
 structured_output?: Schema
 ```
 
@@ -40,11 +41,18 @@ import { TypeTable } from "fumadocs-ui/components/type-table";
       description: "The tools that the LLMNode can use.",
       required: false,
     },
+    to: {
+      type: "(string | Edge)[]",
+      typeDescriptionLink: "/docs/specification/internal_types#edge",
+      description:
+        "Canonical routing field. Edges to any node kind with explicit 'Kind/name' refs. Cannot be mixed with 'nodes'.",
+      required: false,
+    },
     nodes: {
-      type: "Node[]",
+      type: "(Node | Edge<Node>)[]",
       typeDescriptionLink: "/docs/specification/node",
       description:
-        "The nodes that the LLMNode can use, can be used to chain nodes together.",
+        "Alternative routing form scoped to Node targets. Cannot be mixed with 'to'.",
       required: false,
     },
     structured_output: {

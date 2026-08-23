@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import pytest
 from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import ToolMessage
 
 from liman_core.edge.schemas import EdgeSpec
 from liman_core.node_actor import NodeActor, NodeActorStatus
@@ -114,7 +115,7 @@ def test_build_evaluation_context_with_non_dict_output(
 def test_should_follow_edge_no_condition(
     function_actor: NodeActor[FunctionNode],
 ) -> None:
-    edge = EdgeSpec(target="target_node")
+    edge = EdgeSpec(ref="Node/target_node")
     context: dict[str, Any] = {}
     state_context: dict[str, Any] = {}
     transformer = Mock()
@@ -129,7 +130,7 @@ def test_should_follow_edge_no_condition(
 def test_should_follow_edge_with_valid_condition(
     function_actor: NodeActor[FunctionNode],
 ) -> None:
-    edge = EdgeSpec(target="target_node", when="true")
+    edge = EdgeSpec(ref="Node/target_node", when="true")
     context: dict[str, Any] = {}
     state_context: dict[str, Any] = {}
 
@@ -156,7 +157,7 @@ def test_should_follow_edge_with_valid_condition(
 def test_should_follow_edge_with_exception(
     function_actor: NodeActor[FunctionNode],
 ) -> None:
-    edge = EdgeSpec(target="target_node", when="invalid_syntax")
+    edge = EdgeSpec(ref="Node/target_node", when="invalid_syntax")
     context: dict[str, Any] = {}
     state_context: dict[str, Any] = {}
 
@@ -190,19 +191,61 @@ def test_get_node_edges_no_edges(function_actor: NodeActor[FunctionNode]) -> Non
 
 def test_get_node_edges_with_edges(registry: Registry) -> None:
     from liman_core.nodes.function_node.schemas import FunctionNodeSpec
-    from liman_core.nodes.node.node import Node
 
-    edge1 = EdgeSpec(target="node1")
-    edge2 = EdgeSpec(target="node2")
+    edge1 = EdgeSpec(ref="Node/node1", when="status == 'done'")
+    edge2 = EdgeSpec(ref="LLMNode/node2")
     spec = FunctionNodeSpec(name="test_node", nodes=[edge1, "string_node", edge2])
     node = FunctionNode(spec, registry)
     actor = NodeActor.create(node)
 
     edges = actor._get_node_edges()
 
-    assert len(edges) == 2
-    assert edges[0] == (Node, edge1)
-    assert edges[1] == (Node, edge2)
+    assert edges == [
+        edge1,
+        EdgeSpec(ref="Node/string_node"),
+        edge2,
+    ]
+
+
+def test_get_node_edges_with_to(registry: Registry) -> None:
+    from liman_core.nodes.function_node.schemas import FunctionNodeSpec
+
+    spec = FunctionNodeSpec(
+        name="to_test_node",
+        to=["LLMNode/a", EdgeSpec(ref="Node/b", when="true")],
+    )
+    node = FunctionNode(spec, registry)
+    actor = NodeActor.create(node)
+
+    edges = actor._get_node_edges()
+
+    assert edges == [EdgeSpec(ref="LLMNode/a"), EdgeSpec(ref="Node/b", when="true")]
+
+
+def test_tool_node_routes_via_to(registry: Registry, llm_node: LLMNode) -> None:
+    def tool_func(message: str) -> str:
+        return message
+
+    node_dict = {
+        "kind": "ToolNode",
+        "name": "to_tool_node",
+        "description": {"en": "Test tool node"},
+        "to": [
+            {"ref": "LLMNode/test_llm_node"},
+            {"ref": "LLMNode/missing_node", "when": "false"},
+        ],
+    }
+    node = ToolNode.from_dict(node_dict, registry)
+    node.set_func(tool_func)
+    node.compile()
+    actor = NodeActor.create(node)
+    output = ToolMessage(content="output_value", tool_call_id="call_1")
+
+    next_nodes = actor._get_next_nodes(output)
+
+    assert len(next_nodes) == 1
+    assert next_nodes[0].node is llm_node
+    assert next_nodes[0].input_ == output
 
 
 def test_node_actor_with_custom_id(function_node: FunctionNode) -> None:

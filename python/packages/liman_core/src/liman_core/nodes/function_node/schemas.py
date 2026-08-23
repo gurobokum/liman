@@ -1,11 +1,18 @@
+import sys
 from typing import Any, Literal
 
 from langchain_core.messages import BaseMessage
+from pydantic import model_validator
 
 from liman_core.base.schemas import BaseSpec
-from liman_core.edge.schemas import EdgeSpec
+from liman_core.edge.schemas import EdgeSpec, check_exclusive_routing
 from liman_core.languages import LocalizedValue
 from liman_core.nodes.base.schemas import NodeState as BaseNodeState
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 
 class FunctionNodeSpec(BaseSpec):
@@ -25,7 +32,13 @@ class FunctionNodeSpec(BaseSpec):
 
     nodes: list[str | EdgeSpec] = []
     llm_nodes: list[str | EdgeSpec] = []
+    to: list[str | EdgeSpec] = []
     tools: list[str] = []
+
+    @model_validator(mode="after")
+    def validate_routing(self) -> Self:
+        check_exclusive_routing(self)
+        return self
 
 
 class FunctionNodeState(BaseNodeState):
