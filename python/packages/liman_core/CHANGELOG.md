@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.1](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0...liman_core_py-v0.1.1) (2026-06-07)
+
+
+### ✨ Features
+
+* **liman_core:** add structured output to LLMNode ([f007127](https://github.com/gurobokum/liman/commit/f00712700beaba65d6533df7208670d23b7a9ac9))
+
+
+### 🛠 Code Refactoring
+
+* **liman:** executor as stateful restorable entity ([d1913f5](https://github.com/gurobokum/liman/commit/d1913f5f740a4a952a9675c530b6896b6d991028))
+
+
+### 📚 Documentation
+
+* add PyPI badges ([ff9a235](https://github.com/gurobokum/liman/commit/ff9a235a05af3fa8025fc6750f7ecb455ca1cde2))
+
 ## [0.1.0](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a3...liman_core_py-v0.1.0) (2026-05-03)
 
 
