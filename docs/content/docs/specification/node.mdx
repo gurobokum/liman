@@ -8,13 +8,13 @@ description: Node that can be used to create custom functionality in the system.
 ```yaml
 kind: Node
 name: string
-func: string
+func: FunctionRef
 description?: LanguageBundle
 prompts?: LanguageBundle
 to?: (string | Edge)[]
+# legacy
 nodes?: (Node | Edge<Node>)[]
 llm_nodes?: (LLMNode | Edge<LLMNode>)[]
-tools?: ToolNode[]
 ```
 
 import { TypeTable } from "fumadocs-ui/components/type-table";

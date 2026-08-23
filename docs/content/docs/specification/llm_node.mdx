@@ -9,10 +9,12 @@ description: LLMNode is a node that use LLM to generate text.
 kind: LLMNode
 name: string
 prompts: LanguageBundle
-tools?: ToolNode[]
 to?: (string | Edge)[]
-nodes?: (Node | Edge<Node>)[]
+tools?: ToolNode[]
 structured_output?: Schema
+
+# legacy
+nodes?: (Node | Edge<Node>)[]
 ```
 
 import { TypeTable } from "fumadocs-ui/components/type-table";

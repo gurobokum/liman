@@ -1,0 +1,36 @@
+---
+title: HITLNode
+description: HITLNode is a node that allows human-in-the-loop interaction.
+---
+
+## Specification
+
+```yaml
+kind: HITLNode
+name: string
+func: FunctionRef
+to?: (string | Edge)[]
+```
+
+import { TypeTable } from "fumadocs-ui/components/type-table";
+
+<TypeTable
+  type={{
+    kind: {
+      description: "The kind of the node, must be 'HITLNode' or 'HITL'.",
+      required: true,
+      type: "HITLNode",
+    },
+    name: {
+      type: "string",
+      required: true,
+    },
+    to: {
+      type: "(string | Edge)[]",
+      typeDescriptionLink: "/docs/specification/internal_types#edge",
+      description:
+        "Canonical routing field. Edges to any node kind with explicit 'Kind/name' refs.",
+      required: false,
+    },
+  }}
+/>
