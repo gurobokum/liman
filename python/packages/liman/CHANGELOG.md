@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.1.0](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a4...liman_py-v0.1.0) (2026-06-07)
+
+
+### ✨ Features
+
+* **liman:** add simple Redis StateStorage ([088188b](https://github.com/gurobokum/liman/commit/088188b98609639933b8e940f391ded5aef36a99))
+* **liman:** pass context through executor and state storage ([cdc2295](https://github.com/gurobokum/liman/commit/cdc2295159a24aa454baa94f04cab1e4a0920be5))
+* **liman:** provide context during execution ([8902054](https://github.com/gurobokum/liman/commit/8902054ede2a6d82d019fb7b50ce7c365a4be2ba))
+
+
+### 🐛 Bug Fixes
+
+* **liman:** fix executor output ([49ca3a6](https://github.com/gurobokum/liman/commit/49ca3a6476ddfa964065bc8f2d7c53a7d1972581))
+
+
+### 🛠 Code Refactoring
+
+* **liman:** drop aprefix method for StateStorage ([92d20c7](https://github.com/gurobokum/liman/commit/92d20c7a197f0ca36e4c3e06089056fe22d4e3e1))
+* **liman:** executor as stateful restorable entity ([d1913f5](https://github.com/gurobokum/liman/commit/d1913f5f740a4a952a9675c530b6896b6d991028))
+* **liman:** rename node_full_name to node_fullname ([b34b284](https://github.com/gurobokum/liman/commit/b34b2842e5c730418e14a9f6c582f07be05baa1f))
+
+
+### 📚 Documentation
+
+* **liman:** add codecov badge ([6a0a561](https://github.com/gurobokum/liman/commit/6a0a561942cf711d4b9c68d69c19c2ade8747154))
+
+
+### ♻️ Tests
+
+* **liman:** add tests for Agent ([11df3dc](https://github.com/gurobokum/liman/commit/11df3dc38a4d895604fe12ec389bfcad00ee41ea))
+* **liman:** add tests for storage ([7fabc26](https://github.com/gurobokum/liman/commit/7fabc26f4ddfd85bcc99047deeb3229979e3235b))
+
 ## [0.1.0-a4](https://github.com/gurobokum/liman/compare/liman_py-v0.1.0-a3...liman_py-v0.1.0-a4) (2025-08-19)
 
 
