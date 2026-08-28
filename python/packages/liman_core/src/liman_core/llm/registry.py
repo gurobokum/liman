@@ -37,6 +37,7 @@ def resolve_model(ref: str) -> ModelInfo:
     it resolves by exact match across providers and logs a warning to use
     the canonical name. An alias found under several providers raises.
     """
+    ref = ref.lower()
     registry = load_models_registry()
 
     if "/" in ref:

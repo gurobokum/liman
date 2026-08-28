@@ -44,6 +44,14 @@ def test_resolve_model_alias_warns(caplog: pytest.LogCaptureFixture) -> None:
     assert "openai/gpt-4o" in caplog.text
 
 
+def test_resolve_model_is_case_insensitive() -> None:
+    info = resolve_model("OpenAI/GPT-4o")
+
+    assert info.provider == "openai"
+    assert info.name == "gpt-4o"
+    assert info.pricing is not None
+
+
 def test_resolve_model_canonical_unknown_model_allowed() -> None:
     info = resolve_model("openai/my-finetune")
 
