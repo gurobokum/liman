@@ -30,6 +30,33 @@ providers:
           input: 0.1
           cached: 0.025
           output: 0.4
+      gpt-4.5-preview:
+        pricing:
+          input: 75
+          cached: 37.5
+          output: 150
+      gpt-4o-audio-preview:
+        pricing:
+          input: 2.5
+          output: 10
+      gpt-4o-realtime-preview:
+        pricing:
+          input: 5
+          cached: 2.5
+          output: 20
+      gpt-4o-mini-audio-preview:
+        pricing:
+          input: 0.15
+          output: 0.6
+      gpt-4o-mini-realtime-preview:
+        pricing:
+          input: 0.6
+          cached: 0.3
+          output: 2.4
+      gpt-3.5-turbo:
+        pricing:
+          input: 0.5
+          output: 1.5
   google:
     package: langchain-google-genai
     module: langchain_google_genai
