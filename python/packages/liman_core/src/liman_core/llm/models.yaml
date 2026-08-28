@@ -1,0 +1,69 @@
+providers:
+  openai:
+    package: langchain-openai
+    module: langchain_openai
+    class: ChatOpenAI
+    env_key: OPENAI_API_KEY
+    models:
+      gpt-4o:
+        pricing:
+          input: 2.5
+          cached: 1.25
+          output: 10
+      gpt-4o-mini:
+        pricing:
+          input: 0.15
+          cached: 0.075
+          output: 0.6
+      gpt-4.1:
+        pricing:
+          input: 2
+          cached: 0.5
+          output: 8
+      gpt-4.1-mini:
+        pricing:
+          input: 0.4
+          cached: 0.1
+          output: 1.6
+      gpt-4.1-nano:
+        pricing:
+          input: 0.1
+          cached: 0.025
+          output: 0.4
+  google:
+    package: langchain-google-genai
+    module: langchain_google_genai
+    class: ChatGoogleGenerativeAI
+    env_key: GOOGLE_API_KEY
+    models:
+      gemini-2.5-flash:
+        pricing:
+          input: 0.3
+          output: 2.5
+  anthropic:
+    package: langchain-anthropic
+    module: langchain_anthropic
+    class: ChatAnthropic
+    env_key: ANTHROPIC_API_KEY
+    models:
+      claude-sonnet-4-5:
+        pricing:
+          input: 3
+          cached: 0.3
+          output: 15
+  deepseek:
+    package: langchain-deepseek
+    module: langchain_deepseek
+    class: ChatDeepSeek
+    env_key: DEEPSEEK_API_KEY
+    models:
+      deepseek-chat:
+        pricing:
+          input: 0.27
+          cached: 0.07
+          output: 1.1
+  ollama:
+    package: langchain-ollama
+    module: langchain_ollama
+    class: ChatOllama
+    models: {}

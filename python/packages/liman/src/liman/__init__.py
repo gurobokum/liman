@@ -6,6 +6,7 @@ if os.getenv("LIMAN_DEBUG") == "1":
     enable_debug()
 
 
+from liman_core.llm import get_llm
 from liman_core.registry import Registry
 
 from liman.agent import Agent
@@ -23,5 +24,6 @@ __all__ = [
     "StateStorage",
     "InMemoryStateStorage",
     "Registry",
+    "get_llm",
     "load_specs_from_directory",
 ]
