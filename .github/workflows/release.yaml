@@ -49,6 +49,7 @@ jobs:
         if: ${{ needs.release-please.outputs[matrix.package] == 'true' }}
         uses: astral-sh/setup-uv@v6
         with:
+          version: "0.12.7"
           enable-cache: true
       - name: Build package
         if: ${{ needs.release-please.outputs[matrix.package] == 'true' }}
