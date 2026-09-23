@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.1](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0...liman_core_py-v0.1.1) (2026-09-23)
+
+
+### ✨ Features
+
+* **liman_core:** add canonical to routing field with ref-based EdgeSpec ([a8a11dc](https://github.com/gurobokum/liman/commit/a8a11dcecae055de15f8a1eeb2f0ce9466b9a57e))
+* **liman_core:** add get_llm with model registry and pricing ([e3b9ac6](https://github.com/gurobokum/liman/commit/e3b9ac68fcd9b52679c66d5a910678c481b5e441))
+* **liman_core:** add structured output to LLMNode ([f007127](https://github.com/gurobokum/liman/commit/f00712700beaba65d6533df7208670d23b7a9ac9))
+* **liman_core:** lowercase model refs in resolve_model ([9494334](https://github.com/gurobokum/liman/commit/9494334f3332dbd3f0569fd031879fa9da64e2f4))
+* **liman_finops:** read token prices from liman_core model registry ([edafa41](https://github.com/gurobokum/liman/commit/edafa418c92b1fc20d7b3ad9d200c447f547342f))
+
+
+### 🛠 Code Refactoring
+
+* **liman:** executor as stateful restorable entity ([d1913f5](https://github.com/gurobokum/liman/commit/d1913f5f740a4a952a9675c530b6896b6d991028))
+
+
+### 📚 Documentation
+
+* add PyPI badges ([ff9a235](https://github.com/gurobokum/liman/commit/ff9a235a05af3fa8025fc6750f7ecb455ca1cde2))
+
 ## [0.1.0](https://github.com/gurobokum/liman/compare/liman_core_py-v0.1.0-a3...liman_core_py-v0.1.0) (2026-05-03)
 
 
